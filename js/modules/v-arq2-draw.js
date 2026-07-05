@@ -1,5 +1,5 @@
-window.arq2_getSnapGeometry = function(rawPoints, useCostura = false) {
-    let snappedOriginals = arq2_snapVerticesToExisting(rawPoints);
+window.arq2_getSnapGeometry = function(rawPoints, useCostura = false, excludeLineId = null) {
+    let snappedOriginals = arq2_snapVerticesToExisting(rawPoints, excludeLineId);
     let snappedRaw = snappedOriginals;
     
     if (!useCostura && snappedRaw.length >= 3) {

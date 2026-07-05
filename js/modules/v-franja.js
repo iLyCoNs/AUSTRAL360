@@ -860,7 +860,7 @@ function applyDraggedVertexCoords(coords) {
     if (linea.tipo === 'lote-organico' && linea.ejeOriginal && window.arq2_getSnapGeometry) {
         linea.ejeOriginal[draggingVertex.idx] = [coords[0], coords[1]];
         const useCostura = !!linea.costuraStyle;
-        const geoSnap = window.arq2_getSnapGeometry(linea.ejeOriginal, useCostura);
+        const geoSnap = window.arq2_getSnapGeometry(linea.ejeOriginal, useCostura, linea.id);
         if (geoSnap) {
             // Actualizar la posición del handle blanco para que siga visualmente al vértice tras pegarse a la calle
             if (geoSnap.snappedOriginals && geoSnap.snappedOriginals[draggingVertex.idx]) {

@@ -269,11 +269,11 @@ function setupDevModes() {
                     e.stopPropagation();
                 }
             }
-        }, true); // Capture phase is critical here!
+        }, { capture: true, passive: false });
     });
 
     document.querySelectorAll('.dev-toolbar').forEach(tb => { tb.addEventListener('mousedown', e => e.stopPropagation()); tb.addEventListener('mouseup', e => e.stopPropagation()); tb.addEventListener('touchstart', e => e.stopPropagation(), {passive: true}); tb.addEventListener('touchend', e => e.stopPropagation()); });
-    document.addEventListener('keydown', (e) => {
+    window.addEventListener('keydown', (e) => {
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
         if (isArquitecto2Active && e.code === 'Escape') {
             e.preventDefault();
@@ -307,7 +307,7 @@ function setupDevModes() {
             refreshAllHotspots(true);
             return;
         }
-    });
+    }, { capture: true, passive: false });
     
     document.getElementById('btn-draw-solid')?.addEventListener('click', (e) => { setDrawMode('solida', e.target); }); 
     document.getElementById('btn-draw-dash')?.addEventListener('click', (e) => { setDrawMode('punteada', e.target); }); 
