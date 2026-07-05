@@ -8,26 +8,6 @@
   "horizontes": [],
   "trazos": [
     {
-      "id": "arq2_org_1783228419105",
-      "tipo": "lote-organico",
-      "puntos": [
-        [
-          -56.01334751065502,
-          16.08969944927284
-        ],
-        [
-          -74.77801342154538,
-          -136.37148441092285
-        ]
-      ],
-      "sharedSegs": [],
-      "sharedSegStyles": {},
-      "sharedSegMeta": {},
-      "costuraStyle": "punteada",
-      "costuraEstilo": "punteada",
-      "esDivisoria": true
-    },
-    {
       "id": "arq2_org_1783229677093",
       "tipo": "lote-organico",
       "puntos": [
