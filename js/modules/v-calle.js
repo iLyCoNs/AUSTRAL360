@@ -391,13 +391,13 @@ function arq2_getCalleCurvaAlpha(lineData) {
 }
 function arq2_applyCalleCurvaFillStyle(pathEl, alpha) {
     if (!pathEl) return;
-    const a = arq2_getCalleCurvaAlpha({ calleCurvaAlpha: alpha });
-    // Styled as dark asphalt grey-blue (rgba(30, 35, 45, alpha)) instead of flat white
-    pathEl.setAttribute('fill', `rgba(30,35,45,${a})`);
+    // FIX: El asfalto DEBE ser 100% opaco para que tape (enmascare) los bordes blancos subyacentes
+    // en las intersecciones. La transparencia global (alpha) se aplicará ahora a toda la capa SVG contenedora.
+    pathEl.setAttribute('fill', `rgba(30,35,45,1)`);
     pathEl.setAttribute('stroke', 'none');
     // evenodd fill-rule ensures closed-loop streets render as a ring (not solid white)
     pathEl.setAttribute('fill-rule', 'evenodd');
-    pathEl.style.fill = `rgba(30,35,45,${a})`;
+    pathEl.style.fill = 'rgba(30,35,45,1)';
     pathEl.style.fillRule = 'evenodd';
 }
 
