@@ -857,5 +857,30 @@ function applyDraggedVertexCoords(coords) {
         }
         return;
     }
+    if (linea.tipo === 'lote-organico' && linea.ejeOriginal && window.arq2_getSnapGeometry) {
+        linea.ejeOriginal[draggingVertex.idx] = [coords[0], coords[1]];
+        const useCostura = !!linea.costuraStyle;
+        const geoSnap = window.arq2_getSnapGeometry(linea.ejeOriginal);
+        if (geoSnap) {
+            let smoothed;
+            if (useCostura) {
+                smoothed = window.arq2_adaptiveSmooth(geoSnap.snappedRaw, null, Math.min(linea.suavizadoIntensidad || 1, 2));
+                smoothed = window.arq2_restoreAnchoredVertices(smoothed, geoSnap.anchors, 0.04);
+                if (window.arq2_clipCosturaToParent) {
+                    smoothed = window.arq2_clipCosturaToParent(smoothed);
+                }
+            } else {
+                smoothed = window.arq2_adaptiveSmooth(geoSnap.snappedRaw, null, linea.suavizadoIntensidad || 1);
+                smoothed = window.arq2_restoreAnchoredVertices(smoothed, geoSnap.anchors, 0.08);
+            }
+            if (window.arq2_sanitizePolylinePoints) {
+                smoothed = window.arq2_sanitizePolylinePoints(smoothed);
+            }
+            if (smoothed && smoothed.length >= 3) {
+                linea.puntos = smoothed;
+            }
+        }
+        return;
+    }
     linea.puntos[draggingVertex.idx] = [coords[0], coords[1]];
 }

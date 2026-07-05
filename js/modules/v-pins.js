@@ -578,16 +578,8 @@ function renderFranjaDivHandle(hotSpotDiv, args) {
 
 function renderHiddenVertex(hotSpotDiv, args) { 
     hotSpotDiv.classList.add('vertex-marker'); hotSpotDiv.id = args.hsId;
-    // if (args.isFranjaCorner || args.type === 'franja-grupo') hotSpotDiv.classList.add('franja-corner-marker');
     if (args.isFranjaElastic) hotSpotDiv.classList.add('franja-elastic-node');
     if (!DOMCache.markers[args.lineId]) DOMCache.markers[args.lineId] = { base: [] }; DOMCache.markers[args.lineId].base[args.idx] = hotSpotDiv; 
-    
-    // FIX: Para lote-organico, mostrar los vértices originales pero bloquear su arrastre 
-    // para no corromper la matemática del calco perfecto con la calle curva.
-    if (args.type === 'lote-organico') {
-        hotSpotDiv.style.pointerEvents = 'none';
-        hotSpotDiv.style.cursor = 'default';
-    }
     
     if (args.lineId === currentTempLineId) { hotSpotDiv.classList.add('drawing-node'); }
     if (args.lineId === currentTempLineId && args.idx === 0 && currentLinePoints.length >= 3 && currentLineType !== 'cortar' && currentLineType !== 'eraser') { hotSpotDiv.classList.add('origin-vertex'); }
