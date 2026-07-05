@@ -164,9 +164,17 @@ function getHotspotsConfig() {
                     hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
                 });
             } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
-                linea.puntos.forEach((coord, pIdx) => {
-                    hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
-                });
+                // FIX: Para lote-organico, mostrar SOLAMENTE los vértices originales del click (ejeOriginal)
+                // y no todos los cientos de puntos interpolados/adheridos del calco a la calle.
+                if (linea.tipo === 'lote-organico' && linea.ejeOriginal) {
+                    linea.ejeOriginal.forEach((coord, pIdx) => {
+                        hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                    });
+                } else if (linea.tipo !== 'lote-organico') {
+                    linea.puntos.forEach((coord, pIdx) => {
+                        hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                    });
+                }
             }
             if (linea.tipo === 'area-invisible' && linea.franjaNumero && linea.puntos.length >= 3) {
                 const parentStrip = getFranjaStripById(linea.franjaGrupo);

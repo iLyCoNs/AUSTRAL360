@@ -560,6 +560,201 @@ function renderFranjaDivHandle(hotSpotDiv, args) {
         refreshAllHotspots(true);
         saveToLocal();
     }, true);
+} else if (plan.mode === 'franja-rebuild') {
+            if(!confirm("✨ AUTO-MACRO\n\n¿Regenerar franja(s) con bordes sólidos finos y divisiones punteadas?\n\nSe eliminarán los trazos de lote antiguos superpuestos.")) return;
+            plan.grupos.forEach(g => rebuildFranjaGroup(g.id));
+            finalizeAutoMacroSession();
+        } else {
+            if(!confirm("✨ AUTO-MACRO\n\n¿Convertir " + plan.lotes.length + " lote(s) a estilo premium?\n• Perímetro: sólido fino\n• Divisiones internas: punteadas\n• Se eliminan trazos antiguos duplicados")) return;
+            if (!runAutoMacroTransform(plan.lotes)) return alert("No se pudo aplicar AUTO-MACRO.");
+        }
+        finalizeAutoMacroSession();
+        refreshAllHotspots();
+        saveToLocal();
+        flashScreenSuccess();
+    });
+}
+
+function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a borrar TODOS los lotes, calles y pines.\n\n¿Estás seguro?")) return; clearFranjaDraft(); BaseDatosLotes = []; PuntosHorizonte = []; allDrawnLines = []; currentLinePoints = []; document.body.classList.remove('auto-macro-active'); document.body.classList.remove('masterplan-premium-active'); refreshAllHotspots(); localStorage.removeItem(FRESIA_CFG.autosaveKey); }
+
+function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+function buildCloudPayload() {
+    const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
+    if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
+    return payload;
+}
+function mergeAerialWithRemoteSuelo(remote, aerial) {
+    const merged = { ...aerial };
+    if (!remote) return merged;
+    ['lotesSuelo', 'horizontesSuelo', 'trazosSuelo', 'norteSuelo'].forEach((k) => { if (remote[k] !== undefined) merged[k] = remote[k]; });
+    return merged;
+}
+async function fetchGithubFileSha(user, repo, token, filename) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const response = await fetch(url, { method: 'GET', headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+    if (response.status === 404) return '';
+    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || `HTTP ${response.status}`); }
+    const jsonRes = await response.json();
+    return jsonRes.sha || '';
+}
+async function fetchGithubJsonContents(user, repo, token, filename) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const response = await fetch(url, { method: 'GET', headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+    if (response.status === 404) return { sha: '', data: null };
+    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || `HTTP ${response.status}`); }
+    const jsonRes = await response.json();
+    const raw = (jsonRes.content || '').replace(/\n/g, '');
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    return { sha: jsonRes.sha || '', data: decoded };
+}
+async function putGithubContents(user, repo, token, filename, message, contentEncoded, shaRef, onShaUpdate) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const attemptPut = async (shaValue, isRetry) => {
+        const payload = { message, content: contentEncoded };
+        if (shaValue) payload.sha = shaValue;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            const result = await response.json();
+            if (result.content && result.content.sha && onShaUpdate) onShaUpdate(result.content.sha);
+            return { ok: true, result };
+        }
+        const err = await response.json().catch(() => ({}));
+        const msg = err.message || `HTTP ${response.status}`;
+        if (!isRetry && (msg.includes('does not match') || response.status === 409)) {
+            const freshSha = await fetchGithubFileSha(user, repo, token, filename);
+            if (onShaUpdate) onShaUpdate(freshSha);
+            return attemptPut(freshSha, true);
+        }
+        return { ok: false, message: msg };
+    };
+    return attemptPut(shaRef, false);
+}
+function setExportBtnState(btn, html, bg, disabled) {
+    if (!btn) return;
+    btn.innerHTML = html;
+    if (bg !== undefined) btn.style.background = bg;
+    btn.style.pointerEvents = disabled ? 'none' : 'auto';
+    btn.style.opacity = disabled ? '0.7' : '1';
+}
+async function guardarEnNubeDirecto(btn, originalHtml) {
+    const user = safeGetStorage('masterplan_user');
+    const repo = safeGetStorage('masterplan_repo');
+    const token = safeGetStorage('masterplan_token');
+    if (!user || !repo || !token) {
+        alert('⚠️ Para guardar en la nube, inicia sesión una vez en admin.html con tu repositorio GitHub.\n\nLas credenciales quedan guardadas en este navegador.');
+        setExportBtnState(btn, originalHtml || '☁️ GUARDAR EN LA NUBE', '', false);
+        return false;
+    }
+    const localPayload = buildCloudPayload();
+    let shaRef = safeGetStorage(FRESIA_CFG.githubShaStorageKey) || '';
+    let remoteData = null;
+    try {
+        const remote = await fetchGithubJsonContents(user, repo, token, FRESIA_CFG.githubDatosFile);
+        shaRef = remote.sha || shaRef;
+        remoteData = remote.data;
+    } catch (e) {
+        shaRef = await fetchGithubFileSha(user, repo, token, FRESIA_CFG.githubDatosFile);
+    }
+    let merged;
+    if (FRESIA_CFG.mergeRemoteSueloFields) {
+        merged = mergeAerialWithRemoteSuelo(remoteData, localPayload);
+        delete merged.vista;
+    } else {
+        merged = remoteData ? Object.assign({}, remoteData, localPayload) : localPayload;
+    }
+    const jsonString = JSON.stringify(merged, null, 2);
+    const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+    const upload = await putGithubContents(
+        user, repo, token, FRESIA_CFG.githubDatosFile,
+        FRESIA_CFG.githubCommitMessage,
+        contentEncoded,
+        shaRef,
+        (sha) => safeSetStorage(FRESIA_CFG.githubShaStorageKey, sha)
+    );
+    if (upload.ok) {
+        setExportBtnState(btn, '✅ GUARDADO EN NUBE', '#10b981', true);
+        flashScreenSuccess();
+        setTimeout(() => setExportBtnState(btn, originalHtml || '☁️ GUARDAR EN LA NUBE', '', false), 2500);
+        return true;
+    }
+    alert('⛔ Error al guardar en GitHub: ' + (upload.message || 'desconocido'));
+    setExportBtnState(btn, originalHtml || '☁️ GUARDAR EN LA NUBE', '', false);
+    return false;
+}
+async function exportarDatosParaIA(event) {
+    if (guardarNubeEnCurso) return;
+    saveToLocal();
+    const btn = event && event.target ? event.target : null;
+    const originalHtml = btn ? btn.innerHTML : '☁️ GUARDAR EN LA NUBE';
+    guardarNubeEnCurso = true;
+    setExportBtnState(btn, '☁️ GUARDANDO...', '', true);
+    try {
+        if (window.self !== window.top) {
+            window.parent.postMessage({ type: FRESIA_CFG.savePostMessageType, payload: buildCloudPayload(), file: FRESIA_CFG.saveFile }, '*');
+            setExportBtnState(btn, '✅ GUARDADO EN NUBE', '#10b981', true);
+            setTimeout(() => setExportBtnState(btn, originalHtml, '', false), 2500);
+            return;
+        }
+        await guardarEnNubeDirecto(btn, originalHtml);
+    } catch (error) {
+        alert('⚠️ Error de conexión al guardar en la nube. Revisa tu internet e intenta de nuevo.');
+        setExportBtnState(btn, originalHtml, '', false);
+    } finally {
+        guardarNubeEnCurso = false;
+    }
+}
+
+function renderFranjaLotLabel(hotSpotDiv, args) {
+    hotSpotDiv.className = 'franja-lot-label';
+    hotSpotDiv.textContent = args.numero || '00';
+}
+function renderCalleServidumbreLabel(hotSpotDiv, args) {
+    hotSpotDiv.className = 'calle-servidumbre-label';
+    hotSpotDiv.textContent = 'SERVIDUMBRE DE PASO';
+    const scale = args?.labelScale ?? draftCalleLabelScale ?? 1;
+    hotSpotDiv.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    if (args?.isDraft) hotSpotDiv.style.opacity = '0.72';
+}
+function renderCalleMoveHandle(hotSpotDiv, args) {
+    hotSpotDiv.className = 'calle-move-handle';
+    hotSpotDiv.textContent = '✥';
+    hotSpotDiv.title = 'Arrastra para mover toda la calle';
+    const startDrag = (e) => {
+        if (currentLineType === 'eraser' || arq2Tool === 'eraser') return;
+        e.stopPropagation(); e.preventDefault();
+        const line = allDrawnLines.find(l => l.id === args.lineId && l.tipo === 'calle');
+        if (!line) return;
+        const mock = getMockEvent(e);
+        const coords = visor360?.mouseEventToCoords(mock);
+        if (!coords) return;
+        hotSpotDiv.classList.add('is-dragging');
+        draggingCalleMove = { lineId: args.lineId, origPts: line.puntos.map(pt => [...pt]), startPY: [coords[0], coords[1]], el: hotSpotDiv };
+    };
+    hotSpotDiv.addEventListener('mousedown', startDrag);
+    hotSpotDiv.addEventListener('touchstart', startDrag, { passive: false });
+}
+function renderFranjaDivHandle(hotSpotDiv, args) {
+    hotSpotDiv.className = 'franja-div-handle';
+    hotSpotDiv.title = 'Arrastra para mover división (ajustar m²)';
+    const startDrag = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        hotSpotDiv.classList.add('is-dragging');
+        draggingFranjaDiv = { gid: args.gid, splitIdx: args.splitIdx, el: hotSpotDiv };
+    };
+    hotSpotDiv.addEventListener('mousedown', startDrag);
+    hotSpotDiv.addEventListener('touchstart', startDrag, { passive: false });
+    hotSpotDiv.addEventListener('mousedown', (e) => {
+        if (currentLineType !== 'eraser') return;
+        e.stopPropagation(); e.preventDefault();
+        applyEraserDelete(args.gid);
+        refreshAllHotspots(true);
+        saveToLocal();
+    }, true);
 }
 
 function renderHiddenVertex(hotSpotDiv, args) { 
@@ -567,6 +762,14 @@ function renderHiddenVertex(hotSpotDiv, args) {
     // if (args.isFranjaCorner || args.type === 'franja-grupo') hotSpotDiv.classList.add('franja-corner-marker');
     if (args.isFranjaElastic) hotSpotDiv.classList.add('franja-elastic-node');
     if (!DOMCache.markers[args.lineId]) DOMCache.markers[args.lineId] = { base: [] }; DOMCache.markers[args.lineId].base[args.idx] = hotSpotDiv; 
+    
+    // FIX: Para lote-organico, mostrar los vértices originales pero bloquear su arrastre 
+    // para no corromper la matemática del calco perfecto con la calle curva.
+    if (args.type === 'lote-organico') {
+        hotSpotDiv.style.pointerEvents = 'none';
+        hotSpotDiv.style.cursor = 'default';
+    }
+    
     if (args.lineId === currentTempLineId) { hotSpotDiv.classList.add('drawing-node'); }
     if (args.lineId === currentTempLineId && args.idx === 0 && currentLinePoints.length >= 3 && currentLineType !== 'cortar' && currentLineType !== 'eraser') { hotSpotDiv.classList.add('origin-vertex'); }
     if (args.lineId === arq2TempLineId && args.idx === 0 && arq2LinePoints.length >= 3 && isArquitecto2Active) { hotSpotDiv.classList.add('origin-vertex'); }

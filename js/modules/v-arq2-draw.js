@@ -52,6 +52,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
         const entry = {
             id, tipo: 'lote-organico',
             puntos: snappedRaw.map(p => [...p]),
+            ejeOriginal: arq2LinePoints.map(p => [...p]),
             sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {},
             costuraStyle: costuraEstiloGuardado,
             costuraEstilo: costuraEstiloGuardado,
@@ -83,7 +84,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     if (smoothed.length < 3) return;
     const id = 'arq2_org_' + Date.now();
     const costuraEstiloGuardado = useCostura ? (arq2CosturaStyle || 'punteada') : null;
-    const entry = { id, tipo: 'lote-organico', puntos: smoothed, sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {}, suavizadoIntensidad: smoothIntensity };
+    const entry = { id, tipo: 'lote-organico', puntos: smoothed, ejeOriginal: arq2LinePoints.map(p => [...p]), sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {}, suavizadoIntensidad: smoothIntensity };
     if (useCostura) {
         entry.costuraStyle = costuraEstiloGuardado;
         entry.costuraEstilo = costuraEstiloGuardado;
