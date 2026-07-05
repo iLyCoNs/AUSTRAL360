@@ -399,7 +399,7 @@ function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a bo
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
-    const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
+    const payload = { timestamp: Date.now(), configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
     return payload;
 }
