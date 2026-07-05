@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración | Bóveda Inmobiliaria</title>
+    <!-- Tipografía Premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================================================
+           RESET Y VARIABLES GLOBALES (CORE_OS)
+           ========================================================================== */
+        :root {
+            /* Wallpaper Gris Grafito por defecto */
+            --bg-mac: linear-gradient(135deg, #2b2b2b 0%, #000000 100%); 
+            --glass-bg: rgba(20, 20, 25, 0.65); /* Dark Vibrancy adaptativo */
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-blur: blur(40px) saturate(200%);
+            --mac-blue: #0A84FF;
+            --mac-blue-hover: #0062E3;
+            --mac-red: #FF453A;
+            --mac-green: #32D74B;
+            --mac-yellow: #FFD60A;
+            --text-main: #F5F5F7;
+            --text-muted: #86868B;
+            --card-bg: rgba(0, 0, 0, 0.35);
+            --input-bg: rgba(0, 0, 0, 0.4);
+            --focus-ring: rgba(10, 132, 255, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { 
+            background-color: #000;
+            background-image: var(--bg-mac);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main); 
+            display: flex; justify-content: center; align-items: flex-start; 
+            min-height: 100vh; padding: 40px 20px 120px 20px; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            transition: background-image 0.8s ease-in-out;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        /* Ocultar Scrollbar en Chrome/Edge pero mantener funcionalidad */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* ==========================================================================
+           VENTANA MAESTRA TIPO MACOS
+           ========================================================================== */
+        .mac-window {
+            width: 100%; max-width: 1200px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative; z-index: 10;
+            overflow: hidden;
+            animation: windowOpen 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes windowOpen {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* TOP BAR */
+        .mac-titlebar {
+            height: 48px; background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px;
+        }
+
+        .mac-traffic-lights { display: flex; gap: 8px; }
+        .light { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: inset 0 1px 2px rgba(255,255,255,0.4); }
+        .light.close { background-color: var(--mac-red); }
+        .light.min { background-color: var(--mac-yellow); }
+        .light.max { background-color: var(--mac-green); }
+
+        .mac-title { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+        .mac-actions { display: flex; align-items: center; gap: 12px; }
+        .user-pill { font-size: 11px; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-weight: 600; display: none; }
+
+        /* ==========================================================================
+           PANTALLA DE LOGIN
+           ========================================================================== */
+        #login-screen { padding: 60px 40px; display: flex; flex-direction: column; align-items: center; }
+        
+        .login-avatar {
+            width: 80px; height: 80px; background: linear-gradient(135deg, var(--mac-blue), #5E5CE6);
+            border-radius: 50%; margin-bottom: 24px; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .login-form { width: 100%; max-width: 320px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: none; } 
+        .input-group input { 
+            width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border); 
+            padding: 14px 18px; border-radius: 12px; color: #fff; font-size: 14px; outline: none; 
+            transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        .input-group input:focus { border-color: var(--mac-blue); box-shadow: 0 0 0 4px var(--focus-ring); background: rgba(0,0,0,0.6); }
+        .input-group input::placeholder { color: rgba(255,255,255,0.4); font-weight: 500; }
+
+        .btn-submit { 
+            width: 100%; background: var(--mac-blue); color: #fff; border: none; padding: 14px; 
+            border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; 
+            transition: all 0.3s ease; margin-top: 10px; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
+        }
+        .btn-submit:hover { background: var(--mac-blue-hover); transform: scale(1.02); }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* ==========================================================================
+           PANTALLA DE GESTIÓN (DASHBOARD)
+           ========================================================================== */
+        #dashboard-screen { display: none; padding: 30px; animation: fadeIn 0.8s ease-out; height: 75vh; overflow-y: auto; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .dashboard-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .dashboard-header-bar h2 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        
+        .controls-actions { display: flex; gap: 12px; }
+        .btn-logout { background: rgba(255,69,58,0.15); color: var(--mac-red); border: 1px solid rgba(255,69,58,0.3); padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+        .btn-logout:hover { background: var(--mac-red); color: #fff; }
+        
+        .btn-save { background: var(--mac-blue); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(10,132,255,0.3); }
+        .btn-save:hover { background: var(--mac-blue-hover); transform: translateY(-1px); }
+
+        /* DOCK NAVEGACIÓN INFERIOR */
+        .mac-dock {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            background: rgba(30, 30, 35, 0.6); backdrop-filter: blur(30px) saturate(200%); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.15); border-top: 1px solid rgba(255,255,255,0.3);
+            border-radius: 32px; padding: 10px 20px; display: flex; gap: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
+            z-index: 9999;
+        }
+
+        .dock-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: transparent; border: none; cursor: pointer; position: relative;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 50px; height: 50px; border-radius: 12px;
+        }
+        .dock-item:hover { transform: scale(1.3) translateY(-10px); z-index: 10; margin: 0 15px; }
+        
+        .dock-icon {
+            width: 44px; height: 44px; border-radius: 10px; display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.0));
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+            color: #fff; margin-bottom: 5px;
+        }
+        .dock-item.active .dock-icon { background: linear-gradient(135deg, var(--mac-blue), #5E5CE6); box-shadow: 0 8px 15px rgba(10, 132, 255, 0.4); }
+        
+        .dock-item::after { content: ''; position: absolute; bottom: -6px; width: 4px; height: 4px; background-color: var(--text-main); border-radius: 50%; opacity: 0; transition: opacity 0.3s; }
+        .dock-item.active::after { opacity: 1; }
+        .dock-item span { display: none; }
+
+        .vista-switch-bar { position: absolute; top: 12px; left: 12px; z-index: 20; display: flex; gap: 8px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,0.55); border: 1px solid var(--glass-border); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .vista-switch-btn { border: 1px solid transparent; background: transparent; color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.2px; }
+        .vista-switch-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.06); }
+        .vista-switch-btn.active { color: #fff; background: linear-gradient(135deg, rgba(10,132,255,0.85), rgba(94,92,230,0.85)); border-color: rgba(255,255,255,0.18); box-shadow: 0 4px 14px rgba(10,132,255,0.35); }
+
+        /* MAPEO FULLSCREEN (Ctrl+H → botón Mapeo 3D) */
+        #mapeo-fullscreen { position: fixed; inset: 0; z-index: 9999999; background: #000; display: none; flex-direction: column; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s; }
+        #mapeo-fullscreen.open { display: flex; opacity: 1; visibility: visible; }
+        body.mapeo-fs-active { overflow: hidden !important; }
+        .mapeo-fs-topbar { position: relative; flex-shrink: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; gap: 12px; flex-wrap: wrap; background: rgba(9,11,17,0.92); border-bottom: 1px solid rgba(255,255,255,0.08); pointer-events: auto; }
+        .mapeo-fs-topbar .vista-switch-bar { position: static; pointer-events: auto; }
+        .mapeo-mode-tools { display: flex; gap: 8px; pointer-events: auto; flex-wrap: wrap; justify-content: center; flex: 1; }
+        .mapeo-mode-btn { border: 1px solid rgba(255,255,255,0.18); background: rgba(12,16,26,0.88); color: #e2e8f0; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 10px; cursor: pointer; letter-spacing: 0.2px; transition: background 0.2s, border-color 0.2s; }
+        .mapeo-mode-btn:hover { background: rgba(30,41,59,0.95); border-color: rgba(255,255,255,0.35); }
+        .mapeo-mode-btn.is-active { background: rgba(59,130,246,0.35); border-color: rgba(96,165,250,0.65); color: #fff; }
+        .mapeo-mode-btn.is-draw.is-active { background: rgba(245,158,11,0.35); border-color: rgba(251,191,36,0.65); }
+        .mapeo-mode-btn.is-draw { border-color: rgba(245,158,11,0.45); }
+        .mapeo-mode-btn.is-pins { border-color: rgba(59,130,246,0.45); }
+        .mapeo-fs-hint { pointer-events: none; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.75); background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15); padding: 8px 14px; border-radius: 10px; backdrop-filter: blur(12px); letter-spacing: 0.3px; white-space: nowrap; }
+        .mapeo-fs-hint kbd { display: inline-block; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; margin-right: 4px; font-family: inherit; font-size: 10px; }
+        #mapeo-fs-loader { position: absolute; inset: 0; z-index: 20; background: #090b11; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #iframe-fullscreen-360 { flex: 1; width: 100%; min-height: 0; border: none; display: block; }
+
+        .tab-section { display: none; animation: fadeIn 0.4s ease; height: 100%; }
+        .tab-section.active { display: block; }
+
+        /* SEARCH BAR */
+        .search-bar-container { margin-bottom: 24px; position: relative; display: flex; justify-content: center; }
+        .search-bar-container input { 
+            width: 100%; max-width: 500px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 12px 20px 12px 45px; border-radius: 20px; color: #fff; font-size: 15px; 
+            outline: none; transition: all 0.3s; backdrop-filter: blur(10px); text-align: center;
+        }
+        .search-bar-container input:focus { border-color: rgba(255,255,255,0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.3); background: rgba(0,0,0,0.6); text-align: left;}
+        .search-icon { position: absolute; left: calc(50% - 220px); top: 50%; transform: translateY(-50%); color: var(--text-muted); transition: all 0.3s; pointer-events: none;}
+        .search-bar-container input:focus ~ .search-icon, .search-bar-container input:not(:placeholder-shown) ~ .search-icon { left: calc(50% - 235px); color: #fff; }
+
+        /* ESTRUCTURA CARDS & INPUTS */
+        .global-config-card, .lote-row { 
+            background: var(--card-bg); padding: 24px; border-radius: 16px; 
+            border: 1px solid var(--glass-border); margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease;
+        }
+        .lote-row:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); border-color: rgba(255,255,255,0.25); }
+        
+        .global-config-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 20px; color: var(--text-main); }
+
+        .lotes-grid { display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
+        .lote-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+        
+        .lote-header-info { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            width: 90px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px; border: 1px solid var(--glass-border); gap: 10px; 
+        }
+        .lote-num-input { width: 100%; text-align: center; background: transparent; border: none; color: #fff; font-size: 22px; font-weight: 800; outline: none; transition: all 0.3s;}
+        .lote-num-input:focus { color: var(--mac-blue); }
+        
+        .pin-badge { font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px; text-align: center; width: 100%;}
+        .badge-lote { background: rgba(50, 215, 75, 0.2); color: var(--mac-green); border: 1px solid rgba(50, 215, 75, 0.4); }
+        .badge-360 { background: rgba(191, 90, 242, 0.2); color: #BF5AF2; border: 1px solid rgba(191, 90, 242, 0.4); }
+        .badge-horiz { background: rgba(255, 159, 10, 0.2); color: #FF9F0A; border: 1px solid rgba(255, 159, 10, 0.4); }
+        
+        .lote-details { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .col-span-full { grid-column: 1 / -1; }
+        .col-span-2 { grid-column: span 2; }
+        
+        .lote-field { display: flex; flex-direction: column; gap: 6px; }
+        .lote-field label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;}
+        .lote-field input[type="text"], .lote-field input[type="number"], .lote-field select { 
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); 
+            padding: 10px 14px; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 500; 
+            outline: none; transition: all 0.3s;
+        }
+        .lote-field input[type="text"]:focus, .lote-field input[type="number"]:focus, .lote-field select:focus { border-color: var(--mac-blue); background: rgba(0,0,0,0.6); box-shadow: 0 0 0 3px var(--focus-ring); }
+        .lote-field input[type="text"]::placeholder, .lote-field input[type="number"]::placeholder { color: rgba(255,255,255,0.4); font-weight: 400; }
+        
+        /* MAC TOGGLE (HUD BANNER) */
+        .mac-toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .mac-toggle input { opacity: 0; width: 0; height: 0; }
+        .mac-toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 24px; border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);}
+        .mac-toggle .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: #fff; transition: .4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3);}
+        .mac-toggle input:checked + .slider { background-color: var(--mac-green); border-color: var(--mac-green); }
+        .mac-toggle input:checked + .slider:before { transform: translateX(20px); }
+
+        /* SLIDERS DE OPACIDAD */
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; outline: none; margin-top: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--mac-blue); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        /* MOTOR DE SUBIDA */
+        .upload-group { display: flex; gap: 10px; align-items: stretch; width: 100%; }
+        .btn-upload {
+            background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border);
+            color: #fff; padding: 0 16px; border-radius: 8px; font-weight: 600; font-size: 11px; text-transform: uppercase;
+            cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+        }
+        .btn-upload:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); }
+        .btn-upload:disabled { opacity: 0.6; pointer-events: none; background: rgba(0,0,0,0.3); }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+
+        /* ESTILOS DE ESTADO */
+        select option { background: #1c1c1e; color: #fff; }
+        .status-disp { color: var(--mac-green) !important; border-color: rgba(50, 215, 75, 0.4) !important; background: rgba(50, 215, 75, 0.1) !important;}
+        .status-res { color: var(--mac-yellow) !important; border-color: rgba(255, 214, 10, 0.4) !important; background: rgba(255, 214, 10, 0.1) !important;}
+        .status-vend { color: var(--mac-red) !important; border-color: rgba(255, 69, 58, 0.4) !important; background: rgba(255, 69, 58, 0.1) !important;}
+        .status-nodisp { color: var(--text-muted) !important; border-color: rgba(134, 134, 139, 0.4) !important; background: rgba(134, 134, 139, 0.1) !important;}
+
+        /* SECCIÓN DE FONDOS DE PANTALLA */
+        .wallpaper-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
+        .wallpaper-card {
+            height: 120px; border-radius: 12px; cursor: pointer; border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: all 0.3s;
+            display: flex; align-items: flex-end; padding: 12px;
+            background-size: cover !important; background-position: center !important; position: relative; overflow: hidden;
+        }
+        .wallpaper-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%); }
+        .wallpaper-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .wallpaper-card.active { border-color: var(--mac-blue); box-shadow: 0 0 0 4px var(--focus-ring); }
+        .wallpaper-card span { position: relative; z-index: 2; color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8);}
+
+        /* ALERTA FLOTANTE */
+        #toast { 
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%); 
+            background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            color: #fff; padding: 12px 24px; border-radius: 30px; font-weight: 600; font-size: 13px; 
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); opacity: 0; 
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); z-index: 99999; 
+            display: flex; align-items: center; gap: 10px;
+        }
+        #toast.show { top: 30px; opacity: 1; }
+
+        /* GALERÍA EN PANEL ADMIN */
+        .gallery-preview-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .gallery-thumb-wrapper { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .gallery-thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-delete-btn { position: absolute; top: 2px; right: 2px; background: rgba(255,69,58,0.9); color: white; border: none; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .gallery-delete-btn:hover { background: #FF453A; transform: scale(1.1); }
+
+        /* ADAPTACIÓN MÓVIL ESTRICTA */
+        @media (max-width: 768px) {
+            body { padding: 10px; padding-bottom: 110px; }
+            .mac-window { border-radius: 16px; }
+            .dashboard-header-bar { flex-direction: column; gap: 15px; align-items: stretch; text-align: center; }
+            .controls-actions { flex-direction: column; gap: 10px; }
+            .lote-row { flex-direction: column; align-items: stretch; padding: 20px 15px; }
+            .lote-header-info { width: 100%; flex-direction: row; justify-content: space-between; padding: 10px 20px;}
+            .lote-num-input { width: 80px; text-align: left; }
+            .pin-badge { width: auto; padding: 6px 12px;}
+            .lote-details { grid-template-columns: 1fr; width: 100%; }
+            .col-span-2, .col-span-full { grid-column: span 1; }
+            .search-icon { display: none; }
+            .search-bar-container input { padding-left: 20px; text-align: left; }
+            .upload-group { flex-direction: column; }
+            .btn-upload { padding: 12px; }
+            
+            .mac-dock { gap: 8px; padding: 8px 12px; width: 95%; max-width: 360px; justify-content: space-around;}
+            .dock-item { width: 42px; height: 42px; }
+            .dock-item:hover { transform: scale(1.1) translateY(-5px); margin: 0; }
+            .dock-icon { width: 36px; height: 36px; }
+            .wallpaper-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mac-window">
+        <!-- TOP BAR (MAC WINDOW) -->
+        <div class="mac-titlebar">
+            <div class="mac-traffic-lights">
+                <span class="light close"></span>
+                <span class="light min"></span>
+                <span class="light max"></span>
+            </div>
+            <div class="mac-title">PANEL DE CONTROL PRINCIPAL</div>
+            <div class="mac-actions">
+                <div class="user-pill" id="display-user">--</div>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE LOGIN -->
+        <div id="login-screen">
+            <div class="login-avatar">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+                    <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/>
+                    <path d="M9 7h6"/>
+                    <path d="M9 11h6"/>
+                </svg>
+            </div>
+            <div class="login-form">
+                <div class="input-group">
+                    <input type="text" id="gh-user" placeholder="Usuario de GitHub">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="gh-repo" placeholder="Nombre del Repositorio">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="gh-token" placeholder="Personal Access Token">
+                </div>
+                <button class="btn-submit" id="btn-login" onclick="conectarBoveda()">Iniciar Sesión</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA DE GESTIÓN (DASHBOARD) -->
+        <div id="dashboard-screen">
+            <div class="dashboard-header-bar">
+                <h2>Panel de Administración</h2>
+                <div class="controls-actions">
+                    <button class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+                    <button class="btn-save" id="btn-save-master" onclick="guardarCambios()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8V3"></path></svg>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div>
+            
+            <!-- TAB: AJUSTES GLOBALES -->
+            <div id="tab-global" class="tab-section active" style="padding-bottom: 20px;">
+                
+                <!-- IDENTIDAD Y CONTACTO -->
+                <div class="global-config-card">
+                    <h3>Identidad de Marca y Contacto</h3>
+                    <div class="lote-details">
+                        <div class="lote-field col-span-full">
+                            <label>Nombre Principal del Proyecto</label>
+                            <input type="text" id="config-titulo" placeholder="Ej: PROYECTO INMOBILIARIO">
+                        </div>
+                        <div class="lote-field col-span-full">
+                            <label>Subtítulo / Bajada descriptiva</label>
+                            <input type="text" id="config-subtitulo" placeholder="Ej: Terrenos de 5.000 m2 con vista al volcán">
+                        </div>
+                        <div class="lote-field">
+                            <label>Número de WhatsApp (Ej: 56912345678)</label>
+                            <input type="text" id="config-whatsapp" placeholder="Solo números">
+                        </div>
+                        
+                        <!-- CAMPO VALOR UF -->
+                        <div class="lote-field">
+                            <label>Valor UF Actual (Pesos Chilenos)</label>
+                            <input type="number" id="config-valor-uf" placeholder="Ej: 37500" title="Respaldo si no hay internet. El sistema intentará conectarse a Mindicador.cl">
+                        </div>
+
+                        <div class="lote-field col-span-2">
+                            <label>Color Principal (Acento)</label>
+                            <div style="display:flex; gap:10px; align-items:center; background: rgba(255,255,255,0.05); padding: 5px 14px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                <input type="color" id="config-color" value="#10b981" style="width: 30px; height: 30px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                                <span id="color-hex-display" style="font-size: 13px; font-weight: 600; font-family: monospace; color: #fff;">#10b981</span>
+                            </div>
+                        </div>
+
+                        <!-- GESTIÓN DE COLORES DE ESTADO (LOTES Y PINES) + OPACIDAD -->
+                        <div class="lote-field col-span-full">
+                            <label>Personalizar Colores y Transparencia de Lotes Poligonales</label>
+                            <div style="display:flex; gap:15px; flex-wrap:wrap; background: rgba(0,0,0,0.2); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--glass-border); align-items: flex-start; justify-content: space-around;">
+                                
+                                <div style="display:flex; flex-direction:column; gap:8px; align-items:center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; width: 110px;">
+                                    <span style="font-size:9px; font-weight:800; color:var(--text-main); letter-spacing:1px;">DISPONIBLE</span>
+                                    <input type="color" id="config-color-disp" value="#10b981" style="width:40px; height:40px; border:2px solid rgba(255,255,255,0.2); border-radius:10px; background:transparent; cursor:pointer;">
+                                    <div style="display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;">
+                                        <input type="range" id="config-op-disp" min="0" max="100" value="15" oninput="document.getElementById('lbl-op-disp').innerText = this.value + '%'">
+                                        <span id="lbl-op-disp" style="font-size:9px; font-weight:bold; min-width: 25px;">15%</span>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; flex-direction:column; gap:8px; align-items:center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; width: 110px;">
+                                    <span style="font-size:9px; font-weight:800; color:var(--text-main); letter-spacing:1px;">RESERVADO</span>
+                                    <input type="color" id="config-color-res" value="#f59e0b" style="width:40px; height:40px; border:2px solid rgba(255,255,255,0.2); border-radius:10px; background:transparent; cursor:pointer;">
+                                    <div style="display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;">
+                                        <input type="range" id="config-op-res" min="0" max="100" value="15" oninput="document.getElementById('lbl-op-res').innerText = this.value + '%'">
+                                        <span id="lbl-op-res" style="font-size:9px; font-weight:bold; min-width: 25px;">15%</span>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; flex-direction:column; gap:8px; align-items:center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; width: 110px;">
+                                    <span style="font-size:9px; font-weight:800; color:var(--text-main); letter-spacing:1px;">VENDIDO</span>
+                                    <input type="color" id="config-color-vend" value="#ef4444" style="width:40px; height:40px; border:2px solid rgba(255,255,255,0.2); border-radius:10px; background:transparent; cursor:pointer;">
+                                    <div style="display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;">
+                                        <input type="range" id="config-op-vend" min="0" max="100" value="25" oninput="document.getElementById('lbl-op-vend').innerText = this.value + '%'">
+                                        <span id="lbl-op-vend" style="font-size:9px; font-weight:bold; min-width: 25px;">25%</span>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; flex-direction:column; gap:8px; align-items:center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; width: 110px;">
+                                    <span style="font-size:9px; font-weight:800; color:var(--text-main); letter-spacing:1px;">NO DISP.</span>
+                                    <input type="color" id="config-color-nodisp" value="#94a3b8" style="width:40px; height:40px; border:2px solid rgba(255,255,255,0.2); border-radius:10px; background:transparent; cursor:pointer;">
+                                    <div style="display: flex; align-items: center; gap: 5px; width: 100%; margin-top: 5px;">
+                                        <input type="range" id="config-op-nodisp" min="0" max="100" value="25" oninput="document.getElementById('lbl-op-nodisp').innerText = this.value + '%'">
+                                        <span id="lbl-op-nodisp" style="font-size:9px; font-weight:bold; min-width: 25px;">25%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lote-field col-span-full">
+                            <label>Logotipo del Proyecto (Splash Screen)</label>
+                            <div class="upload-group">
+                                <input type="text" id="config-logo" placeholder="Pegar enlace PNG o subir logo ➔">
+                                <button class="btn-upload" onclick="document.getElementById('file-logo').click()">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Subir Logo
+                                </button>
+                                <input type="file" id="file-logo" style="display:none" accept="image/png, image/jpeg, image/svg+xml" onchange="procesarYSubirLogo(event)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONSOLA DE MARKETING HUD -->
+                <div class="global-config-card">
+                    <h3>Consola de Marketing (HUD Banner)</h3>
+                    <div class="lote-details">
+                        <div class="lote-field col-span-full" style="flex-direction: row; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                            <div>
+                                <label style="color:#fff; font-size:13px;">Activar Banner Promocional en 360°</label>
+                                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: none; font-weight: 500;">Muestra un anuncio destacado en la parte superior del Masterplan para captar clientes.</p>
+                            </div>
+                            <label class="mac-toggle">
+                                <input type="checkbox" id="config-banner-activo">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="lote-field">
+                            <label>Campaña / Tipo de Oferta</label>
+                            <select id="config-banner-tipo">
+                                <option value="descuento">🔥 Descuento Especial</option>
+                                <option value="cyber">💻 CyberDay / CyberMonday</option>
+                                <option value="blackfriday">⬛ Black Friday</option>
+                                <option value="verde">🌱 Venta en Verde</option>
+                                <option value="ultimos">🚨 Últimas Unidades</option>
+                                <option value="lanzamiento">🚀 Lanzamiento Oficial</option>
+                                <option value="bono">🎁 Bono Pie / Gastos Gratis</option>
+                                <option value="personalizado">✨ Otro (Personalizado)</option>
+                            </select>
+                        </div>
+                        <div class="lote-field col-span-2">
+                            <label>Texto del Anuncio</label>
+                            <input type="text" id="config-banner-texto" placeholder="Ej: ¡Aprovecha un 10% de descuento en lotes frente al lago solo por hoy!">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MAPEO ESPACIAL (360 EDITOR) -->
+            <div id="tab-mapeo" class="tab-section" style="height: 100%; padding: 0;">
+                <div style="width: 100%; height: 100%; position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border);">
+                    <div id="mapeo-vista-switch" class="vista-switch-bar">
+                        <button type="button" id="btn-vista-aereo" class="vista-switch-btn active" onclick="cambiarVistaEditor('aereo')">🚁 Vista Aérea</button>
+                        <button type="button" id="btn-vista-suelo" class="vista-switch-btn" onclick="cambiarVistaEditor('suelo')">🌿 Vista Suelo</button>
+                        <button type="button" class="mapeo-mode-btn is-draw" onclick="adminToggleDrawMode()">📐 Modo Arquitecto</button>
+                        <button type="button" class="mapeo-mode-btn is-pins" onclick="adminTogglePinsMode()">📍 Modo Pines</button>
+                    </div>
+                    <div id="mapeo-loader" style="position:absolute; top:0; left:0; width:100%; height:100%; background:var(--glass-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10;">
+                        <svg class="spinner" width="30" height="30" fill="none" stroke="var(--mac-blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <p style="margin-top: 15px; font-weight: 600;">Inicializando Motor Gráfico 3D...</p>
+                    </div>
+                    <iframe id="iframe-editor-360" src="" tabindex="0" title="Editor 360 Mapeo" style="width: 100%; height: 100%; border: none; z-index: 1;"></iframe>
+                </div>
+            </div>
+
+            <!-- TAB: INVENTARIO (LOTES Y VISTAS 360) -->
+            <div id="tab-lotes" class="tab-section" style="padding-bottom: 20px;">
+                <div class="search-bar-container">
+                    <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                    <input type="text" id="search-lotes" placeholder="Buscar lote por título o número..." onkeyup="filtrarInventario('search-lotes', 'lotes-container')">
+                </div>
+                <div class="lotes-grid" id="lotes-container">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- TAB: MARCADORES HORIZONTE -->
+            <div id="tab-horizontes" class="tab-section" style="padding-bottom: 20px;">
+                <div class="global-config-card" style="margin-bottom: 15px; padding: 15px 24px;">
+                    <h3 style="margin-bottom: 8px;">📍 Calculadora de Rutas Reales</h3>
+                    <p style="font-size: 11px; color: var(--text-muted);">Usa los botones para abrir Maps o Waze y verificar la <b>distancia real (con tráfico)</b> desde tu Origen Drone.</p>
+                </div>
+                
+                <div class="search-bar-container">
+                    <svg class="search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                    <input type="text" id="search-horizontes" placeholder="Buscar marcador..." onkeyup="filtrarInventario('search-horizontes', 'horizontes-container')">
+                </div>
+                <div class="lotes-grid" id="horizontes-container">
+                    <!-- Dinámico -->
+                </div>
+            </div>
+
+            <!-- TAB: FONDOS DE PANTALLA -->
+            <div id="tab-wallpapers" class="tab-section" style="padding-bottom: 20px;">
+                <div class="global-config-card">
+                    <h3>Apariencia del Escritorio</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Selecciona el ambiente de trabajo para tu Panel. El diseño translúcido se adaptará automáticamente.</p>
+                    <div class="wallpaper-grid">
+                        <div class="wallpaper-card" data-bg="solid-graphite" onclick="setWallpaper('solid-graphite')" style="background: linear-gradient(135deg, #2b2b2b 0%, #000000 100%);"><span>Gris Grafito</span></div>
+                        <div class="wallpaper-card" data-bg="solid-silver" onclick="setWallpaper('solid-silver')" style="background: linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%);"><span style="color: #000; text-shadow: none;">Plata / Blanco</span></div>
+                        <div class="wallpaper-card" data-bg="solid-midnight" onclick="setWallpaper('solid-midnight')" style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);"><span>Azul Medianoche</span></div>
+                        <div class="wallpaper-card" data-bg="mac-dark" onclick="setWallpaper('mac-dark')" style="background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop');"><span>Abstracto Dark</span></div>
+                        <div class="wallpaper-card" data-bg="mac-light" onclick="setWallpaper('mac-light')" style="background: url('https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=600&auto=format&fit=crop');"><span>Abstracto Claro</span></div>
+                        <div class="wallpaper-card" data-bg="mac-landscape" onclick="setWallpaper('mac-landscape')" style="background: url('https://images.unsplash.com/photo-1506744626753-1fa44df14dd4?q=80&w=600&auto=format&fit=crop');"><span>Paisaje Yosemite</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DOCK MACOS STYLE -->
+    <div class="mac-dock" id="mac-dock-nav" style="display: none;">
+        <button class="dock-item active" onclick="switchTab('tab-global', this)" title="Ajustes Globales">
+            <div class="dock-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path></svg></div>
+            <span>Global</span>
+        </button>
+        
+        <button class="dock-item" id="btn-dock-mapeo" onclick="abrirMapeoFullscreen(this)" title="Mapeo Espacial" style="display: none;">
+            <div class="dock-icon" style="background: linear-gradient(135deg, #BF5AF2, #5E5CE6);"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></div>
+            <span>Mapeo 3D</span>
+        </button>
+
+        <button class="dock-item" onclick="switchTab('tab-lotes', this)" title="Inventario Lotes">
+            <div class="dock-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></div>
+            <span>Lotes</span>
+        </button>
+        
+        <button class="dock-item" onclick="switchTab('tab-horizontes', this)" title="Marcadores Horizonte">
+            <div class="dock-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+            <span>Marcadores</span>
+        </button>
+        
+        <button class="dock-item" onclick="switchTab('tab-wallpapers', this)" title="Apariencia">
+            <div class="dock-icon"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
+            <span>Apariencia</span>
+        </button>
+    </div>
+
+    <!-- ALERTA DE ÉXITO -->
+    <div id="toast">
+        <svg id="toast-icon" width="20" height="20" fill="var(--mac-green)" viewBox="0 0 24 24"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.997-6l7.07-7.071-1.414-1.414-5.656 5.657-2.829-2.829-1.414 1.414L11.003 16z"></path></svg>
+        <span id="toast-msg">Panel Actualizado Exitosamente</span>
+    </div>
+
+    <!-- MASTERPLAN FULLSCREEN (solo salida con Escape) -->
+    <div id="mapeo-fullscreen" aria-hidden="true">
+        <div class="mapeo-fs-topbar">
+            <div class="vista-switch-bar">
+                <button type="button" id="btn-fs-vista-aereo" class="vista-switch-btn active" onclick="cambiarVistaEditor('aereo')">🚁 Vista Aérea</button>
+                <button type="button" id="btn-fs-vista-suelo" class="vista-switch-btn" onclick="cambiarVistaEditor('suelo')">🌿 Vista Suelo</button>
+            </div>
+            <div class="mapeo-mode-tools">
+                <button type="button" class="mapeo-mode-btn is-draw" onclick="adminToggleDrawMode()">📐 Modo Arquitecto</button>
+                <button type="button" class="mapeo-mode-btn is-pins" onclick="adminTogglePinsMode()">📍 Modo Pines</button>
+            </div>
+            <span class="mapeo-fs-hint"><kbd>Ctrl+Espacio</kbd> Arquitecto · <kbd>Ctrl+P</kbd> Pines · <kbd>Esc</kbd> Volver</span>
+        </div>
+        <div id="mapeo-fs-loader">
+            <svg class="spinner" width="30" height="30" fill="none" stroke="var(--mac-blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p style="margin-top: 15px; font-weight: 600; color: #fff;">Inicializando Masterplan 360°...</p>
+        </div>
+        <iframe id="iframe-fullscreen-360" src="" tabindex="0" title="Masterplan 360 Fullscreen"></iframe>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN CENTRAL
+        const FILENAME = "datos.json";
+        const FILENAME_SUELO = "datos-suelo.json";
+        let shaActual = "";
+        let shaSueloActual = "";
+        let masterData = {};
+        let editorVistaActual = 'aereo';
+        let guardarCambiosEnCurso = false;
+        let mapeoFsReturnDock = null;
+
+        function isMapeoFullscreenOpen() {
+            const fs = document.getElementById('mapeo-fullscreen');
+            return !!(fs && fs.classList.contains('open'));
+        }
+
+        function getActiveEditorIframe() {
+            if (isMapeoFullscreenOpen()) return document.getElementById('iframe-fullscreen-360');
+            return document.getElementById('iframe-editor-360');
+        }
+
+        function getActiveMapeoLoader() {
+            if (isMapeoFullscreenOpen()) return document.getElementById('mapeo-fs-loader');
+            return document.getElementById('mapeo-loader');
+        }
+
+        function syncVistaSwitchButtons(vista) {
+            const v = vista || editorVistaActual;
+            const aereo = v === 'aereo';
+            ['btn-vista-aereo', 'btn-fs-vista-aereo'].forEach(id => document.getElementById(id)?.classList.toggle('active', aereo));
+            ['btn-vista-suelo', 'btn-fs-vista-suelo'].forEach(id => document.getElementById(id)?.classList.toggle('active', !aereo));
+        }
+
+        async function fetchGithubFileSha(user, repo, token, filename) {
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+            });
+            if (response.status === 404) return '';
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${response.status}`);
+            }
+            const jsonRes = await response.json();
+            return jsonRes.sha || '';
+        }
+
+        async function refrescarShaAereo(user, repo, token) {
+            shaActual = await fetchGithubFileSha(user, repo, token, FILENAME);
+            return shaActual;
+        }
+
+        async function refrescarShaSuelo(user, repo, token) {
+            shaSueloActual = await fetchGithubFileSha(user, repo, token, FILENAME_SUELO);
+            return shaSueloActual;
+        }
+
+        async function putGithubContents(user, repo, token, filename, message, contentEncoded, shaRef, onShaUpdate) {
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+            const attemptPut = async (shaValue, isRetry) => {
+                const payload = { message, content: contentEncoded };
+                if (shaValue) payload.sha = shaValue;
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.content && result.content.sha && onShaUpdate) onShaUpdate(result.content.sha);
+                    return { ok: true, result };
+                }
+                const err = await response.json().catch(() => ({}));
+                const msg = err.message || `HTTP ${response.status}`;
+                if (!isRetry && (msg.includes('does not match') || response.status === 409)) {
+                    const freshSha = await fetchGithubFileSha(user, repo, token, filename);
+                    if (onShaUpdate) onShaUpdate(freshSha);
+                    return attemptPut(freshSha, true);
+                }
+                return { ok: false, message: msg };
+            };
+            return attemptPut(shaRef, false);
+        }
+
+        // MOTOR DE FONDOS DE PANTALLA
+        const wallpapers = {
+            'solid-graphite': "linear-gradient(135deg, #2b2b2b 0%, #000000 100%)",
+            'solid-silver': "linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)",
+            'solid-midnight': "linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)",
+            'mac-dark': "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')",
+            'mac-light': "url('https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2564&auto=format&fit=crop')",
+            'mac-landscape': "url('https://images.unsplash.com/photo-1506744626753-1fa44df14dd4?q=80&w=2500&auto=format&fit=crop')"
+        };
+
+        // FUNCIONES SEGURAS DE MEMORIA LOCAL
+        function safeGetStorage(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+        function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch(e) { console.warn("Modo local estricto detectado."); } }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedWallpaper = safeGetStorage("masterplan_wallpaper") || 'solid-graphite';
+            setWallpaper(savedWallpaper);
+
+            const colorInput = document.getElementById('config-color');
+            const colorDisplay = document.getElementById('color-hex-display');
+            if (colorInput && colorDisplay) {
+                colorInput.addEventListener('input', (e) => {
+                    colorDisplay.innerText = e.target.value;
+                });
+            }
+
+            const savedToken = safeGetStorage("masterplan_token");
+            const savedUser = safeGetStorage("masterplan_user");
+            const savedRepo = safeGetStorage("masterplan_repo");
+            
+            if (savedToken && savedUser && savedRepo) {
+                document.getElementById('gh-user').value = savedUser;
+                document.getElementById('gh-repo').value = savedRepo;
+                document.getElementById('gh-token').value = savedToken;
+            }
+        });
+
+        // BACKDOOR DE SEGURIDAD (TECLADO Y TÁCTIL) PARA MOSTRAR BOTÓN DE MAPEO ESPACIAL
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isMapeoFullscreenOpen()) {
+                e.preventDefault();
+                e.stopPropagation();
+                cerrarMapeoFullscreen();
+                return;
+            }
+            if (isMapeoFullscreenOpen()) {
+                if (e.ctrlKey && e.code === 'Space') {
+                    e.preventDefault();
+                    adminToggleDrawMode();
+                    return;
+                }
+                if (e.ctrlKey && (e.code === 'KeyP' || e.key.toLowerCase() === 'p')) {
+                    e.preventDefault();
+                    adminTogglePinsMode();
+                    return;
+                }
+            }
+            if (e.ctrlKey && e.key.toLowerCase() === 'h') {
+                e.preventDefault();
+                toggleAdminMapeoBtn();
+            }
+        });
+
+        let adminBackdoorTimer = null;
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                let sumY = e.touches[0].clientY + e.touches[1].clientY;
+                let avgY = sumY / 2;
+                if (avgY < window.innerHeight * 0.4) {
+                    adminBackdoorTimer = setTimeout(() => {
+                        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                        toggleAdminMapeoBtn();
+                        adminBackdoorTimer = null;
+                    }, 3000); 
+                }
+            } else {
+                clearTimeout(adminBackdoorTimer);
+            }
+        }, {passive: true});
+
+        document.addEventListener('touchmove', (e) => {
+            if (adminBackdoorTimer && e.touches.length !== 2) {
+                clearTimeout(adminBackdoorTimer);
+            }
+        }, {passive: true});
+
+        document.addEventListener('touchend', () => clearTimeout(adminBackdoorTimer));
+        document.addEventListener('touchcancel', () => clearTimeout(adminBackdoorTimer));
+
+        function toggleAdminMapeoBtn() {
+            const btnMapeo = document.getElementById('btn-dock-mapeo');
+            if (btnMapeo) {
+                if (btnMapeo.style.display === 'none') {
+                    btnMapeo.style.display = 'flex';
+                    mostrarToast("🛡️ Modo Arquitecto Desbloqueado", true);
+                } else {
+                    btnMapeo.style.display = 'none';
+                    mostrarToast("🔒 Modo Arquitecto Oculto", true);
+                    if (isMapeoFullscreenOpen()) cerrarMapeoFullscreen();
+                    else if (btnMapeo.classList.contains('active')) {
+                        switchTab('tab-global', document.querySelector('.dock-item[title="Ajustes Globales"]'));
+                    }
+                }
+            }
+        }
+
+        function setWallpaper(key) {
+            const bgValue = wallpapers[key] || wallpapers['solid-graphite'];
+            document.body.style.backgroundImage = bgValue;
+            safeSetStorage("masterplan_wallpaper", key);
+
+            document.querySelectorAll('.wallpaper-card').forEach(card => {
+                card.classList.remove('active');
+                if(card.getAttribute('data-bg') === key) {
+                    card.classList.add('active');
+                }
+            });
+        }
+
+        function switchTab(tabId, dockItem) {
+            document.querySelectorAll('.tab-section').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.dock-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(dockItem) dockItem.classList.add('active');
+        }
+
+        function filtrarInventario(inputId, containerId) {
+            const query = document.getElementById(inputId).value.toLowerCase();
+            const rows = document.getElementById(containerId).querySelectorAll('.lote-row');
+            
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    row.style.display = "flex";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        // MOTOR DE BÚSQUEDA PROFUNDA A GOOGLE MAPS Y WAZE (CON COORDENADAS)
+        window.abrirRutaApp = function(idDestinoInput, mode) {
+            const origen = masterData.origen;
+            if (!origen || !origen.lat || !origen.lng) {
+                alert("⚠️ FALTAN LAS COORDENADAS ORIGEN DRONE.\n\nVe a la pestaña 'Mapeo 3D', haz clic en el botón naranja '📍 Origen Drone' e ingresa tus coordenadas y luego Guarda los Cambios.");
+                return;
+            }
+
+            const destinoInput = document.querySelector(`input[data-id="${idDestinoInput}"][data-field="titulo"]`);
+            const coordsInput = document.querySelector(`input[data-id="${idDestinoInput}"][data-field="coordenadasDestino"]`);
+            
+            let destino = destinoInput ? destinoInput.value.trim() : '';
+            let coordsDestino = coordsInput ? coordsInput.value.trim() : '';
+
+            let target = coordsDestino ? coordsDestino.replace(/\s/g, '') : destino;
+
+            if (!target) {
+                alert("⚠️ Ingresa un 'Nombre de Destino' o sus 'Coordenadas' para trazar la ruta.");
+                return;
+            }
+
+            let url = "";
+            if (mode === 'google_driving') {
+                url = `https://www.google.com/maps/dir/?api=1&origin=${origen.lat},${origen.lng}&destination=${encodeURIComponent(target)}&travelmode=driving`;
+            } else if (mode === 'google_transit') {
+                url = `https://www.google.com/maps/dir/?api=1&origin=${origen.lat},${origen.lng}&destination=${encodeURIComponent(target)}&travelmode=transit`;
+            } else if (mode === 'waze') {
+                if(coordsDestino) {
+                    url = `https://www.waze.com/ul?ll=${target}&navigate=yes`;
+                } else {
+                    url = `https://www.waze.com/ul?q=${encodeURIComponent(target)}&navigate=yes`;
+                }
+            }
+            
+            window.open(url, '_blank');
+        };
+
+        // NUEVO: Motor Inteligente de Enrutamiento Topográfico
+        async function autoCalcularRutaOSRM(horizId) {
+            const origen = masterData.origen;
+            if (!origen || !origen.lat || !origen.lng) {
+                alert("⚠️ Falta el 'Origen Drone'. Ve a la pestaña Mapeo 3D, fíjalo y Guarda los Cambios primero.");
+                return;
+            }
+            
+            const inputCoords = document.querySelector(`input[data-id="${horizId}"][data-field="coordenadasDestino"]`).value;
+            if(!inputCoords || !inputCoords.includes(',')) {
+                alert("⚠️ Ingresa coordenadas de destino válidas (Lat, Lng) antes de calcular.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-osrm-'+horizId);
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> Calculando...`; 
+            btn.disabled = true;
+
+            try {
+                const parts = inputCoords.split(',');
+                const latDest = parts[0].trim();
+                const lonDest = parts[1].trim();
+
+                // OSRM Public API (Longitud, Latitud)
+                const url = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${lonDest},${latDest}?overview=false`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if(data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const distKm = (route.distance / 1000).toFixed(1);
+                    const traffic = (function(d) {
+                        d = d || new Date(); const h = d.getHours(), day = d.getDay(), month = d.getMonth();
+                        let f = 1.0; const wd = day >= 1 && day <= 5;
+                        if (wd && ((h >= 7 && h < 9) || (h >= 17 && h < 20))) f = 1.42;
+                        else if (wd && h >= 12 && h < 14) f = 1.12;
+                        if (month >= 11 || month <= 1) f *= 1.1;
+                        return f;
+                    })();
+                    const timeMin = Math.round((route.duration / 60) * traffic);
+
+                    document.querySelector(`input[data-id="${horizId}"][data-field="distancia"]`).value = distKm + " KM";
+                    document.querySelector(`input[data-id="${horizId}"][data-field="tiempo"]`).value = timeMin + " MIN";
+
+                    mostrarToast("✅ Ruta por carretera + factor tráfico Chile", true);
+                } else {
+                    alert("⚠️ Imposible trazar ruta. Verifica que haya conexión terrestre.");
+                }
+            } catch(e) {
+                alert("⚠️ Falló el motor de enrutamiento. Intenta de nuevo.");
+            } finally {
+                btn.innerHTML = originalText; 
+                btn.disabled = false;
+            }
+        }
+
+        async function conectarBoveda() {
+            const user = document.getElementById('gh-user').value.trim();
+            const repo = document.getElementById('gh-repo').value.trim();
+            const token = document.getElementById('gh-token').value.trim();
+
+            if(!user || !repo || !token) { alert("⚠️ Completa todos los campos para acceder."); return; }
+
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "Verificando...";
+            btn.style.pointerEvents = "none";
+            btn.style.opacity = "0.7";
+
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${FILENAME}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+
+                if (response.ok) {
+                    const jsonRes = await response.json();
+                    shaActual = jsonRes.sha; 
+                    
+                    const contenidoDecodificado = decodeURIComponent(escape(atob(jsonRes.content)));
+                    masterData = JSON.parse(contenidoDecodificado);
+
+                    if(!masterData.configProyecto) {
+                        masterData.configProyecto = { 
+                            titulo: "", subtitulo: "", whatsapp: "", colorPrincipal: "#10b981", 
+                            logoUrl: "", bannerActivo: false, bannerTipo: "descuento", bannerTexto: "",
+                            colorDisp: "#10b981", colorRes: "#f59e0b", colorVend: "#ef4444", colorNoDisp: "#94a3b8",
+                            opacidadDisp: 15, opacidadRes: 15, opacidadVend: 25, opacidadNoDisp: 25,
+                            valorUF: 0
+                        };
+                    } else {
+                        if(!masterData.configProyecto.colorDisp) masterData.configProyecto.colorDisp = "#10b981";
+                        if(!masterData.configProyecto.colorRes) masterData.configProyecto.colorRes = "#f59e0b";
+                        if(!masterData.configProyecto.colorVend) masterData.configProyecto.colorVend = "#ef4444";
+                        if(!masterData.configProyecto.colorNoDisp) masterData.configProyecto.colorNoDisp = "#94a3b8";
+                        
+                        if(masterData.configProyecto.opacidadDisp === undefined) masterData.configProyecto.opacidadDisp = 15;
+                        if(masterData.configProyecto.opacidadRes === undefined) masterData.configProyecto.opacidadRes = 15;
+                        if(masterData.configProyecto.opacidadVend === undefined) masterData.configProyecto.opacidadVend = 25;
+                        if(masterData.configProyecto.opacidadNoDisp === undefined) masterData.configProyecto.opacidadNoDisp = 25;
+                        
+                        if(masterData.configProyecto.valorUF === undefined) masterData.configProyecto.valorUF = "";
+                    }
+
+                    if(!masterData.lotes) masterData.lotes = [];
+                    if(!masterData.horizontes) masterData.horizontes = [];
+                    if(!masterData.trazos) masterData.trazos = [];
+                    if(!masterData.lotesSuelo) masterData.lotesSuelo = [];
+                    if(!masterData.horizontesSuelo) masterData.horizontesSuelo = [];
+                    if(!masterData.trazosSuelo) masterData.trazosSuelo = [];
+                    if(masterData.norteSuelo === undefined) masterData.norteSuelo = 0;
+
+                    await cargarShaSuelo(user, repo, token);
+
+                    safeSetStorage("masterplan_user", user);
+                    safeSetStorage("masterplan_repo", repo);
+                    safeSetStorage("masterplan_token", token);
+
+                    document.getElementById('login-screen').style.display = "none";
+                    document.getElementById('dashboard-screen').style.display = "block";
+                    document.getElementById('display-user').style.display = "block";
+                    document.getElementById('display-user').innerText = user;
+                    
+                    document.getElementById('mac-dock-nav').style.display = "flex";
+
+                    renderUI();
+                } else {
+                    const errObj = await response.json();
+                    alert(`⛔ ACCESO DENEGADO.\n\nEl servidor de GitHub respondió:\n"${errObj.message}"\n\n¿Subiste el archivo 'datos.json' a tu repositorio '${repo}'?`);
+                    btn.innerText = "Iniciar Sesión";
+                    btn.style.pointerEvents = "auto";
+                    btn.style.opacity = "1";
+                }
+            } catch (error) {
+                alert("⚠️ Error de conexión. Revisa tu internet.");
+                btn.innerText = "Iniciar Sesión";
+                btn.style.pointerEvents = "auto";
+                btn.style.opacity = "1";
+            }
+        }
+
+        async function cargarShaSuelo(user, repo, token) {
+            const url = `https://api.github.com/repos/${user}/${repo}/contents/${FILENAME_SUELO}`;
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (response.ok) {
+                    const jsonRes = await response.json();
+                    shaSueloActual = jsonRes.sha;
+                    const sueloData = JSON.parse(decodeURIComponent(escape(atob(jsonRes.content))));
+                    masterData.lotesSuelo = sueloData.lotes || sueloData.lotesSuelo || [];
+                    masterData.horizontesSuelo = sueloData.horizontes || sueloData.horizontesSuelo || [];
+                    masterData.trazosSuelo = sueloData.trazos || sueloData.trazosSuelo || [];
+                    masterData.norteSuelo = sueloData.norte ?? sueloData.norteSuelo ?? 0;
+                } else {
+                    shaSueloActual = "";
+                }
+            } catch (e) {
+                shaSueloActual = "";
+            }
+        }
+
+        async function subirDatosSuelo(payload) {
+            const user = safeGetStorage("masterplan_user");
+            const repo = safeGetStorage("masterplan_repo");
+            const token = safeGetStorage("masterplan_token");
+            if (!user || !repo || !token) {
+                mostrarToast("Conecta GitHub en Ajustes antes de subir", false);
+                return false;
+            }
+
+            const sueloData = {
+                vista: 'suelo',
+                configProyecto: payload.configProyecto || masterData.configProyecto || {},
+                origen: payload.origen || masterData.origen || null,
+                norte: payload.norte ?? masterData.norteSuelo ?? 0,
+                lotes: payload.lotes || [],
+                horizontes: payload.horizontes || [],
+                trazos: payload.trazos || []
+            };
+
+            const jsonString = JSON.stringify(sueloData, null, 2);
+            const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+            try {
+                await refrescarShaSuelo(user, repo, token);
+                const upload = await putGithubContents(
+                    user, repo, token, FILENAME_SUELO,
+                    "🌿 Actualización Vista Suelo 360° (Panel Admin)",
+                    contentEncoded,
+                    shaSueloActual,
+                    (sha) => { shaSueloActual = sha; }
+                );
+                if (upload.ok) {
+                    masterData.norteSuelo = sueloData.norte;
+                    masterData.lotesSuelo = sueloData.lotes;
+                    masterData.horizontesSuelo = sueloData.horizontes;
+                    masterData.trazosSuelo = sueloData.trazos;
+                    mostrarToast("Vista suelo guardada en datos-suelo.json", true);
+                    return true;
+                }
+                alert("⛔ Error al subir vista suelo: " + upload.message);
+                return false;
+            } catch (error) {
+                alert("⚠️ Error de conexión al subir vista suelo.");
+                return false;
+            }
+        }
+
+        function triggerUpload(loteId) {
+            document.getElementById(`file-${loteId}`).click();
+        }
+
+        async function procesarYSubirImagen(event, loteId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = event.target.previousElementSibling;
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> Subiendo...`;
+            btn.disabled = true;
+
+            try {
+                const base64Data = await comprimirImagen(file);
+                const user = safeGetStorage("masterplan_user");
+                const repo = safeGetStorage("masterplan_repo");
+                const token = safeGetStorage("masterplan_token");
+
+                const filename = `lote_${loteId}_${Date.now()}.jpg`;
+                const path = `assets/lotes/${filename}`;
+                const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+                const payload = {
+                    message: `📸 Imagen subida para lote ${loteId} (Vía Panel de Administración)`,
+                    content: base64Data
+                };
+
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const input = document.querySelector(`input[data-id="${loteId}"][data-field="imagen"]`);
+                    input.value = data.content.download_url;
+                    mostrarToast("Imagen procesada y anclada al Lote", true);
+                } else {
+                    const err = await response.json();
+                    alert("Error al subir imagen a GitHub: " + err.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error crítico procesando la imagen. Verifica el formato.");
+            } finally {
+                btn.innerHTML = originalBtnHtml; btn.disabled = false; event.target.value = '';
+            }
+        }
+
+        async function procesarYSubirLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = event.target.previousElementSibling;
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> Subiendo...`;
+            btn.disabled = true;
+
+            try {
+                const base64Data = await comprimirLogo(file);
+                const user = safeGetStorage("masterplan_user");
+                const repo = safeGetStorage("masterplan_repo");
+                const token = safeGetStorage("masterplan_token");
+
+                const filename = `logo_${Date.now()}.png`;
+                const path = `assets/branding/${filename}`;
+                const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+                const payload = {
+                    message: `🎨 Logo corporativo subido (Vía Panel de Administración)`,
+                    content: base64Data
+                };
+
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('config-logo').value = data.content.download_url;
+                    mostrarToast("Logotipo procesado y configurado", true);
+                } else {
+                    const err = await response.json();
+                    alert("Error al subir logo a GitHub: " + err.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error procesando el logo. Verifica el formato.");
+            } finally {
+                btn.innerHTML = originalBtnHtml; btn.disabled = false; event.target.value = ''; 
+            }
+        }
+
+        function comprimirImagen(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image(); img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200; const MAX_HEIGHT = 1200;
+                        let width = img.width; let height = img.height;
+                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                        else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+                    }; img.onerror = error => reject(error);
+                }; reader.onerror = error => reject(error);
+            });
+        }
+
+        function comprimirLogo(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image(); img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; const MAX_HEIGHT = 800; 
+                        let width = img.width; let height = img.height;
+                        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                        else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    }; img.onerror = error => reject(error);
+                }; reader.onerror = error => reject(error);
+            });
+        }
+
+        function renderUI() {
+            document.getElementById('config-titulo').value = masterData.configProyecto.titulo || "";
+            document.getElementById('config-subtitulo').value = masterData.configProyecto.subtitulo || "";
+            document.getElementById('config-whatsapp').value = masterData.configProyecto.whatsapp || "";
+            document.getElementById('config-valor-uf').value = masterData.configProyecto.valorUF || "";
+            document.getElementById('config-logo').value = masterData.configProyecto.logoUrl || "";
+            
+            document.getElementById('config-color').value = masterData.configProyecto.colorPrincipal || "#10b981";
+            document.getElementById('color-hex-display').innerText = masterData.configProyecto.colorPrincipal || "#10b981";
+            
+            document.getElementById('config-color-disp').value = masterData.configProyecto.colorDisp || "#10b981";
+            document.getElementById('config-color-res').value = masterData.configProyecto.colorRes || "#f59e0b";
+            document.getElementById('config-color-vend').value = masterData.configProyecto.colorVend || "#ef4444";
+            document.getElementById('config-color-nodisp').value = masterData.configProyecto.colorNoDisp || "#94a3b8";
+
+            document.getElementById('config-op-disp').value = masterData.configProyecto.opacidadDisp ?? 15;
+            document.getElementById('lbl-op-disp').innerText = (masterData.configProyecto.opacidadDisp ?? 15) + '%';
+            
+            document.getElementById('config-op-res').value = masterData.configProyecto.opacidadRes ?? 15;
+            document.getElementById('lbl-op-res').innerText = (masterData.configProyecto.opacidadRes ?? 15) + '%';
+            
+            document.getElementById('config-op-vend').value = masterData.configProyecto.opacidadVend ?? 25;
+            document.getElementById('lbl-op-vend').innerText = (masterData.configProyecto.opacidadVend ?? 25) + '%';
+            
+            document.getElementById('config-op-nodisp').value = masterData.configProyecto.opacidadNoDisp ?? 25;
+            document.getElementById('lbl-op-nodisp').innerText = (masterData.configProyecto.opacidadNoDisp ?? 25) + '%';
+
+            document.getElementById('config-banner-activo').checked = masterData.configProyecto.bannerActivo || false;
+            document.getElementById('config-banner-tipo').value = masterData.configProyecto.bannerTipo || "descuento";
+            document.getElementById('config-banner-texto').value = masterData.configProyecto.bannerTexto || "";
+
+            const containerLotes = document.getElementById('lotes-container');
+            containerLotes.innerHTML = "";
+            if(masterData.lotes.length === 0) {
+                containerLotes.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-weight: 500;">No hay lotes configurados en la base de datos.</div>`;
+            } else {
+                masterData.lotes.forEach((lote) => {
+                    const row = document.createElement('div');
+                    row.className = "lote-row";
+                    
+                    if (lote.tipo === 'lote') {
+                        let colorClass = lote.status === 'disponible' ? 'status-disp' : 
+                                         lote.status === 'reservado' ? 'status-res' : 
+                                         lote.status === 'vendido' ? 'status-vend' : 'status-nodisp';
+                        
+                        row.innerHTML = `
+                            <div class="lote-header-info">
+                                <input type="text" class="lote-num-input" data-id="${lote.id}" data-field="numero" value="${lote.numero || ''}" title="Número del Lote">
+                                <div class="pin-badge badge-lote">LOTE</div>
+                                ${lote.videoUrl ? '<div class="pin-badge badge-360" style="font-size:10px;">360° ACTIVO</div>' : ''}
+                            </div>
+                            <div class="lote-details">
+                                <div class="lote-field col-span-2">
+                                    <label>Identificador Público</label>
+                                    <input type="text" data-id="${lote.id}" data-field="titulo" value="${lote.titulo || ''}">
+                                </div>
+                                <div class="lote-field">
+                                    <label>Superficie</label>
+                                    <input type="text" data-id="${lote.id}" data-field="superficie" value="${lote.superficie || ''}">
+                                </div>
+                                <div class="lote-field">
+                                    <label>Precio de Venta</label>
+                                    <input type="text" data-id="${lote.id}" data-field="precio" value="${lote.precio || ''}">
+                                </div>
+                                <div class="lote-field">
+                                    <label>Estado Actual</label>
+                                    <select data-id="${lote.id}" data-field="status" class="${colorClass}" onchange="this.className = this.options[this.selectedIndex].dataset.class">
+                                        <option value="disponible" data-class="status-disp" ${lote.status === 'disponible' ? 'selected' : ''}>Disponible</option>
+                                        <option value="reservado" data-class="status-res" ${lote.status === 'reservado' ? 'selected' : ''}>Reservado</option>
+                                        <option value="vendido" data-class="status-vend" ${lote.status === 'vendido' ? 'selected' : ''}>Vendido</option>
+                                        <option value="no_disponible" data-class="status-nodisp" ${lote.status === 'no_disponible' ? 'selected' : ''}>No Disp.</option>
+                                    </select>
+                                </div>
+                                <div class="lote-field">
+                                    <label>Tipo de Terreno</label>
+                                    <select data-id="${lote.id}" data-field="terreno">
+                                        <option value="Plano" ${lote.terreno === 'Plano' ? 'selected' : ''}>Plano</option>
+                                        <option value="Pendiente Suave" ${lote.terreno === 'Pendiente Suave' ? 'selected' : ''}>Pendiente Suave</option>
+                                        <option value="Pendiente Fuerte" ${lote.terreno === 'Pendiente Fuerte' ? 'selected' : ''}>Pendiente Fuerte</option>
+                                        <option value="Quebrada" ${lote.terreno === 'Quebrada' ? 'selected' : ''}>Quebrada</option>
+                                        <option value="Terraza" ${lote.terreno === 'Terraza' ? 'selected' : ''}>Terraza</option>
+                                        <option value="Irregular" ${lote.terreno === 'Irregular' ? 'selected' : ''}>Irregular</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="lote-field col-span-full">
+                                    <label>URL Imagen del Lote</label>
+                                    <div class="upload-group">
+                                        <input type="text" data-id="${lote.id}" data-field="imagen" value="${lote.imagen || ''}" placeholder="Pegar enlace o subir imagen ➔">
+                                        <button class="btn-upload" onclick="triggerUpload('${lote.id}')">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Subir Foto
+                                        </button>
+                                        <input type="file" id="file-${lote.id}" style="display:none" accept="image/*" onchange="procesarYSubirImagen(event, '${lote.id}')">
+                                    </div>
+                                </div>
+
+                                <div class="lote-field col-span-full">
+                                    <label>Recorrido Virtual 360° del Lote <span style="color:#BF5AF2;font-size:11px;">(activa leyenda + latido en el mapa)</span></label>
+                                    <input type="text" data-id="${lote.id}" data-field="videoUrl" value="${lote.videoUrl || ''}" placeholder="Opcional. Ej: https://youtu.be/... o tour 360°">
+                                </div>
+
+                                <div class="lote-field col-span-full" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 8px;">
+                                    <label>Galería Fotográfica del Lote (Máx. 5 fotos)</label>
+                                    <div class="upload-group">
+                                        <button class="btn-upload" onclick="document.getElementById('gallery-${lote.id}').click()" style="background: rgba(10, 132, 255, 0.15); border-color: rgba(10, 132, 255, 0.4); color: #0A84FF;">
+                                            📸 Añadir Fotos a la Galería
+                                        </button>
+                                        <input type="file" id="gallery-${lote.id}" multiple accept="image/*" style="display:none" onchange="subirGaleriaLote(event, '${lote.id}')">
+                                    </div>
+                                    <div class="gallery-preview-container" id="preview-gallery-${lote.id}">
+                                        ${(lote.galeria || []).map((imgUrl, i) => `
+                                            <div class="gallery-thumb-wrapper">
+                                                <img src="${imgUrl}" alt="Thumb">
+                                                <button class="gallery-delete-btn" onclick="eliminarFotoGaleria('${lote.id}', ${i})">X</button>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (lote.tipo === 'vista360') {
+                        row.innerHTML = `
+                            <div class="lote-header-info">
+                                <div class="pin-badge badge-360" style="font-size:12px;">360°</div>
+                            </div>
+                            <div class="lote-details" style="grid-template-columns: 1fr;">
+                                <div class="lote-field">
+                                    <label>Nombre del Portal 360°</label>
+                                    <input type="text" data-id="${lote.id}" data-field="titulo" value="${lote.titulo || ''}">
+                                </div>
+                                <div class="lote-field">
+                                    <label>Enlace del Tour 360° Asociado</label>
+                                    <input type="text" data-id="${lote.id}" data-field="url" value="${lote.url || ''}" placeholder="Ej: https://tudominio.com/tour360">
+                                </div>
+                            </div>
+                        `;
+                    }
+                    containerLotes.appendChild(row);
+                });
+            }
+
+            const containerHorizontes = document.getElementById('horizontes-container');
+            containerHorizontes.innerHTML = "";
+            if(masterData.horizontes.length === 0) {
+                containerHorizontes.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-weight: 500;">No hay marcadores de horizonte configurados.</div>`;
+            } else {
+                masterData.horizontes.forEach((horiz) => {
+                    const row = document.createElement('div');
+                    row.className = "lote-row";
+                    row.innerHTML = `
+                        <div class="lote-header-info">
+                            <div class="pin-badge badge-horiz" style="font-size:10px;">HORIZ</div>
+                        </div>
+                        <div class="lote-details" style="grid-template-columns: 1fr 1fr;">
+                            <div class="lote-field col-span-full">
+                                <label>Nombre del Destino</label>
+                                <input type="text" data-id="${horiz.id}" data-field="titulo" value="${horiz.titulo || ''}" placeholder="Ej: Volcán Osorno">
+                            </div>
+                            <div class="lote-field col-span-full">
+                                <label>Coordenadas Destino (Para precisión 100%)</label>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" style="flex:1;" data-id="${horiz.id}" data-field="coordenadasDestino" value="${horiz.coordenadasDestino || ''}" placeholder="Ej: -41.112, -72.521">
+                                    <button class="btn-upload" id="btn-osrm-${horiz.id}" onclick="autoCalcularRutaOSRM('${horiz.id}')" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #10b981; min-width: 140px;">
+                                        🪄 Auto-Calcular
+                                    </button>
+                                </div>
+                                <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">Haz clic en Auto-Calcular para trazar la ruta real por carretera usando IA topográfica.</p>
+                            </div>
+                            <div class="lote-field">
+                                <label>Distancia Fija</label>
+                                <input type="text" data-id="${horiz.id}" data-field="distancia" value="${horiz.distancia || ''}" placeholder="Ej: 15 KM">
+                            </div>
+                            <div class="lote-field">
+                                <label>Tiempo Estimado</label>
+                                <input type="text" data-id="${horiz.id}" data-field="tiempo" value="${horiz.tiempo || ''}" placeholder="Ej: 20 MIN">
+                            </div>
+                            
+                            <div class="lote-field col-span-full" style="flex-direction: row; gap: 10px; margin-top: 5px;">
+                                <button class="btn-upload" style="flex:1; background: rgba(10, 132, 255, 0.2); border-color: rgba(10, 132, 255, 0.5); color: #fff;" onclick="abrirRutaApp('${horiz.id}', 'google_driving')">
+                                    🚗 Google Auto
+                                </button>
+                                <button class="btn-upload" style="flex:1; background: rgba(50, 215, 75, 0.2); border-color: rgba(50, 215, 75, 0.5); color: #fff;" onclick="abrirRutaApp('${horiz.id}', 'google_transit')">
+                                    🚌 Google Bus
+                                </button>
+                                <button class="btn-upload" style="flex:1; background: rgba(0, 194, 255, 0.2); border-color: rgba(0, 194, 255, 0.5); color: #fff;" onclick="abrirRutaApp('${horiz.id}', 'waze')">
+                                    🚙 Waze (Tráfico)
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    containerHorizontes.appendChild(row);
+                });
+            }
+        }
+
+        async function guardarCambios() {
+            if (guardarCambiosEnCurso) return false;
+            guardarCambiosEnCurso = true;
+            const btn = document.getElementById('btn-save-master');
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; transform-origin: center;"/></svg> Procesando...`;
+            btn.style.pointerEvents = "none";
+            btn.style.opacity = "0.7";
+
+            masterData.configProyecto.titulo = document.getElementById('config-titulo').value.trim();
+            masterData.configProyecto.subtitulo = document.getElementById('config-subtitulo').value.trim();
+            masterData.configProyecto.whatsapp = document.getElementById('config-whatsapp').value.trim();
+            masterData.configProyecto.valorUF = parseInt(document.getElementById('config-valor-uf').value) || 0;
+            masterData.configProyecto.colorPrincipal = document.getElementById('config-color').value;
+            masterData.configProyecto.logoUrl = document.getElementById('config-logo').value.trim();
+            masterData.configProyecto.bannerActivo = document.getElementById('config-banner-activo').checked;
+            masterData.configProyecto.bannerTipo = document.getElementById('config-banner-tipo').value;
+            masterData.configProyecto.bannerTexto = document.getElementById('config-banner-texto').value.trim();
+            
+            masterData.configProyecto.colorDisp = document.getElementById('config-color-disp').value;
+            masterData.configProyecto.colorRes = document.getElementById('config-color-res').value;
+            masterData.configProyecto.colorVend = document.getElementById('config-color-vend').value;
+            masterData.configProyecto.colorNoDisp = document.getElementById('config-color-nodisp').value;
+
+            masterData.configProyecto.opacidadDisp = parseInt(document.getElementById('config-op-disp').value);
+            masterData.configProyecto.opacidadRes = parseInt(document.getElementById('config-op-res').value);
+            masterData.configProyecto.opacidadVend = parseInt(document.getElementById('config-op-vend').value);
+            masterData.configProyecto.opacidadNoDisp = parseInt(document.getElementById('config-op-nodisp').value);
+
+            const loteInputs = document.querySelectorAll('#tab-lotes [data-id]');
+            loteInputs.forEach(input => {
+                const id = input.getAttribute('data-id');
+                const field = input.getAttribute('data-field');
+                const val = input.value;
+                const index = masterData.lotes.findIndex(l => l.id === id);
+                
+                if(index !== -1) {
+                    if (field === 'videoUrl' || field === 'url' || field === 'imagen') {
+                        if (val.trim() === '') { delete masterData.lotes[index][field]; } 
+                        else { masterData.lotes[index][field] = val.trim(); }
+                    } else {
+                        masterData.lotes[index][field] = val;
+                    }
+                }
+            });
+
+            const horizInputs = document.querySelectorAll('#tab-horizontes [data-id]');
+            horizInputs.forEach(input => {
+                const id = input.getAttribute('data-id');
+                const field = input.getAttribute('data-field');
+                const val = input.value;
+                const index = masterData.horizontes.findIndex(h => h.id === id);
+                if(index !== -1) {
+                    masterData.horizontes[index][field] = val;
+                }
+            });
+
+            const datosAereos = {
+                origen: masterData.origen,
+                norte: masterData.norte,
+                lotes: masterData.lotes,
+                horizontes: masterData.horizontes,
+                trazos: masterData.trazos,
+                configProyecto: masterData.configProyecto
+            };
+
+            const jsonString = JSON.stringify(datosAereos, null, 2);
+            const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+
+            const user = safeGetStorage("masterplan_user");
+            const repo = safeGetStorage("masterplan_repo");
+            const token = safeGetStorage("masterplan_token");
+            try {
+                await refrescarShaAereo(user, repo, token);
+                const upload = await putGithubContents(
+                    user, repo, token, FILENAME,
+                    "🏢 Actualización de Proyecto, Textos e Inventario (Vía Panel de Administración)",
+                    contentEncoded,
+                    shaActual,
+                    (sha) => { shaActual = sha; }
+                );
+                if (upload.ok) {
+                    mostrarToast("Panel Actualizado Exitosamente", true);
+                    pushMasterplanToEditor();
+                    guardarCambiosEnCurso = false;
+                    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8V3"></path></svg> Guardar Cambios`;
+                    btn.style.pointerEvents = "auto";
+                    btn.style.opacity = "1";
+                    return true;
+                }
+                alert("⛔ Error al guardar: " + upload.message);
+            } catch (error) {
+                alert("⚠️ Error crítico de conexión. Revisa tu internet.");
+            }
+
+            guardarCambiosEnCurso = false;
+            btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8V3"></path></svg> Guardar Cambios`;
+            btn.style.pointerEvents = "auto";
+            btn.style.opacity = "1";
+            return false;
+        }
+
+        function mostrarToast(mensaje, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = mensaje;
+            
+            const icon = document.getElementById('toast-icon');
+            if (isSuccess) {
+                icon.setAttribute("fill", "var(--mac-green)");
+                icon.innerHTML = `<path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-.997-6l7.07-7.071-1.414-1.414-5.656 5.657-2.829-2.829-1.414 1.414L11.003 16z"></path>`;
+            } else {
+                icon.setAttribute("fill", "var(--mac-blue)");
+                icon.innerHTML = `<path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z"></path>`;
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+        }
+
+        function cerrarSesion() {
+            try {
+                localStorage.removeItem("masterplan_user");
+                localStorage.removeItem("masterplan_repo");
+                localStorage.removeItem("masterplan_token");
+            } catch(e) {}
+            location.reload();
+        }
+
+        function getEditorPayloadForVista(vista) {
+            if (vista === 'suelo') {
+                return {
+                    vista: 'suelo',
+                    configProyecto: masterData.configProyecto || {},
+                    origen: masterData.origen || null,
+                    norte: masterData.norteSuelo ?? 0,
+                    lotes: masterData.lotesSuelo || [],
+                    horizontes: masterData.horizontesSuelo || [],
+                    trazos: masterData.trazosSuelo || []
+                };
+            }
+            return {
+                vista: 'aereo',
+                configProyecto: masterData.configProyecto || {},
+                origen: masterData.origen || null,
+                norte: masterData.norte ?? 0,
+                lotes: masterData.lotes || [],
+                horizontes: masterData.horizontes || [],
+                trazos: masterData.trazos || []
+            };
+        }
+
+        function postToEditorIframe(msg) {
+            const iframe = getActiveEditorIframe();
+            if (!iframe || !iframe.contentWindow) return false;
+            if (!iframe.src || !iframe.src.includes('.html')) return false;
+            try {
+                iframe.contentWindow.postMessage(msg, '*');
+                try { iframe.focus(); } catch (e) {}
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function postToEditorIframeRetry(msg, attempts) {
+            attempts = attempts || 0;
+            if (postToEditorIframe(msg)) return true;
+            if (attempts >= 8) return false;
+            setTimeout(() => postToEditorIframeRetry(msg, attempts + 1), 400);
+            return true;
+        }
+
+        function adminToggleDrawMode() {
+            if (!postToEditorIframeRetry({ type: 'ADMIN_TOGGLE_DRAW', active: true })) {
+                mostrarToast('Espera a que cargue el visor 3D…', false);
+            }
+        }
+
+        function adminTogglePinsMode() {
+            if (!postToEditorIframeRetry({ type: 'ADMIN_TOGGLE_PINS', active: true })) {
+                mostrarToast('Espera a que cargue el visor 3D…', false);
+            }
+        }
+
+        function pushMasterplanToEditor() {
+            const iframe = getActiveEditorIframe();
+            if (!iframe || !iframe.contentWindow) return;
+            try {
+                iframe.contentWindow.postMessage({ type: 'APPLY_MASTERPLAN_DATA', payload: getEditorPayloadForVista(editorVistaActual) }, '*');
+            } catch(e) {}
+        }
+
+        function getEditorIframeSrc(vista) {
+            const file = vista === 'suelo' ? 'suelo.html' : 'index.html';
+            return `${file}?admin=true&v=${Date.now()}`;
+        }
+
+        function loadEditorIframe(iframe, loader) {
+            if (!iframe) return;
+            if (loader) loader.style.display = 'flex';
+            iframe.src = getEditorIframeSrc(editorVistaActual);
+            iframe.onload = () => {
+                try { iframe.focus(); } catch (e) {}
+                setTimeout(() => {
+                    pushMasterplanToEditor();
+                    postToEditorIframe({ type: 'ADMIN_TOGGLE_PINS', active: true });
+                    if (loader) loader.style.display = 'none';
+                }, 900);
+            };
+        }
+
+        function abrirMapeoFullscreen(dockItem) {
+            const overlay = document.getElementById('mapeo-fullscreen');
+            if (!overlay) return;
+
+            const prevActive = document.querySelector('.dock-item.active');
+            mapeoFsReturnDock = (prevActive && prevActive !== dockItem) ? prevActive : document.querySelector('.dock-item[title="Ajustes Globales"]');
+
+            if (dockItem) {
+                document.querySelectorAll('.dock-item').forEach(b => b.classList.remove('active'));
+                dockItem.classList.add('active');
+            }
+
+            syncVistaSwitchButtons(editorVistaActual);
+            overlay.classList.add('open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('mapeo-fs-active');
+
+            const iframe = document.getElementById('iframe-fullscreen-360');
+            const loader = document.getElementById('mapeo-fs-loader');
+
+            if (!iframe.src || iframe.src === window.location.href || !iframe.src.includes('.html')) {
+                loadEditorIframe(iframe, loader);
+            } else {
+                if (loader) loader.style.display = 'none';
+                pushMasterplanToEditor();
+            }
+        }
+
+        function cerrarMapeoFullscreen() {
+            const overlay = document.getElementById('mapeo-fullscreen');
+            if (!overlay || !overlay.classList.contains('open')) return;
+
+            overlay.classList.remove('open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('mapeo-fs-active');
+
+            document.querySelectorAll('.dock-item').forEach(b => b.classList.remove('active'));
+            if (mapeoFsReturnDock) mapeoFsReturnDock.classList.add('active');
+            else document.querySelector('.dock-item[title="Ajustes Globales"]')?.classList.add('active');
+        }
+
+        function cambiarVistaEditor(vista) {
+            if (vista === editorVistaActual && getActiveEditorIframe()?.src?.includes('.html')) {
+                syncVistaSwitchButtons(vista);
+                return;
+            }
+            editorVistaActual = vista;
+            syncVistaSwitchButtons(vista);
+            loadEditorIframe(getActiveEditorIframe(), getActiveMapeoLoader());
+        }
+
+        function abrirEditorEspacial(dockItem) {
+            abrirMapeoFullscreen(dockItem);
+        }
+
+        window.addEventListener("message", (event) => {
+            if (event.data && event.data.type === "ADMIN_CLOSE_FULLSCREEN") {
+                cerrarMapeoFullscreen();
+                return;
+            }
+            if (event.data && event.data.type === "EDITOR_READY") {
+                if (!event.data.vista || event.data.vista === editorVistaActual) {
+                    pushMasterplanToEditor();
+                }
+                return;
+            }
+            if (event.data && event.data.type === "SAVE_MASTERPLAN_DATA") {
+                console.log("¡Datos espaciales recibidos del motor 3D!");
+                
+                const newData = event.data.payload;
+                const isSuelo = newData.vista === 'suelo';
+
+                if (isSuelo) {
+                    masterData.norteSuelo = newData.norte ?? 0;
+                    masterData.lotesSuelo = newData.lotes || [];
+                    masterData.horizontesSuelo = newData.horizontes || [];
+                    masterData.trazosSuelo = newData.trazos || [];
+                    mostrarToast("Vista suelo recibida. Subiendo a la nube...", true);
+                    subirDatosSuelo(newData);
+                } else {
+                    masterData.origen = newData.origen;
+                    masterData.norte = newData.norte;
+                    masterData.lotes = newData.lotes;
+                    masterData.horizontes = newData.horizontes;
+                    masterData.trazos = newData.trazos;
+                    renderUI();
+                    mostrarToast("Geometría aérea recibida. Subiendo a la bóveda...", true);
+                    guardarCambios();
+                }
+            }
+            if (event.data && event.data.type === "SAVE_SUELO_DATA") {
+                const newData = event.data.payload;
+                masterData.norteSuelo = newData.norte ?? 0;
+                masterData.lotesSuelo = newData.lotes || [];
+                masterData.horizontesSuelo = newData.horizontes || [];
+                masterData.trazosSuelo = newData.trazos || [];
+                mostrarToast("Vista suelo recibida. Subiendo a la nube...", true);
+                subirDatosSuelo(newData);
+            }
+        });
+
+        // MOTOR DE SUBIDA DE GALERÍAS (MULTIPLE)
+        window.subirGaleriaLote = async function(event, loteId) {
+            const files = Array.from(event.target.files);
+            if(!files.length) return;
+
+            const lote = masterData.lotes.find(l => l.id === loteId);
+            if(!lote.galeria) lote.galeria = [];
+
+            if(lote.galeria.length + files.length > 5) {
+                alert("⚠️ Límite de la bóveda excedido. Solo se permiten 5 fotos máximo por lote para garantizar la velocidad del sistema.");
+                event.target.value = '';
+                return;
+            }
+
+            const btn = event.target.previousElementSibling;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> Subiendo...`;
+            btn.disabled = true;
+
+            const user = safeGetStorage("masterplan_user");
+            const repo = safeGetStorage("masterplan_repo");
+            const token = safeGetStorage("masterplan_token");
+
+            for(let file of files) {
+                try {
+                    const base64Data = await comprimirImagen(file); 
+                    const filename = `gal_${loteId}_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+                    const path = `assets/galeria/${filename}`;
+                    const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+                    const payload = {
+                        message: `📸 Foto de galería añadida al lote ${loteId}`,
+                        content: base64Data
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if(response.ok) {
+                        const data = await response.json();
+                        lote.galeria.push(data.content.download_url);
+                    }
+                } catch (error) {
+                    console.error("Error subiendo foto a galería", error);
+                }
+            }
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            event.target.value = '';
+            
+            // Re-renderizamos para mostrar las fotos
+            renderUI();
+            mostrarToast("📸 Galería actualizada. Recuerda Guardar Cambios.", true);
+        }
+
+        window.eliminarFotoGaleria = function(loteId, index) {
+            const lote = masterData.lotes.find(l => l.id === loteId);
+            if(lote && lote.galeria) {
+                lote.galeria.splice(index, 1);
+                renderUI();
+                mostrarToast("🗑️ Foto removida. Recuerda Guardar Cambios.", true);
+            }
+        }
+    </script>
+</body>
+</html>

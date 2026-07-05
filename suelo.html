@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="head-title-tag">Vista Suelo 360° — Masterplan Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="pannellum.css">
+    <script src="pannellum.js"></script>
+    <script>(function(){if(window.self!==window.top)document.documentElement.classList.add('is-iframe');if(/[?&]admin=true(?:&|$)/.test(location.search))document.documentElement.classList.add('is-admin-editor');})();</script>
+    <link rel="stylesheet" href="css/viewer.css">
+</head>
+<body>
+    <div id="panorama-container"></div>
+    <svg id="loteo-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="holographic-ui-engine" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 90;">
+        <div id="sun-hud">☀️ AMANECER (ESTE)</div>
+        <div id="promo-banner-hud"><div class="promo-content"><span id="promo-icon">✨</span><span id="promo-text">¡Aprovecha nuestras ofertas!</span></div></div>
+        <div id="splash-screen"><div class="splash-content"><img src="https://raw.githubusercontent.com/iLyCoNs/austral-drones/refs/heads/main/logobanner.png" class="splash-main-logo" alt="Austral Drone"><h2 class="splash-project-name" id="splash-title">PROYECTO INMOBILIARIO</h2><div class="splash-progress-container"><div class="splash-progress-bar" id="js-progress-bar"></div></div><p class="splash-loading-text" id="splash-loading-text">INICIALIZANDO BÓVEDA DE DATOS...</p></div></div>
+        <div class="watermark">Diseñado por <b>Deus Vult</b> <span class="version">V.41.0 Favs Edition</span> | AustralDrone.CL</div>
+        <div class="premium-header" title="Mantén presionado para abrir el Modo Pines"><h1 id="ui-main-title">PROYECTO INMOBILIARIO</h1><p id="ui-subtitle">Masterplan Interactivo 360°</p></div>
+        <button class="poi-trigger-btn" id="js-poi-trigger" title="Puntos de Referencia y Servicios Cercanos"><div class="poi-icon">🌐</div></button>
+        <div class="poi-panel" id="js-poi-panel">
+            <div class="poi-header"><h3 id="poi-panel-title">Puntos de Referencia</h3><button class="poi-close" id="js-close-poi">X</button></div>
+            <div class="poi-list" id="poi-main-list">
+                <div class="poi-item" onclick="window.abrirRutaServicio('Supermercado', event)"><span class="poi-item-icon">🛒</span><span class="poi-item-name">Supermercados</span><span class="poi-item-arrow">➔</span></div>
+                <div class="poi-item" onclick="window.abrirRutaServicio('Colegio', event)"><span class="poi-item-icon">🏫</span><span class="poi-item-name">Colegios / Educación</span><span class="poi-item-arrow">➔</span></div>
+                <div class="poi-item" onclick="window.abrirRutaServicio('Centro Medico, Hospital, Clinica', event)"><span class="poi-item-icon">🏥</span><span class="poi-item-name">Centros de Salud</span><span class="poi-item-arrow">➔</span></div>
+                <div class="poi-item" onclick="window.abrirRutaServicio('Bencinera, Gasolinera', event)"><span class="poi-item-icon">⛽</span><span class="poi-item-name">Bencineras</span><span class="poi-item-arrow">➔</span></div>
+                <div class="poi-item" onclick="window.abrirRutaServicio('Comisaria, Carabineros, Policia', event)"><span class="poi-item-icon">👮</span><span class="poi-item-name">Seguridad Pública</span><span class="poi-item-arrow">➔</span></div>
+            </div>
+        </div>
+        <div class="premium-compass-container" id="js-compass-container" title="Mantén presionado para abrir el Modo Arquitecto"><div class="compass-indicator"></div><div class="compass-dial" id="js-compass"><div class="compass-n">N</div><div class="compass-e">E</div><div class="compass-s">S</div><div class="compass-w">W</div><div class="compass-center"></div></div></div>
+        <div id="inapp-modal"><div class="inapp-content" id="js-inapp-content"><iframe id="inapp-iframe-player" class="inapp-iframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><button class="btn-volver-360" id="js-close-inapp"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Volver al 360</button></div>
+        <div id="pin-editor-modal">
+            <div class="modal-content pin-modal-premium" id="modal-content-box">
+                <div class="pm-header">
+                    <span class="pm-badge" id="pm-type-badge">Smart Pin</span>
+                    <h3 id="modal-title-text">Editar Pin</h3>
+                </div>
+                <div class="pm-body">
+                    <div class="pm-field">
+                        <label id="pm-label-title">Identificador</label>
+                        <input type="text" id="pin-title" placeholder="Título (ej: Lote 06)">
+                    </div>
+                    <div id="pin-nav-section" class="pm-section" style="display:none">
+                        <div class="pm-section-head"><span>Navegación y ruta</span></div>
+                        <div class="pm-field">
+                            <label>Coordenadas destino (Lat, Lng)</label>
+                            <input type="text" id="pin-coords" placeholder="-41.120, -72.480">
+                        </div>
+                        <div class="pm-field">
+                            <label>Escenario de tráfico</label>
+                            <select id="pin-traffic-scenario">
+                                <option value="auto">Automático (hora actual Chile)</option>
+                                <option value="normal">Flujo normal</option>
+                                <option value="punta_am">Hora punta mañana</option>
+                                <option value="punta_pm">Hora punta tarde</option>
+                                <option value="sabado">Sábado</option>
+                                <option value="domingo">Domingo</option>
+                                <option value="libre">Tráfico libre / madrugada</option>
+                                <option value="temporada">Temporada alta</option>
+                            </select>
+                        </div>
+                        <button type="button" id="pin-calc-route" class="pm-calc-btn">🛣️  Calcular desde Origen Drone</button>
+                        <p id="pin-traffic-hint" class="pin-traffic-hint">Distancia por carretera + factor tráfico Chile.</p>
+                        <div class="pm-row-2">
+                            <div class="pm-field"><label>Distancia (KM)</label><input type="text" id="pin-area" placeholder="Auto"></div>
+                            <div class="pm-field"><label>Tiempo (MIN)</label><input type="text" id="pin-price" placeholder="Auto"></div>
+                        </div>
+                    </div>
+                    <div id="pin-card-section" class="pm-section" style="display:none">
+                        <div class="pm-section-head"><span>Tarjeta de presentación</span></div>
+                        <div class="pm-field">
+                            <label>Nombre en plano</label>
+                            <input type="text" id="pin-titulo-plano" placeholder="Ej: 7-A">
+                        </div>
+                        <div class="pm-color-grid">
+                            <div class="pm-color-cell"><label>Color título MP</label><input type="color" id="pin-titulo-color" value="#1d1d1f"></div>
+                            <div class="pm-color-cell"><label>Color ref. plano</label><input type="color" id="pin-titulo-plano-color" value="#0066cc"></div>
+                        </div>
+                        <div class="pm-vis-grid">
+                            <label class="pm-vis-toggle"><span>Título MP</span><input type="checkbox" class="card-vis-toggle" data-vis="titulo" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Ref. plano</span><input type="checkbox" class="card-vis-toggle" data-vis="tituloPlano" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Precio UF</span><input type="checkbox" class="card-vis-toggle" data-vis="precio" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Precio CLP</span><input type="checkbox" class="card-vis-toggle" data-vis="precioCLP" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Imagen</span><input type="checkbox" class="card-vis-toggle" data-vis="imagen" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Estado</span><input type="checkbox" class="card-vis-toggle" data-vis="statusPill" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Superficie</span><input type="checkbox" class="card-vis-toggle" data-vis="superficie" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Terreno</span><input type="checkbox" class="card-vis-toggle" data-vis="terreno" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Favorito</span><input type="checkbox" class="card-vis-toggle" data-vis="favorito" checked><span class="pm-vis-switch"></span></label>
+                            <label class="pm-vis-toggle"><span>Botones</span><input type="checkbox" class="card-vis-toggle" data-vis="acciones" checked><span class="pm-vis-switch"></span></label>
+                        </div>
+                    </div>
+                    <div id="pm-panel-lote" class="pm-section">
+                        <div class="pm-row-2">
+                            <div class="pm-field pm-lote-area"><label>Superficie</label><input type="text" id="pin-area-lote" placeholder="0.5011 HA"></div>
+                            <div class="pm-field pm-lote-price"><label>Precio UF</label><input type="text" id="pin-price-lote" placeholder="1500"></div>
+                        </div>
+                        <div class="pm-field pm-lote-status"><label>Estado del lote</label><select id="pin-status"><option value="disponible">Disponible</option><option value="reservado">Reservado</option><option value="vendido">Vendido</option><option value="no_disponible">No Disponible</option></select></div>
+                        <div class="pm-field pm-lote-img"><label>Imagen de la tarjeta</label><input type="text" id="pin-img" placeholder="URL (vacío = default)"></div>
+                        <div class="pm-field pm-lote-video"><label>Tour / Video 360°</label><input type="text" id="pin-video" placeholder="YouTube o MP4 (opcional)"></div>
+                    </div>
+                    <div id="pm-panel-media" class="pm-section" style="display:none">
+                        <div class="pm-field"><label>URL del recorrido</label><input type="text" id="pin-video-media" placeholder="Portal 360° o video"></div>
+                    </div>
+                </div>
+                <div class="pm-footer">
+                    <button class="btn-cancel" id="btn-cancel-pin" type="button">Cancelar</button>
+                    <button class="btn-save" id="btn-save-pin" type="button">Guardar</button>
+                </div>
+            </div>
+        </div>
+        <div id="linea-pines-panel"><h4>📌 Línea Pines</h4><span id="linea-pines-status">Clic en el mapa: punto inicial y final de la fila</span><p class="linea-pines-hint">Pulsa <strong>Enter</strong> para alinear los smart pins al centro de cada lote franja. El trazo desaparece al confirmar.</p></div>
+        <div id="calle-tool-panel"><h4>🛣️ Servidumbre de paso</h4><label>Grosor <span id="calle-ui-ancho-val">8.0</span></label><input type="range" id="calle-ui-ancho" min="2" max="28" step="0.5" value="8"><div id="calle-width-preview"><div id="calle-width-preview-bar"></div></div><label>Transparencia <span id="calle-ui-alpha-val">0%</span></label><input type="range" id="calle-ui-alpha" min="0" max="1" step="0.05" value="0"><label>Tamaño texto <span id="calle-ui-label-val">1.0×</span></label><input type="range" id="calle-ui-label" min="0.5" max="2.5" step="0.1" value="1"><label class="calle-ui-check"><input type="checkbox" id="calle-ui-show-label" checked> Etiqueta SERVIDUMBRE DE PASO</label><label class="calle-ui-check"><input type="checkbox" id="calle-ui-snap-franja"> Pegar a borde franja (opcional)</label><button type="button" id="btn-calle-finish">✓ Terminar calle</button><span id="calle-draw-status">Coloca al menos 2 puntos en el mapa</span><p class="calle-ui-hint">Termina con el botón verde, doble clic, Enter o clic en el último punto (verde). Luego arrastra ✥ para mover la calle.</p></div>
+        <div id="arq2-panel" class="arq2-panel">
+            <div class="macos-header"><div class="macos-dots"><i></i><i></i><i></i></div><div class="dev-toolbar-title">MODO ARQUITECTO 2.0</div><button type="button" id="arq2-panel-close" class="arq2-close-btn" title="Cerrar (Ctrl+Alt+A)">✖</button></div>
+            <div class="arq2-tool-row">
+                <button type="button" class="dev-btn arq2-tool-btn" data-arq2-tool="eraser">Goma</button>
+                <button type="button" class="dev-btn arq2-tool-btn active" data-arq2-tool="lote-libre">Lote Libre</button>
+                <button type="button" class="dev-btn arq2-tool-btn" data-arq2-tool="costura">Costura</button>
+                <button type="button" class="dev-btn arq2-tool-btn" data-arq2-tool="fila-variable" style="color:#10b981;font-weight:800;">Franja</button>
+                <button type="button" class="dev-btn arq2-tool-btn" data-arq2-tool="relleno-auto">Relleno</button>
+            </div>
+            <p id="arq2-fila-desc" class="arq2-fila-desc">FILA VARIABLE: dibuja el contorno COMPLETO de toda la hilera de terrenos de una vez (como un lote grande), igual que Lote Libre. Luego indicas cuántos lotes quieres adentro y el tamaño de cada uno — la herramienta reparte las divisiones internas proporcionalmente sola, sin que tengas que dibujar cada lote por separado.</p>
+            <p id="arq2-semaphore" class="arq2-semaphore arq2-sem-green">Trazo limpio</p>
+            <ul id="arq2-steps-list" class="arq2-steps-dynamic"></ul>
+            <label id="arq2-smooth-row" class="arq2-smooth-row"><input type="checkbox" id="arq2-smooth-toggle" checked> Suavizar curvas naturales</label>
+            <div id="arq2-costura-style-row" class="arq2-style-toggle-row">
+                <span class="arq2-style-label">Borde costura:</span>
+                <button type="button" class="arq2-style-btn active" id="arq2-costura-punteada" data-costura-style="punteada">Línea Punteada</button>
+                <button type="button" class="arq2-style-btn" id="arq2-costura-solida" data-costura-style="solida">Línea Sólida</button>
+            </div>
+            <button type="button" id="arq2-costura-toggle-selected" class="arq2-context-btn">Cambiar costura seleccionada</button>
+            <button type="button" id="arq2-fila-demo-replay" class="arq2-context-btn arq2-demo-replay-btn">Ver cómo funciona</button>
+            <p id="arq2-fila-direction-warn" class="arq2-fila-direction-warn">Dirección incorrecta detectada</p>
+            <p id="arq2-status" class="arq2-status">Listo — Lote Libre orgánico</p>
+        </div>
+        <div id="arq2-fila-modal">
+            <div class="modal-content franja-modal-box arq2-fila-modal-box">
+                <h3>Fila Variable — m² por lote</h3>
+                <p class="franja-modal-hint">Indica la superficie de cada lote. El ancho a lo largo del eje curvo será proporcional a √m² (arc-length real).</p>
+                <div class="franja-modal-count-row"><input type="number" id="arq2-fila-count" min="1" max="40" value="4"><button type="button" id="arq2-fila-apply-count">Actualizar filas</button></div>
+                <div class="franja-scale-preview" id="arq2-fila-scale-preview"></div>
+                <div class="franja-modal-rows" id="arq2-fila-rows"></div>
+                <div class="franja-modal-tools"><button type="button" id="arq2-fila-equal">Igualar todos</button></div>
+                <div class="modal-btns"><button class="btn-cancel" id="arq2-fila-cancel">Cancelar</button><button class="btn-save" id="arq2-fila-confirm">Generar hilera</button></div>
+            </div>
+        </div>
+        <div id="franja-lotes-modal"><div class="modal-content franja-modal-box"><h3>Franja de Lotes</h3><p class="franja-modal-hint">Indica cuántos lotes y el tamaño de cada uno en m². El ancho en el mapa será proporcional (ej. 7000 m² = 40% más ancho que 5000 m²).</p><div class="franja-modal-count-row"><input type="number" id="franja-modal-count" min="1" max="200" value="10"><button type="button" id="franja-modal-apply-count">Actualizar</button></div><div class="franja-scale-preview" id="franja-modal-scale-preview"></div><div class="franja-modal-rows" id="franja-modal-rows"></div><div class="franja-modal-tools"><button type="button" id="franja-modal-equal">Igualar todos</button><button type="button" id="franja-modal-last-big"> Último +40% (7000)</button></div><div class="modal-btns"><button class="btn-cancel" id="franja-modal-cancel">Cancelar</button><button class="btn-save" id="franja-modal-confirm">Crear franja</button></div></div></div>
+        <div id="global-event-interceptor" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999999;"></div>
+        <div id="arq2-live-counter"></div>
+        <div id="arq2-invasion-tooltip">Cruza una calle/límite</div>
+        <div id="snap-cursor"></div>
+        <div id="pegman-ghost"><img src="https://raw.githubusercontent.com/iLyCoNs/panellum/refs/heads/main/street.png" alt="Travel"></div>
+        <div id="ghost-pin"><div class="ghost-wrapper"><div class="ghost-pin-body"></div></div><div class="ghost-pin-laser"></div><div class="ghost-pin-target"></div></div>
+        <div class="map-panel" id="js-map-panel"><div class="close-map-btn" id="js-close-map"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><iframe id="js-gmap-iframe" class="gmap-iframe" src="" loading="lazy"></iframe><div class="map-overlay-bottom"><div class="gps-tracker-box" id="js-gps-tracker"><button id="js-btn-gps">📌 Calcular distancia a mi ubicación</button><div id="js-gps-result" style="display:none;"><span>Estás a <b id="js-gps-km">--</b> km</span><small>~<span id="js-gps-min">--</span> min en ruta</small></div></div></div><a href="#" target="_blank" class="btn-directions" id="js-directions-btn"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>Iniciar Ruta</a></div>
+        <div class="premium-sidebar" id="js-sidebar">
+            <div class="filter-group"><button class="filter-btn active" data-status="todos">Todos</button><button class="filter-btn" data-status="favoritos">❤️ Favs</button><button class="filter-btn" data-status="disponible">Disp.</button><button class="filter-btn" data-status="reservado">Reser.</button><button class="filter-btn" data-status="vendido">Vend.</button><button class="filter-btn" data-status="no_disponible">No Disp.</button></div>
+            <div class="lotes-list" id="js-lotes-list"></div>
+        </div>
+        <div id="dev-toolbar-draw" class="dev-toolbar"><div class="macos-header"><div class="macos-dots"><i></i><i></i><i></i></div><div class="dev-toolbar-title">MODO ARQUITECTO (DIBUJO LIBRE)</div><div style="width: 42px;"></div></div><div class="dev-tools-row"><button class="dev-btn active" id="btn-draw-solid">Sólida</button><button class="dev-btn" id="btn-draw-dash">Punteada</button><button class="dev-btn" id="btn-draw-street" title="Servidumbre: panel de grosor. Botón Terminar calle o Enter al tener 2+ puntos. ✥ mueve la calle.">🛣️ Calle</button><button class="dev-btn" id="btn-draw-cut" style="color: #f59e0b;" title="Apunta hacia donde quieres cortar">✂️ Subdividir</button><button class="dev-btn" id="btn-draw-divisoria" title="Dibuja una línea punteada interna (no se cierra automáticamente)">📌 Divisoria</button><button class="dev-btn btn-franja-lotes" id="btn-draw-franja" style="color: #10b981; font-weight: 800;" title="2 clics: dibuja el rectángulo → cantidad de lotes y m² de cada uno (ancho proporcional)">Franja Lotes</button><button class="dev-btn" id="btn-draw-franja-curva" style="color: #06b6d4; font-weight: 800;" title="Dibuja curva frontal (Enter) y curva trasera (Enter)">📐 Franja Curva</button><button class="dev-btn" id="btn-straighten-franja" style="color: #f59e0b; font-weight: 800;" title="Endereza franja(s): bordes y divisiones en líneas rectas para levantamiento">📐 Enderezar</button><div style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div><button class="dev-btn" id="btn-auto-macro" style="color: #a855f7; font-weight: 800;" title="Convierte lotes adyacentes en un Macro-Lote">✨ AUTO-MACRO</button><button class="dev-btn" id="btn-eraser" style="color: #fca5a5;">🗑️ Goma</button><div style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div><button class="dev-btn action" id="btn-undo-point" title="Borrar último vértice trazado">Deshacer Punto</button><button class="dev-btn nuke" id="btn-nuke">🗑️ Limpiar Todo</button><button class="dev-btn export-ai" title="Guardar directamente en el servidor">☁️ GUARDAR EN LA NUBE</button></div></div>
+        <div id="dev-toolbar-pins" class="dev-toolbar"><div class="macos-header"><div class="macos-dots"><i></i><i></i><i></i></div><div class="dev-toolbar-title">MODO PINES (MAPEO)</div><div style="width: 42px;"></div></div><div class="dev-tools-row"><button class="dev-btn active btn-pin-disp" data-pintype="disponible">Disp.</button><button class="dev-btn btn-pin-res" data-pintype="reservado">Res.</button><button class="dev-btn btn-pin-vend" data-pintype="vendido">Vend.</button><button class="dev-btn btn-pin-nodisp" data-pintype="no_disponible">No Disp.</button><div style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div><button class="dev-btn btn-pin-360°" data-pintype="vista360°">Pin 360°</button><button class="dev-btn btn-pin-casa" data-pintype="casa360°">Casa 360°</button><button class="dev-btn btn-pin-hor" data-pintype="horizonte">Horizonte</button><button class="dev-btn btn-pin-ruta" data-pintype="ruta">Ruta</button><button class="dev-btn" id="btn-linea-pines" style="color: #a855f7; font-weight: 800;" title="Trazo guía → Enter alinea smart pins al centro de cada lote franja">📌 Línea Pines</button><button class="dev-btn" id="btn-set-drone" style="color: #f59e0b;" title="Establecer Coordenadas Base (Lat, Lng)">📌 Origen Drone</button><button class="dev-btn" id="btn-set-north" style="color: #34d399;" title="Fijar la vista actual como el Norte Magnético">🧭 Fijar Norte</button><div style="width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 5px;"></div><button class="dev-btn action" id="btn-heatmap" title="Activa Telemetría Visual">🔥 Mapa Calor</button><button class="dev-btn" id="btn-edit-titles" style="color: #cbd5e1;" title="Editar Título y Subtítulo Central">📌 Títulos</button><button class="dev-btn nuke" id="btn-nuke-pins">🗑️ Limpiar Todo</button><button class="dev-btn export-ai" title="Guardar directamente en el servidor">☁️ GUARDAR EN LA NUBE</button></div></div>
+        <div class="premium-dock" id="js-dock">
+            <div class="dock-legend"><div class="legend-item"><div class="legend-dot dot-disp"></div><span class="legend-text">Disponible</span></div><div class="legend-item"><div class="legend-dot dot-res"></div><span class="legend-text">Reservado</span></div><div class="legend-item"><div class="legend-dot dot-vend"></div><span class="legend-text">Vendido</span></div><div class="legend-item"><div class="legend-dot dot-nodisp"></div><span class="legend-text">No Disp.</span></div></div>
+            <div class="dock-btn pegman-dock-btn" id="js-pegman" title="Arrastra para 360°"><img src="https://raw.githubusercontent.com/iLyCoNs/panellum/refs/heads/main/street.png" alt="Street View" class="pegman-img"><span class="hide-mobile">Arrastra para 360°</span><span class="hide-desktop">360°</span></div>
+            <button class="dock-btn" id="js-location-btn" title="Ubicación y Mapa"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg><span>Mapa</span></button>
+            <button class="dock-btn" id="js-toggle-btn" title="Lista de Lotes"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span>Lotes</span></button>
+            <button class="dock-btn sun-btn" id="js-sun-btn" title="Simular Trayectoria Solar"><span style="font-size: 14px;">☀️</span><span>Sol</span></button>
+            <a href="https://wa.me/569XXXXXXXX" target="_blank" class="dock-btn primary" title="Cotizar tu Masterplan 360°" draggable="false"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg><span>Cotizar <span class="hide-mobile">tu Masterplan 360°</span></span></a>
+        </div>
+    </div>
+    <div id="mac-gallery-modal">
+        <div class="mac-g-window">
+            <div class="mac-g-header">
+                <div class="mac-g-traffic"><span class="mac-g-close" onclick="cerrarGaleriaLote()"></span><span class="mac-g-min" onclick="cerrarGaleriaLote()"></span><span class="mac-g-max" onclick="document.getElementById('img-gallery-main').classList.toggle('zoomed')"></span></div>
+                <div class="mac-g-title" id="mac-g-title">Lote --</div><div style="width: 44px;"></div>
+            </div>
+            <div class="mac-g-body"><button class="mac-g-nav mac-g-prev" onclick="navegarGaleria(-1)">❮</button><img id="img-gallery-main" class="mac-g-main-img" src="" alt="Main" onclick="this.classList.toggle('zoomed')"><button class="mac-g-nav mac-g-next" onclick="navegarGaleria(1)">❯</button></div>
+            <div class="mac-g-footer" id="mac-g-thumbs-container"></div>
+        </div>
+    </div>
+    <script>
+    window.FRESIA_VIEWER_CONFIG = {
+        vista: 'suelo',
+        panorama: 'suelo360.jpg',
+        datosJson: 'datos-suelo.json',
+        autosaveKey: 'suelo360_autosave',
+        savePostMessageType: 'SAVE_SUELO_DATA',
+        saveFile: 'datos-suelo.json',
+        githubDatosFile: 'datos-suelo.json',
+        githubShaStorageKey: 'masterplan_sha_datos_suelo',
+        githubCommitMessage: '🌿 Actualización vista suelo (suelo.html)',
+        payloadIncludeVista: false,
+        mergeRemoteSueloFields: false
+    };
+    </script>
+    <!-- ===== FRESIA360 Viewer - Módulos JS (orden de dependencias) ===== -->
+    <script src="js/modules/v-config.js"></script>
+    <script src="js/modules/v-franja.js"></script>
+    <script src="js/modules/v-automacro.js"></script>
+    <script src="js/modules/v-arq2-core.js"></script>
+    <script src="js/modules/v-calle.js"></script>
+    <script src="js/modules/v-arq2-smooth.js"></script>
+    <script src="js/modules/v-fila-variable.js"></script>
+    <script src="js/modules/v-lote-organico.js"></script>
+    <script src="js/modules/v-arq2-anim.js"></script>
+    <script src="js/modules/v-arq2-draw.js"></script>
+    <script src="js/modules/v-arq2-events.js"></script>
+    <script src="js/modules/v-franja-curva.js"></script>
+    <script src="js/modules/v-svg-render.js"></script>
+    <script src="js/modules/v-panorama.js"></script>
+    <script src="js/modules/v-pins.js"></script>
+    <script src="js/modules/v-smartpin.js"></script>
+    <script src="js/modules/v-ui.js"></script>
+</body>
+</html>
