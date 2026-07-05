@@ -471,6 +471,17 @@
                                 <input type="file" id="file-logo" style="display:none" accept="image/png, image/jpeg, image/svg+xml" onchange="procesarYSubirLogo(event)">
                             </div>
                         </div>
+
+                        <div class="lote-field col-span-full" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 8px;">
+                            <label>Imagen 360° Principal (Fondo para index.html)</label>
+                            <div class="upload-group">
+                                <input type="text" id="config-pano" readonly placeholder="loteo360.jpg (Se subirá a la raíz del repositorio)">
+                                <button class="btn-upload" style="background: rgba(191, 90, 242, 0.15); border-color: rgba(191, 90, 242, 0.4); color: #BF5AF2;" onclick="document.getElementById('file-pano').click()">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg> Subir Panorama 360°
+                                </button>
+                                <input type="file" id="file-pano" style="display:none" accept="image/jpeg" onchange="procesarYSubirPanorama(event)">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1193,6 +1204,70 @@
             } catch (error) {
                 console.error(error);
                 alert("Error procesando el logo. Verifica el formato.");
+            } finally {
+                btn.innerHTML = originalBtnHtml; btn.disabled = false; event.target.value = ''; 
+            }
+        }
+
+        function leerPanoramaComoBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function procesarYSubirPanorama(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const btn = event.target.previousElementSibling;
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/></svg> Subiendo...`;
+            btn.disabled = true;
+
+            try {
+                // Leemos directamente en Base64 sin comprimir para mantener calidad máxima del 360°
+                const base64Data = await leerPanoramaComoBase64(file);
+                const user = safeGetStorage("masterplan_user");
+                const repo = safeGetStorage("masterplan_repo");
+                const token = safeGetStorage("masterplan_token");
+
+                // Buscamos el SHA del loteo360.jpg actual para poder sobreescribirlo
+                let shaPanorama = "";
+                try {
+                    const checkRes = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/loteo360.jpg`, {
+                        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                    });
+                    if (checkRes.ok) {
+                        const checkData = await checkRes.json();
+                        shaPanorama = checkData.sha;
+                    }
+                } catch(e) {}
+
+                const url = `https://api.github.com/repos/${user}/${repo}/contents/loteo360.jpg`;
+                const payload = {
+                    message: `🌐 Imagen 360° Principal actualizada (Vía Panel de Administración)`,
+                    content: base64Data
+                };
+                if (shaPanorama) payload.sha = shaPanorama;
+
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    mostrarToast("Imagen 360° Principal actualizada con éxito", true);
+                } else {
+                    const err = await response.json();
+                    alert("Error al subir panorama a GitHub: " + err.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error procesando el panorama. Verifica el archivo.");
             } finally {
                 btn.innerHTML = originalBtnHtml; btn.disabled = false; event.target.value = ''; 
             }
