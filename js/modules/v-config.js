@@ -287,8 +287,30 @@ function applyProjectConfig() {
         banner.style.background = grad; banner.style.display = 'block'; setTimeout(() => { banner.classList.add('show'); document.body.classList.add('has-banner'); }, 500);
     } else if (banner) { banner.classList.remove('show'); document.body.classList.remove('has-banner'); setTimeout(() => { banner.style.display = 'none'; }, 500); }
     const waBtn = document.querySelector('a.dock-btn.primary'); if(waBtn && ConfigProyecto.whatsapp) { waBtn.href = `https://wa.me/${ConfigProyecto.whatsapp.replace(/\D/g,'')}`; }
+    
+    const panoramaContainer = document.getElementById('panorama-container');
+    if (panoramaContainer) {
+        panoramaContainer.className = '';
+        if (ConfigProyecto.filtro360 && ConfigProyecto.filtro360 !== 'ninguno') {
+            panoramaContainer.classList.add('filtro-' + ConfigProyecto.filtro360);
+        }
+    }
+    
     initMasterplanPremiumFromData();
 }
+
+window.toggleFiltrosMenu = function() {
+    const menu = document.getElementById('filtros-menu');
+    if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+};
+
+window.aplicarFiltro360 = function(tipo) {
+    ConfigProyecto.filtro360 = tipo;
+    applyProjectConfig();
+    const menu = document.getElementById('filtros-menu');
+    if (menu) menu.style.display = 'none';
+    mostrarToast("Filtro aplicado y guardado en memoria", true);
+};
 
 function saveToLocal() { localStorage.setItem(FRESIA_CFG.autosaveKey, JSON.stringify({ configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines })); }
 function loadFromLocal() { const savedData = localStorage.getItem(FRESIA_CFG.autosaveKey); if (savedData) { try { const parsed = JSON.parse(savedData); if((parsed.lotes && parsed.lotes.length > 0) || (parsed.trazos && parsed.trazos.length > 0)) { ConfigProyecto = parsed.configProyecto || ConfigProyecto; OrigenDrone = parsed.origen || OrigenDrone; NorteOffset = parsed.norte || 0; BaseDatosLotes = parsed.lotes || BaseDatosLotes; PuntosHorizonte = parsed.horizontes || PuntosHorizonte; allDrawnLines = parsed.trazos || allDrawnLines; } } catch(e) {} } }

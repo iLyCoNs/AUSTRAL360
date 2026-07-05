@@ -539,3 +539,9 @@ g.lote-organico.arq2-costura-selected path.linea-organico-perimetro { stroke: #0
 .arq2-demo-pop { animation: arq2DemoPop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 @keyframes arq2DemoPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.75; } }
 @keyframes arq2DemoPop { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+/* FILTROS 360 - Ajustes de Brillo y Color para Imagen Base */
+#panorama-container.filtro-natural { filter: brightness(0.95) contrast(1.05) saturate(1.1); transition: filter 0.5s ease; }
+#panorama-container.filtro-reduccion-sol { filter: brightness(0.82) contrast(1.15) saturate(1.05) sepia(0.08); transition: filter 0.5s ease; }
+#panorama-container.filtro-realce-verde { filter: brightness(0.92) contrast(1.15) saturate(1.25); transition: filter 0.5s ease; }
+#panorama-container.filtro-calido { filter: brightness(0.95) contrast(1.1) saturate(1.15) sepia(0.18); transition: filter 0.5s ease; }
+#panorama-container.filtro-contraste-dinamico { filter: brightness(0.88) contrast(1.2) saturate(1.1); transition: filter 0.5s ease; }
