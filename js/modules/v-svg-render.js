@@ -67,6 +67,7 @@ function syncSVGElements() {
                 const mkPath = (cls, edge) => {
                     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     p.setAttribute('class', cls);
+                    p.dataset.lineId = line.id;
                     if (edge) p.dataset.edgeRole = edge;
                     bindSvgEraser(p, line.id);
                     return p;
@@ -151,27 +152,36 @@ function syncSVGElements() {
                 const target = lAristas;
                 if (pEl && pEl.parentNode !== target) target.appendChild(pEl);
                 if (pEl) DOMCache.paths[line.id] = { base: [pEl] };
+            } else if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
+                const paths = Array.from(svg.querySelectorAll(`path[data-line-id="${line.id}"]`));
+                if (paths.length > 0) {
+                    const pFill = paths.find(p => p.classList.contains('linea-calle-arq2-fill'));
+                    const pLeft = paths.find(p => p.dataset.edgeRole === 'left');
+                    const pRight = paths.find(p => p.dataset.edgeRole === 'right');
+                    const pCapStart = paths.find(p => p.dataset.edgeRole === 'cap-start');
+                    const pCapEnd = paths.find(p => p.dataset.edgeRole === 'cap-end');
+                    const pCenter = paths.find(p => p.dataset.edgeRole === 'center');
+                    const gDummy = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    gDummy.dataset.lineId = line.id;
+                    gDummy.dataset.tipo = line.tipo;
+                    DOMCache.paths[line.id] = { gNode: gDummy, base: [pFill, pLeft, pRight, pCapStart, pCapEnd, pCenter] };
+                }
             } else {
                 const gNode = svg.querySelector(`g[data-line-id="${line.id}"]`);
                 if (gNode) {
                     gNode.dataset.tipo = line.tipo;
-                    if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
-                        // For GIS street rendering, paths are appended globally to layer-calles-arq2 sub-groups.
-                        // We do not manage them inside a physical gNode.
-                    } else {
-                        const targetLayer = resolveSvgLayerForLine(line, { lBordes, lAsfalto, lLotes, lAristas });
-                        if (targetLayer && gNode.parentNode !== targetLayer) targetLayer.appendChild(gNode);
-                        const pBase = gNode.querySelector('path');
-                        if (pBase) pBase.setAttribute('class', getPathClassForLine(line));
-                        if (line.tipo === 'lote-organico' || line.tipo === 'fila-variable-lote') {
-                            gNode.style.isolation = 'isolate';
-                            gNode.style.mixBlendMode = 'normal';
-                            arq2_ensureOrganicPathLayers(gNode, line);
-                        }
-                        bindSvgEraser(gNode, line.id);
-                        if (pBase) bindSvgEraser(pBase, line.id);
-                        DOMCache.paths[line.id] = { gNode: gNode, base: Array.from(gNode.querySelectorAll('path')) };
+                    const targetLayer = resolveSvgLayerForLine(line, { lBordes, lAsfalto, lLotes, lAristas });
+                    if (targetLayer && gNode.parentNode !== targetLayer) targetLayer.appendChild(gNode);
+                    const pBase = gNode.querySelector('path');
+                    if (pBase) pBase.setAttribute('class', getPathClassForLine(line));
+                    if (line.tipo === 'lote-organico' || line.tipo === 'fila-variable-lote') {
+                        gNode.style.isolation = 'isolate';
+                        gNode.style.mixBlendMode = 'normal';
+                        arq2_ensureOrganicPathLayers(gNode, line);
                     }
+                    bindSvgEraser(gNode, line.id);
+                    if (pBase) bindSvgEraser(pBase, line.id);
+                    DOMCache.paths[line.id] = { gNode: gNode, base: Array.from(gNode.querySelectorAll('path')) };
                 }
             }
         }
