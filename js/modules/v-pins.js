@@ -243,10 +243,27 @@ function setupDevModes() {
                 // If it is an input field, stop event propagation so it never bubbles to Pannellum
                 e.stopPropagation();
             } else {
-                // Si no es un input, bloquear teclas de movimiento (WASD, flechas)
-                // EXCEPTO combos modificados como Ctrl+A (modo Arquitecto 2.0)
+                // EXCEPTO combos de herramientas (Alt+A, Ctrl+P, Ctrl+Space, Ctrl+Z)
                 const keysToBlock = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Equal', 'Minus'];
                 const isArq2Combo = e.code === 'KeyA' && e.altKey && !e.ctrlKey;
+                const isArqAntiguoCombo = e.ctrlKey && e.code === 'Space';
+                const isPinesCombo = e.ctrlKey && (e.code === 'KeyP' || e.key.toLowerCase() === 'p');
+                const isUndoCombo = e.ctrlKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z');
+                
+                if (evtType === 'keydown') {
+                    if (isArq2Combo) { e.preventDefault(); e.stopPropagation(); arq2_toggleArquitecto2(); return; }
+                    if (isArqAntiguoCombo) { e.preventDefault(); e.stopPropagation(); if(isDevModePinsActive) togglePinsMode(false); toggleDrawMode(!isDevModeDrawActive); return; }
+                    if (isPinesCombo) { e.preventDefault(); e.stopPropagation(); if(isDevModeDrawActive) toggleDrawMode(false); togglePinsMode(!isDevModePinsActive); return; }
+                    if (isUndoCombo) {
+                        e.preventDefault(); e.stopPropagation();
+                        if (isDevModeDrawActive) {
+                            if (currentLinePoints.length > 0) document.getElementById('btn-undo-point')?.click();
+                            else if (allDrawnLines.length > 0) document.getElementById('btn-delete-last-line')?.click();
+                        }
+                        return;
+                    }
+                }
+                
                 if (!isArq2Combo && (keysToBlock.includes(e.code) || keysToBlock.includes(e.key))) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -258,7 +275,6 @@ function setupDevModes() {
     document.querySelectorAll('.dev-toolbar').forEach(tb => { tb.addEventListener('mousedown', e => e.stopPropagation()); tb.addEventListener('mouseup', e => e.stopPropagation()); tb.addEventListener('touchstart', e => e.stopPropagation(), {passive: true}); tb.addEventListener('touchend', e => e.stopPropagation()); });
     document.addEventListener('keydown', (e) => {
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
-        if (e.altKey && !e.ctrlKey && e.code === 'KeyA') { e.preventDefault(); arq2_toggleArquitecto2(); return; }
         if (isArquitecto2Active && e.code === 'Escape') {
             e.preventDefault();
             arq2_clearDraft();
@@ -279,20 +295,18 @@ function setupDevModes() {
             finishCalleDrawing();
             return;
         }
-        if (e.code === 'Escape' && isLineaPinesActive) {
+        if (e.code === 'Backspace' && isDevModeDrawActive && currentLinePoints.length > 0) {
             e.preventDefault();
-            clearLineaPinesDraft();
-            refreshAllHotspots(true);
+            document.getElementById('btn-undo-point')?.click();
             return;
         }
-        if (e.ctrlKey && e.code === 'KeyZ' && isLineaPinesActive && lineaPinesPoints.length > 0) {
+        if (e.code === 'Escape' && isLineaPinesActive) {
             e.preventDefault();
             lineaPinesPoints.pop();
             syncLineaPinesPanelUI();
             refreshAllHotspots(true);
             return;
         }
-        if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); if(isDevModePinsActive) togglePinsMode(false); toggleDrawMode(!isDevModeDrawActive); } if (e.ctrlKey && (e.code === 'KeyP' || e.key.toLowerCase() === 'p')) { e.preventDefault(); if(isDevModeDrawActive) toggleDrawMode(false); togglePinsMode(!isDevModePinsActive); } if (e.ctrlKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) { e.preventDefault(); if (isDevModeDrawActive) { if (currentLinePoints.length > 0) document.getElementById('btn-undo-point')?.click(); else if (allDrawnLines.length > 0) document.getElementById('btn-delete-last-line')?.click(); } }
     });
     
     document.getElementById('btn-draw-solid')?.addEventListener('click', (e) => { setDrawMode('solida', e.target); }); 
