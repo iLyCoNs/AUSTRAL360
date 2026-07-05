@@ -194,7 +194,7 @@ function updateSVGPaths() {
     
     // FIX: Aplicar transparencia global al grupo de calles GIS para lograr empalmes sin costuras.
     const lCallesArq2 = document.getElementById('layer-calles-arq2');
-    if (lCallesArq2) lCallesArq2.setAttribute('opacity', String(typeof draftCalleAlpha !== 'undefined' ? draftCalleAlpha : 0.55));
+    if (lCallesArq2) lCallesArq2.setAttribute('opacity', String(typeof draftCalleCurvaAlpha !== 'undefined' ? draftCalleCurvaAlpha : 0.55));
     
     // Refresh fila-calle preview when camera changes
     if (arq2Tool === 'fila-calle' && arq2FilaCalle?.borderPts) arq2_updateFilaCallePreview();
