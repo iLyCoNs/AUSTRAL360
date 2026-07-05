@@ -227,7 +227,22 @@ function updateSVGPaths() {
             }
             if ((lineData.tipo === 'calle-curva-arq2' || lineData.tipo === 'calle-curva-arq2-preview') && cacheObj.base?.length >= 5) {
                 const geoLine = lineData.tipo === 'calle-curva-arq2-preview' ? arq2_getCalleCurvaPreviewLineData() : lineData;
+                
+                // Backward compat: if old street doesn't have left/right, recompute geometry!
+                if (!geoLine.left?.length || !geoLine.right?.length) {
+                    if (geoLine.ejeOriginal) {
+                        const geo = arq2_buildCalleCurvaGeometry(geoLine.ejeOriginal, geoLine.ancho, geoLine.calleCurvaAlpha, geoLine.calleRetorno);
+                        if (geo) {
+                            geoLine.left = geo.left;
+                            geoLine.right = geo.right;
+                            geoLine.puntosSuavizados = geo.puntosSuavizados;
+                            geoLine.puntos = geo.fillPoly;
+                            geoLine.ejeIsClosed = geo.ejeIsClosed;
+                        }
+                    }
+                }
                 if (!geoLine.left?.length || !geoLine.right?.length) return;
+                
                 // Backward compat: compute ejeIsClosed if not stored
                 if (geoLine.ejeIsClosed === undefined && geoLine.ejeOriginal) {
                     geoLine.ejeIsClosed = arq2_isCalleEjeClosed(geoLine.ejeOriginal);
