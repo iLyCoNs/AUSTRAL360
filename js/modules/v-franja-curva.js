@@ -176,16 +176,9 @@ function getHotspotsConfig() {
                 cP /= linea.puntos.length; cY /= linea.puntos.length;
                 hotspots.push({ "id": "franja_lbl_" + linea.id, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: linea.franjaNumero } });
             }
-            if (linea.tipo === 'fila-variable-lote' && linea.arq2FilaLotes?.length) {
-                linea.arq2FilaLotes.forEach((lot, li) => {
-                    if (!lot?.centroid) return;
-                    hotspots.push({ "id": "arq2_fila_lbl_" + linea.id + "_" + li, "pitch": lot.centroid[0], "yaw": lot.centroid[1], "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: lot.numero } });
-                });
-            } else if (linea.tipo === 'lote-organico' && linea.franjaNumero && linea.puntos.length >= 3) {
-                let cP = 0, cY = 0; linea.puntos.forEach(pt => { cP += pt[0]; cY += pt[1]; });
-                cP /= linea.puntos.length; cY /= linea.puntos.length;
-                hotspots.push({ "id": "arq2_lbl_" + linea.id, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: linea.franjaNumero } });
-            }
+            // FIX: Removido el renderizado automático de etiquetas numéricas (.franja-lot-label) 
+            // para 'fila-variable-lote' y 'lote-organico' mientras se dibuja, a petición del usuario
+            // para mantener la vista limpia en el Modo Arquitecto 2.0.
         });
         currentLinePoints.forEach((coord, idx) => { hotspots.push({ "id": "temp_base_" + currentTempLineId + "_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: currentTempLineId, type: currentLineType, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: idx, hsId: "temp_base_" + currentTempLineId + "_" + idx } }); });
         if (isArquitecto2Active) {
