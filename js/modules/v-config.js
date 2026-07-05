@@ -628,7 +628,20 @@ function arq2_syncOrganicLotePaths(lineData, cacheObj, getCamFn, cx, cySc, f) {
         paths[1].style.cssText = '';
         paths[2].style.cssText = '';
         paths[3].style.cssText = '';
-        const shared = arq2_buildSharedEdgePaths(lineData.puntos, lineData.sharedSegs, lineData.sharedSegStyles, true, getCamFn, cx, cySc, f, costuraEstilo);
+        
+        // FIX: Evitar que ambos lotes dibujen la misma línea punteada compartida y se vea doble.
+        // Solo el lote con el ID (string) menor dibuja la línea divisoria.
+        let renderSharedSegs = [];
+        if (lineData.sharedSegs) {
+            lineData.sharedSegs.forEach(segIdx => {
+                const meta = lineData.sharedSegMeta?.[segIdx];
+                if (!meta || meta.isStreet || lineData.id < meta.lineId) {
+                    renderSharedSegs.push(segIdx);
+                }
+            });
+        }
+        
+        const shared = arq2_buildSharedEdgePaths(lineData.puntos, renderSharedSegs, lineData.sharedSegStyles, true, getCamFn, cx, cySc, f, costuraEstilo);
         const dPerimeter = arq2_buildNonSharedEdgePaths(lineData.puntos, lineData.sharedSegs, true, getCamFn, cx, cySc, f);
         paths[1].setAttribute('d', dPerimeter.trim() || 'M -999 -999');
         arq2_applyOrganicPathAttrs(paths[1], 'perimeter');
