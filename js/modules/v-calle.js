@@ -1,37 +1,48 @@
+const arq2_D2R = Math.PI / 180;
+const arq2_toVec = (pt) => { const p = pt[0]*arq2_D2R, y = pt[1]*arq2_D2R; return [Math.cos(p)*Math.sin(y), Math.sin(p), Math.cos(p)*Math.cos(y)]; };
+const arq2_fromVec = (v) => { const len = Math.hypot(v[0], v[1], v[2]); return [(Math.asin(v[1]/len)/arq2_D2R), (Math.atan2(v[0], v[2])/arq2_D2R)]; };
+
 function arq2_catmullRomSmooth(points, segmentsPerCurve = 8) {
     if (!points || points.length < 3) return points ? points.map(p => [...p]) : [];
     const pts = points.map(p => [...p]), n = pts.length, out = [];
+    const vecs = pts.map(arq2_toVec);
     for (let i = 0; i < n; i++) {
-        const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+        const v0 = vecs[(i - 1 + n) % n], v1 = vecs[i], v2 = vecs[(i + 1) % n], v3 = vecs[(i + 2) % n];
         for (let s = 0; s < segmentsPerCurve; s++) {
             const u = s / segmentsPerCurve, u2 = u * u, u3 = u2 * u;
-            const pitch = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * u + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * u2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * u3);
-            const yaw = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * u + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * u2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * u3);
+            const x = 0.5 * ((2 * v1[0]) + (-v0[0] + v2[0]) * u + (2 * v0[0] - 5 * v1[0] + 4 * v2[0] - v3[0]) * u2 + (-v0[0] + 3 * v1[0] - 3 * v2[0] + v3[0]) * u3);
+            const y = 0.5 * ((2 * v1[1]) + (-v0[1] + v2[1]) * u + (2 * v0[1] - 5 * v1[1] + 4 * v2[1] - v3[1]) * u2 + (-v0[1] + 3 * v1[1] - 3 * v2[1] + v3[1]) * u3);
+            const z = 0.5 * ((2 * v1[2]) + (-v0[2] + v2[2]) * u + (2 * v0[2] - 5 * v1[2] + 4 * v2[2] - v3[2]) * u2 + (-v0[2] + 3 * v1[2] - 3 * v2[2] + v3[2]) * u3);
             if (s === 0 && i > 0) continue;
-            out.push([parseFloat(pitch.toFixed(4)), parseFloat(yaw.toFixed(4))]);
+            const py = arq2_fromVec([x, y, z]);
+            out.push([parseFloat(py[0].toFixed(4)), parseFloat(py[1].toFixed(4))]);
         }
     }
     return out.length >= 3 ? out : pts;
 }
 function arq2_detectCornerAngle(pPrev, pCurr, pNext) {
-    const v1x = pCurr[0] - pPrev[0], v1y = pCurr[1] - pPrev[1];
-    const v2x = pNext[0] - pCurr[0], v2y = pNext[1] - pCurr[1];
-    const len1 = Math.hypot(v1x, v1y), len2 = Math.hypot(v2x, v2y);
+    const vPrev = arq2_toVec(pPrev), vCurr = arq2_toVec(pCurr), vNext = arq2_toVec(pNext);
+    const v1 = [vCurr[0]-vPrev[0], vCurr[1]-vPrev[1], vCurr[2]-vPrev[2]];
+    const v2 = [vNext[0]-vCurr[0], vNext[1]-vCurr[1], vNext[2]-vCurr[2]];
+    const len1 = Math.hypot(v1[0], v1[1], v1[2]), len2 = Math.hypot(v2[0], v2[1], v2[2]);
     if (len1 < 1e-8 || len2 < 1e-8) return 180;
-    const dot = Math.max(-1, Math.min(1, (v1x * v2x + v1y * v2y) / (len1 * len2)));
+    const dot = Math.max(-1, Math.min(1, (v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]) / (len1 * len2)));
     return 180 - (Math.acos(dot) * 180 / Math.PI);
 }
 function arq2_catmullRomOpen(points, segmentsPerCurve = 8) {
     if (!points || points.length < 2) return points ? points.map(p => [...p]) : [];
     if (points.length === 2) return [points[0].map(v => v), points[1].map(v => v)];
     const out = [[...points[0]]];
-    for (let i = 0; i < points.length - 1; i++) {
-        const p0 = points[Math.max(0, i - 1)], p1 = points[i], p2 = points[i + 1], p3 = points[Math.min(points.length - 1, i + 2)];
+    const vecs = points.map(arq2_toVec);
+    for (let i = 0; i < vecs.length - 1; i++) {
+        const v0 = vecs[Math.max(0, i - 1)], v1 = vecs[i], v2 = vecs[i + 1], v3 = vecs[Math.min(vecs.length - 1, i + 2)];
         for (let s = 1; s <= segmentsPerCurve; s++) {
             const u = s / segmentsPerCurve, u2 = u * u, u3 = u2 * u;
-            const pitch = 0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * u + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * u2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * u3);
-            const yaw = 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * u + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * u2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * u3);
-            out.push([parseFloat(pitch.toFixed(4)), parseFloat(yaw.toFixed(4))]);
+            const x = 0.5 * ((2 * v1[0]) + (-v0[0] + v2[0]) * u + (2 * v0[0] - 5 * v1[0] + 4 * v2[0] - v3[0]) * u2 + (-v0[0] + 3 * v1[0] - 3 * v2[0] + v3[0]) * u3);
+            const y = 0.5 * ((2 * v1[1]) + (-v0[1] + v2[1]) * u + (2 * v0[1] - 5 * v1[1] + 4 * v2[1] - v3[1]) * u2 + (-v0[1] + 3 * v1[1] - 3 * v2[1] + v3[1]) * u3);
+            const z = 0.5 * ((2 * v1[2]) + (-v0[2] + v2[2]) * u + (2 * v0[2] - 5 * v1[2] + 4 * v2[2] - v3[2]) * u2 + (-v0[2] + 3 * v1[2] - 3 * v2[2] + v3[2]) * u3);
+            const py = arq2_fromVec([x, y, z]);
+            out.push([parseFloat(py[0].toFixed(4)), parseFloat(py[1].toFixed(4))]);
         }
     }
     return out;
