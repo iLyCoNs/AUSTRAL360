@@ -4731,6 +4731,7 @@ function arq2_setTool(tool) {
     arq2_ensurePanelExtras();
     document.querySelectorAll('.arq2-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.arq2Tool === tool));
     document.body.classList.toggle('eraser-mode-active', tool === 'eraser');
+    document.body.classList.toggle('calle-mode-active', tool === 'calle-curva-arq2' || tool === 'calle');
     arq2_updatePanelStep();
     if (tool === 'fila-variable' && isArquitecto2Active) arq2_startDemoAnimation(false);
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();

@@ -399,13 +399,13 @@ function arq2_getCalleCurvaAlpha(lineData) {
 function arq2_applyCalleCurvaFillStyle(pathEl, alpha) {
     if (!pathEl) return;
     const a = arq2_getCalleCurvaAlpha({ calleCurvaAlpha: alpha });
-    // Styled as dark asphalt grey-blue (rgba(30, 35, 45, alpha)) instead of flat white
-    pathEl.setAttribute('fill', `rgba(30,35,45,${a})`);
+    pathEl.setAttribute('fill', `rgb(30,35,45)`);
     pathEl.setAttribute('stroke', 'none');
-    // evenodd fill-rule ensures closed-loop streets render as a ring (not solid white)
     pathEl.setAttribute('fill-rule', 'evenodd');
-    pathEl.style.fill = `rgba(30,35,45,${a})`;
+    pathEl.style.fill = `rgb(30,35,45)`;
     pathEl.style.fillRule = 'evenodd';
+    const layer = document.getElementById('layer-calles-arq2');
+    if (layer) layer.style.opacity = a;
 }
 
 function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, calleRetorno = false) {
