@@ -426,14 +426,14 @@ function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, cal
             Math.hypot(eje[0][0]-eje[eje.length-1][0], eje[0][1]-eje[eje.length-1][1]) < 0.05
             ? eje.slice(0, -1) : eje;
         const offset = arq2_offsetSplinePath(ejeLoop, halfWidthPx, false, true);
-        left = arq2_snapStreetBorderToLots(offset.left);
-        right = arq2_snapStreetBorderToLots(offset.right);
+        left = offset.left;
+        right = offset.right;
         if (left.length > 1) left.push([...left[0]]);
         if (right.length > 1) right.push([...right[0]]);
     } else {
         const offset = arq2_offsetSplinePath(eje, halfWidthPx, calleRetorno, false);
-        left = arq2_snapStreetBorderToLots(offset.left);
-        right = arq2_snapStreetBorderToLots(offset.right);
+        left = offset.left;
+        right = offset.right;
     }
     if (left.length < 2 || right.length < 2) return null;
     const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? draftCalleCurvaAlpha ?? 0.55));
