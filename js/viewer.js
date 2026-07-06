@@ -3930,6 +3930,8 @@ function arq2_findNearestEdgeOrVertex(screenX, screenY, excludeLineId, radiusPx 
     };
     allDrawnLines.forEach(line => {
         if (line.id === excludeLineId || !arq2_isUniversalSnapTarget(line)) return;
+        const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+        if (hideStreets && (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview' || line.tipo === 'calle')) return;
         // When drawing or dragging a street, ONLY snap to other street edges - NOT to lote polygon vertices
         // (snapping to lot vertices causes the street path to jump/hook unexpectedly and overlaps half the street)
         const isDrawingStreet = arq2Tool === 'calle-curva-arq2' || isDraggingStreet;
@@ -4792,6 +4794,8 @@ function arq2_setTool(tool) {
     document.querySelectorAll('.arq2-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.arq2Tool === tool));
     document.body.classList.toggle('eraser-mode-active', tool === 'eraser');
     document.body.classList.toggle('calle-mode-active', tool === 'calle-curva-arq2' || tool === 'calle');
+    const hideStreetsRow = document.getElementById('arq2-lote-libre-hide-streets-row');
+    if (hideStreetsRow) hideStreetsRow.style.display = (tool === 'lote-libre' || tool === 'fila-variable') ? '' : 'none';
     arq2_updatePanelStep();
     if (tool === 'fila-variable' && isArquitecto2Active) arq2_startDemoAnimation(false);
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();

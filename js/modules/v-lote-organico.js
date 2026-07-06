@@ -75,6 +75,8 @@ function arq2_findNearestEdgeOrVertex(screenX, screenY, excludeLineId, radiusPx 
     };
     allDrawnLines.forEach(line => {
         if (line.id === excludeLineId || !arq2_isUniversalSnapTarget(line)) return;
+        const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+        if (hideStreets && (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview' || line.tipo === 'calle')) return;
         // When drawing or dragging a street, ONLY snap to other street edges - NOT to lote polygon vertices
         // (snapping to lot vertices causes the street path to jump/hook unexpectedly and overlaps half the street)
         const isDrawingStreet = arq2Tool === 'calle-curva-arq2' || isDraggingStreet;

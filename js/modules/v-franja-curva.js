@@ -150,15 +150,19 @@ function getHotspotsConfig() {
                     }
                 }
             } else if (linea.tipo === 'calle-curva-arq2') {
-                if (linea.ejeOriginal) {
+                const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+                if (!hideStreets && linea.ejeOriginal) {
                     linea.ejeOriginal.forEach((coord, pIdx) => {
                         hotspots.push({ "id": "vert_calle_curva_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle-curva-arq2-vertex', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_curva_" + linea.id + "_" + pIdx } });
                     });
                 }
             } else if (linea.tipo === 'calle') {
-                linea.puntos.forEach((coord, pIdx) => {
-                    hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
-                });
+                const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+                if (!hideStreets) {
+                    linea.puntos.forEach((coord, pIdx) => {
+                        hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
+                    });
+                }
             } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
                 const isOrg = linea.tipo === 'lote-organico' || linea.tipo === 'fila-variable-lote';
                 const arr = (isOrg && linea.ejeOriginal) ? linea.ejeOriginal : linea.puntos;

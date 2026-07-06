@@ -219,6 +219,9 @@ function arq2_setup() {
         arq2_updatePanelStep();
     });
     arq2_ensureSmoothIntensityPanel();
+    document.getElementById('arq2-lote-libre-hide-streets')?.addEventListener('change', () => {
+        refreshAllHotspots(true);
+    });
     document.getElementById('arq2-costura-punteada')?.addEventListener('click', () => {
         arq2CosturaStyle = 'punteada';
         if (arq2SelectedLineId) {
