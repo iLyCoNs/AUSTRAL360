@@ -151,7 +151,7 @@ body.is-embedded #calle-tool-panel { bottom: 72px; left: 8px; width: min(248px, 
 .vertex-marker.origin-vertex { background: #f59e0b !important; border-color: #fff !important; width: 18px !important; height: 18px !important; box-shadow: 0 0 0 5px rgba(245,158,11,0.25), 0 0 20px rgba(245,158,11,0.9) !important; animation: closePulse 0.75s ease-in-out infinite alternate; }
 @keyframes closePulse { from { transform: translate(-50%,-50%) scale(1); } to { transform: translate(-50%,-50%) scale(1.55); box-shadow: 0 0 0 8px rgba(245,158,11,0.15), 0 0 28px rgba(245,158,11,1) !important; } }
 #snap-cursor.is-closing { border-color: #f59e0b !important; background: rgba(245,158,11,0.25) !important; width: 32px !important; height: 32px !important; box-shadow: 0 0 0 5px rgba(245,158,11,0.15), 0 0 20px rgba(245,158,11,0.7); }
-#snap-cursor { position: fixed; width: 10px; height: 10px; border: 1.5px solid #10b981; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 9999999; opacity: 0; transition: opacity 0.1s; background: rgba(16, 185, 129, 0.3); }
+#snap-cursor { position: fixed; width: 10px; height: 10px; border: 1.5px solid #10b981; border-radius: 50%; transform: translate(-50%, -50%) translateZ(0); pointer-events: none; z-index: 9999999; opacity: 0; transition: opacity 0.1s; background: rgba(16, 185, 129, 0.3); will-change: transform; }
 #snap-cursor.active { opacity: 1; animation: snapPulse 1s infinite alternate; }
 @keyframes snapPulse { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.2); } }
 body.heatmap-mode g.lote-interactivo path { stroke: transparent !important; }
@@ -160,7 +160,7 @@ body.heatmap-mode g.lote-interactivo[data-status="reservado"] path { fill: rgba(
 body.heatmap-mode g.lote-interactivo[data-status="vendido"] path { fill: rgba(239, 68, 68, 0.8) !important; filter: drop-shadow(0 0 15px rgba(239,68,68,0.8)); }
 body.heatmap-mode g.lote-interactivo[data-status="no_disponible"] path { fill: rgba(148, 163, 184, 0.8) !important; filter: drop-shadow(0 0 15px rgba(148,163,184,0.8)); }
 .pnlm-compass { display: none !important; } .pnlm-load-button { background: #141923 !important; border-radius: 50% !important; }
-.pnlm-hotspot-base { z-index: 10 !important; transition: opacity 0.5s ease-out !important; will-change: transform; }
+.pnlm-hotspot-base { z-index: 10 !important; transition: opacity 0.5s ease-out !important; will-change: transform; transform: translateZ(0); }
 body:not(.loteo-overlay-ready) .pnlm-hotspot-base { opacity: 0 !important; pointer-events: none !important; }
 .pnlm-hotspot-base:hover, .pnlm-hotspot-base:focus-within { z-index: 999999 !important; } .pnlm-fadeOut { opacity: 0 !important; display: none !important; }
 #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 99999999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1.5s, visibility 1.5s; pointer-events: auto; } #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }

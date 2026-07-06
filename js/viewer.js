@@ -47,7 +47,14 @@ const DOMCache = { paths: {}, markers: {}, viewport: { w: window.innerWidth, h: 
 let isHeatmapActive = false, isWebGLSupported = true, viewerGpuReady = true, smartInitAttempts = 0, panoramaEventsBound = false, pannellumIntroBootstrapped = false, svgFrameCounter = 0;
 function isTouchDevice() { return (navigator.maxTouchPoints || 0) > 0 || ('ontouchstart' in window); }
 function isSvgRenderAllowed() { return (!isWebGLSupported) ? false : (isTouchDevice() ? viewerGpuReady && !!visor360 : true); }
-function shouldUpdateSVGThisFrame() { return true; }
+function shouldUpdateSVGThisFrame() { 
+    svgFrameCounter++; 
+    if (document.body.classList.contains('panorama-dragging')) {
+        const skip = isTouchDevice() ? 3 : 2;
+        return (svgFrameCounter % skip) === 0;
+    }
+    return true; 
+}
 
 function flashScreenSuccess() {
     let flash = document.createElement('div');
@@ -5835,6 +5842,26 @@ function updateSVGPaths() {
             lineData = arq2Tool === 'calle-curva-arq2' ? arq2_getCalleCurvaPreviewLineData() : { tipo: 'lote-organico-preview', puntos: arq2LinePoints };
         }
         if (!lineData) return;
+        if (lineData.puntos && lineData.puntos.length > 0) {
+            let cP = 0, cY = 0;
+            lineData.puntos.forEach(pt => { cP += pt[0]; cY += pt[1]; });
+            cP /= lineData.puntos.length; cY /= lineData.puntos.length;
+            const cp_rad = cP * Math.PI / 180, cy_rad = cY * Math.PI / 180;
+            const c3d = { x: Math.cos(cp_rad) * Math.sin(cy_rad), y: Math.sin(cp_rad), z: Math.cos(cp_rad) * Math.cos(cy_rad) };
+            const cam3d = { x: Math.cos(cp) * Math.sin(cy), y: Math.sin(cp), z: Math.cos(cp) * Math.cos(cy) };
+            const dot = c3d.x * cam3d.x + c3d.y * cam3d.y + c3d.z * cam3d.z;
+            const angleDeg = Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
+            if (angleDeg > 105) {
+                if (cacheObj.base) {
+                    if (Array.isArray(cacheObj.base)) {
+                        cacheObj.base.forEach(p => p && p.setAttribute && p.setAttribute('d', 'M -999 -999'));
+                    } else if (cacheObj.base.setAttribute) {
+                        cacheObj.base.setAttribute('d', 'M -999 -999');
+                    }
+                }
+                return;
+            }
+        }
         let isClosed = shouldClosePolygonLine(lineId, lineData);
         if (cacheObj.gNode && lineData.tipo !== 'calle' && lineData.tipo !== 'calle-curva-arq2' && lineData.tipo !== 'calle-curva-arq2-preview' && lineData.tipo !== 'franja-grupo' && lineData.tipo !== 'franja-curva-grupo') { if (lineData.puntos && lineData.puntos.length > 0) { let polyStatus = lineData.loteStatus || 'disponible'; if (!lineData.loteStatus && !(lineData.franjaNumero || lineData.tipo === 'area-invisible')) { let cP = 0, cY = 0; lineData.puntos.forEach(pt => { cP += pt[0]; cY += pt[1]; }); cP /= lineData.puntos.length; cY /= lineData.puntos.length; let closestPin = null; let minDist = 30; BaseDatosLotes.forEach(pin => { if(pin.tipo === 'lote') { let dist = Math.pow(pin.pitch - cP, 2) + Math.pow(pin.yaw - cY, 2); if(dist < minDist) { minDist = dist; closestPin = pin; } } }); if (closestPin) polyStatus = closestPin.status; } cacheObj.gNode.setAttribute('data-status', polyStatus); } }
         if ((lineData.tipo === 'calle-curva-arq2' || lineData.tipo === 'calle-curva-arq2-preview') && cacheObj.base?.length >= 3) {
