@@ -1158,6 +1158,18 @@ function purgeAllNonFranjaLoteTrazos() {
 function promoteClusterToFranja(children) {
     if (!children || children.length < 2) return false;
     const sorted = sortLotesAlongStrip(children);
+    let isContinuous = true;
+    for (let i = 0; i < sorted.length - 1; i++) {
+        let sharesVertex = false;
+        const p1s = sorted[i].puntos, p2s = sorted[i+1].puntos;
+        for (let a = 0; a < p1s.length; a++) {
+            for (let b = 0; b < p2s.length; b++) {
+                if (Math.hypot(p1s[a][0] - p2s[b][0], p1s[a][1] - p2s[b][1]) < 0.2) sharesVertex = true;
+            }
+        }
+        if (!sharesVertex) { isContinuous = false; break; }
+    }
+    if (!isContinuous) return false;
     const N = sorted.length;
     const first = sorted[0].puntos, last = sorted[N - 1].puntos;
     if (!first || first.length < 4 || !last || last.length < 4) return false;
@@ -1625,8 +1637,13 @@ function runAutoMacroTransform(explicitLotes) {
     allDrawnLines = [...others, ...invisibleFills, ...macroLines];
     purgeAllNonFranjaLoteTrazos();
     const orphanFills = allDrawnLines.filter(l => l.tipo === 'area-invisible' && !l.franjaGrupo);
-    if (orphanFills.length >= 2) promoteClusterToFranja(orphanFills);
-    else orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
+    if (orphanFills.length >= 2) {
+        if (!promoteClusterToFranja(orphanFills)) {
+            orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
+        }
+    } else {
+        orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
+    }
     document.body.classList.add('auto-macro-active');
     return true;
 }
