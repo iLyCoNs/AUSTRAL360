@@ -699,7 +699,8 @@ function arq2_ensurePanelExtras() {
         rowEl.innerHTML = '<label>Ancho calle <span id="arq2-calle-ancho-val">8.0</span></label><input type="range" id="arq2-calle-ancho" min="4" max="15" step="0.5" value="8"><div id="arq2-calle-width-preview"><div id="arq2-calle-width-preview-bar"></div></div>' +
             '<label>Curvatura <span id="arq2-calle-curvatura-val">5</span> <span style="font-size:10px;color:#94a3b8">(0=recta / 10=muy curva)</span></label><input type="range" id="arq2-calle-curvatura" min="0" max="10" step="1" value="5">' +
             '<label>Transparencia <span id="arq2-calle-alpha-val">55%</span></label><input type="range" id="arq2-calle-alpha" min="0.15" max="1" step="0.05" value="0.55">' +
-            '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-retorno" style="cursor:pointer;"><label for="arq2-calle-retorno" style="cursor:pointer; margin: 0; font-size: 11px; color: #fff;">Retorno Circular (Cul-de-sac)</label></div>';
+            '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-retorno" style="cursor:pointer;"><label for="arq2-calle-retorno" style="cursor:pointer; margin: 0; font-size: 11px; color: #fff;">Retorno Circular (Cul-de-sac)</label></div>' +
+            '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imán)</label></div>';
 
         document.getElementById('arq2-smooth-row')?.insertAdjacentElement('afterend', rowEl);
         document.getElementById('arq2-calle-ancho')?.addEventListener('input', (e) => {
@@ -720,6 +721,9 @@ function arq2_ensurePanelExtras() {
             arq2CalleRetorno = !!e.target.checked;
             syncSVGElements();
             updateSVGPaths();
+        });
+        document.getElementById('arq2-calle-no-snap')?.addEventListener('change', (e) => {
+            document.body.classList.toggle('calle-no-snap-active', e.target.checked);
         });
         arq2_bindCalleCurvaAlphaSlider();
     } else if (!document.getElementById('arq2-calle-alpha') && document.getElementById('arq2-calle-curva-row')) {

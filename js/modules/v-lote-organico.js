@@ -53,6 +53,7 @@ function arq2_isLineClosedForSnap(line) {
     return pts.length >= 3;
 }
 function arq2_findNearestEdgeOrVertex(screenX, screenY, excludeLineId, radiusPx = 7) {
+    if (arq2Tool === 'calle-curva-arq2' && document.getElementById('arq2-calle-no-snap')?.checked) return null;
     const proj = getPanoramaScreenProjector();
     if (!proj) return null;
     const sx = screenX - DOMCache.viewport.left, sy = screenY - DOMCache.viewport.top;
