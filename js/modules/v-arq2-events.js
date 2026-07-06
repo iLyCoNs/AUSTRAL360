@@ -11,7 +11,7 @@ function arq2_onPanoramaMove(mock) {
         return;
     }
     
-    arq2CosturaSnap = arq2_findNearestEdgeOrVertex(mock.clientX, mock.clientY, arq2TempLineId, 15);
+    arq2CosturaSnap = arq2_findNearestEdgeOrVertex(mock.clientX, mock.clientY, arq2TempLineId, 7);
     // For Lote Libre, only keep the snap indicator if the target is a STREET edge
     if (arq2CosturaSnap && arq2Tool === 'lote-libre') {
         const snapLine = arq2CosturaSnap.lineId ? allDrawnLines.find(l => l.id === arq2CosturaSnap.lineId) : null;

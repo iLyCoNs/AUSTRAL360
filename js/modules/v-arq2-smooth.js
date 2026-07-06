@@ -1,9 +1,9 @@
 function arq2_getSmoothParams(intensity) {
     const n = intensity == null ? arq2SmoothIntensity : intensity;
     if (n <= 0) return { enabled: false, segmentsPerCurve: 8, angleThreshold: 180, label: 'Apagado' };
-    if (n <= 3) return { enabled: true, segmentsPerCurve: 6, angleThreshold: 155, label: 'Sutil' };
-    if (n <= 7) return { enabled: true, segmentsPerCurve: 10, angleThreshold: 130, label: 'Natural' };
-    return { enabled: true, segmentsPerCurve: 18, angleThreshold: 100, label: 'Máximo' };
+    if (n <= 3) return { enabled: true, segmentsPerCurve: 6, angleThreshold: 150, label: 'Sutil' };
+    if (n <= 7) return { enabled: true, segmentsPerCurve: 10, angleThreshold: 165, label: 'Natural' };
+    return { enabled: true, segmentsPerCurve: 18, angleThreshold: 175, label: 'Máximo' };
 }
 function arq2_estimatePolygonScreenAreaPx(pts) {
     const proj = getPanoramaScreenProjector();

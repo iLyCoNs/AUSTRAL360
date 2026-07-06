@@ -52,12 +52,12 @@ function arq2_isLineClosedForSnap(line) {
     const pts = arq2_getSewPolygonPoints(line);
     return pts.length >= 3;
 }
-function arq2_findNearestEdgeOrVertex(screenX, screenY, excludeLineId, radiusPx = 15) {
+function arq2_findNearestEdgeOrVertex(screenX, screenY, excludeLineId, radiusPx = 7) {
     const proj = getPanoramaScreenProjector();
     if (!proj) return null;
     const sx = screenX - DOMCache.viewport.left, sy = screenY - DOMCache.viewport.top;
     // Use only the provided radius (no forced minimum) so snap isn't too aggressive in tight areas
-    const effectiveRadius = Math.max(radiusPx, 14);
+    const effectiveRadius = radiusPx;
     let best = null, bestD = effectiveRadius;
 
     const tryPt = (pitch, yaw, meta) => {
@@ -535,8 +535,8 @@ function arq2_snapVerticesToExisting(points) {
     if (!points || !points.length) return points;
     const proj = getPanoramaScreenProjector();
     return points.map(pt => {
-        // Threshold: 0.15 degrees (3x more permissive than before)
-        let best = null, bestD = 0.15;
+        // Threshold: 0.06 degrees
+        let best = null, bestD = 0.06;
         allDrawnLines.forEach(line => {
             if (!arq2_isUniversalSnapTarget(line)) return;
             let linePts;
