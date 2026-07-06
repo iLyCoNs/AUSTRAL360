@@ -1156,7 +1156,7 @@ function purgeAllNonFranjaLoteTrazos() {
     });
 }
 function promoteClusterToFranja(children) {
-    if (!children || children.length < 2) return false;
+    return false;
     const sorted = sortLotesAlongStrip(children);
     let isContinuous = true;
     for (let i = 0; i < sorted.length - 1; i++) {
