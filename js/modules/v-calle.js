@@ -401,10 +401,9 @@ function arq2_getCalleCurvaAlpha(lineData) {
 function arq2_applyCalleCurvaFillStyle(pathEl, alpha) {
     if (!pathEl) return;
     const a = arq2_getCalleCurvaAlpha({ calleCurvaAlpha: alpha });
-    pathEl.setAttribute('fill', `rgb(30,35,45)`);
+    // Let CSS handle the fill color for premium styling (.linea-calle-arq2-fill)
     pathEl.setAttribute('stroke', 'none');
     pathEl.setAttribute('fill-rule', 'evenodd');
-    pathEl.style.fill = `rgb(30,35,45)`;
     pathEl.style.fillRule = 'evenodd';
     const layer = document.getElementById('layer-calles-arq2');
     if (layer) layer.style.opacity = a;
