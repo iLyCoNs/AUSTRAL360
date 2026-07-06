@@ -163,7 +163,21 @@ function getHotspotsConfig() {
                 const isOrg = linea.tipo === 'lote-organico' || linea.tipo === 'fila-variable-lote';
                 const arr = (isOrg && linea.ejeOriginal) ? linea.ejeOriginal : linea.puntos;
                 arr.forEach((coord, pIdx) => {
-                    hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                    let show = true;
+                    if (arr === linea.puntos && arr.length > 10) {
+                        const prev = arr[(pIdx - 1 + arr.length) % arr.length];
+                        const next = arr[(pIdx + 1) % arr.length];
+                        const dx1 = coord[0] - prev[0], dy1 = coord[1] - prev[1];
+                        const dx2 = next[0] - coord[0], dy2 = next[1] - coord[1];
+                        const dot = dx1*dx2 + dy1*dy2;
+                        const lenSq1 = dx1*dx1 + dy1*dy1;
+                        const lenSq2 = dx2*dx2 + dy2*dy2;
+                        if (lenSq1 > 0 && lenSq2 > 0) {
+                            const cosAng = dot / Math.sqrt(lenSq1 * lenSq2);
+                            if (cosAng > 0.996) show = false;
+                        }
+                    }
+                    if (show) hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
                 });
             }
             if (linea.tipo === 'area-invisible' && linea.franjaNumero && linea.puntos.length >= 3) {
