@@ -96,7 +96,7 @@
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783306832294,
+      "rutaCalculadaEn": 1783308489594,
       "rutaEscenarioTrafico": "libre"
     },
     {
@@ -113,7 +113,7 @@
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783306832742,
+      "rutaCalculadaEn": 1783308490039,
       "rutaEscenarioTrafico": "libre"
     },
     {
@@ -130,112 +130,97 @@
   ],
   "trazos": [
     {
-      "id": "arq2_org_1783306903555",
+      "id": "arq2_org_1783308524186",
       "tipo": "lote-organico",
       "puntos": [
         [
-          -70.414,
-          -105.488
+          -77.488,
+          -130.136
         ],
         [
-          -70.4184,
-          -104.8572
+          -82.454,
+          -95.588
         ],
         [
-          -70.4239,
-          -104.034
+          -71.797,
+          -80.023
         ],
         [
-          -70.4304,
-          -103.0561
+          -70.522,
+          -88.062
         ],
         [
-          -70.4377,
-          -101.9612
+          -70.118,
+          -95.567
         ],
         [
-          -70.4456,
-          -100.7871
-        ],
-        [
-          -70.4541,
-          -99.5715
-        ],
-        [
-          -70.4629,
-          -98.352
-        ],
-        [
-          -70.4719,
-          -97.1665
-        ],
-        [
-          -70.481,
-          -96.0526
-        ],
-        [
-          -70.49,
-          -95.048
-        ],
-        [
-          -70.4996,
-          -94.0936
-        ],
-        [
-          -70.5104,
-          -93.1173
-        ],
-        [
-          -70.5219,
-          -92.1377
-        ],
-        [
-          -70.5338,
-          -91.1733
-        ],
-        [
-          -70.5457,
-          -90.2425
-        ],
-        [
-          -70.5573,
-          -89.3639
-        ],
-        [
-          -70.5681,
-          -88.5561
-        ],
-        [
-          -70.5777,
-          -87.8375
-        ],
-        [
-          -70.5858,
-          -87.2266
-        ],
-        [
-          -70.592,
-          -86.742
-        ],
-        [
-          -71.799,
-          -80.087
-        ],
-        [
-          -82.763,
-          -107.579
-        ],
-        [
-          -77.294,
-          -143.656
+          -69.804,
+          -104.832
         ]
       ],
-      "sharedSegs": [],
-      "sharedSegStyles": {},
-      "sharedSegMeta": {},
+      "sharedSegs": [
+        1
+      ],
+      "sharedSegStyles": {
+        "1": "punteada"
+      },
+      "sharedSegMeta": {
+        "1": {
+          "lineId": "arq2_org_1783308535052",
+          "segIdx": 5,
+          "isStreet": false
+        }
+      },
       "suavizadoIntensidad": 5,
       "arq2Numero": "01",
       "franjaNumero": "01",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783308535052",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -82.454,
+          -95.588
+        ],
+        [
+          -80.324,
+          -16.512
+        ],
+        [
+          -72.22608747907115,
+          -46.60225217428845
+        ],
+        [
+          -72.688,
+          -51.224
+        ],
+        [
+          -73.483,
+          -60.071
+        ],
+        [
+          -71.797,
+          -80.023
+        ]
+      ],
+      "sharedSegs": [
+        5
+      ],
+      "sharedSegStyles": {
+        "5": "punteada"
+      },
+      "sharedSegMeta": {
+        "5": {
+          "lineId": "arq2_org_1783308524186",
+          "segIdx": 1,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "02",
+      "franjaNumero": "02",
       "loteStatus": "disponible"
     }
   ],
