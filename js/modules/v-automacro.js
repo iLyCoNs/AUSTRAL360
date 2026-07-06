@@ -128,7 +128,8 @@ function initAutoMacroFromData() {
     allDrawnLines.filter(l => l.tipo === 'franja-curva-grupo').forEach(g => rebuildFranjaCurvaGroup(g.id));
     const fills = allDrawnLines.filter(l => isAutoMacroLotePoly(l) && l.tipo !== 'franja-grupo');
     const hasMacroEdges = allDrawnLines.some(l => isMacroEdgeType(l.tipo));
-    if (fills.length >= 2 && !hasMacroEdges) { runAutoMacroTransform(fills); finalizeAutoMacroSession(); }
+    const isModern = fills.some(l => l.tipo === 'lote-organico' || l.tipo === 'fila-variable-lote');
+    if (fills.length >= 2 && !hasMacroEdges && !isModern) { runAutoMacroTransform(fills); finalizeAutoMacroSession(); }
     else if (hasMacroEdges && fills.some(l => l.tipo === 'area-invisible' || l.tipo === 'masterplan_fill')) document.body.classList.add('auto-macro-active');
     else syncFranjaVisualsOnReady();
 }

@@ -160,8 +160,22 @@ function getHotspotsConfig() {
                     hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
                 });
             } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
+                const isOrg = linea.tipo === 'lote-organico' || linea.tipo === 'fila-variable-lote';
+                const n = linea.puntos.length;
                 linea.puntos.forEach((coord, pIdx) => {
-                    hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                    let showHandle = true;
+                    if (isOrg && n >= 3) {
+                        const p0 = linea.puntos[(pIdx - 1 + n) % n];
+                        const p1 = linea.puntos[pIdx];
+                        const p2 = linea.puntos[(pIdx + 1) % n];
+                        if (typeof arq2_detectCornerAngle === 'function') {
+                            const angle = arq2_detectCornerAngle(p0, p1, p2);
+                            if (angle > 155) showHandle = false;
+                        }
+                    }
+                    if (showHandle) {
+                        hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                    }
                 });
             }
             if (linea.tipo === 'area-invisible' && linea.franjaNumero && linea.puntos.length >= 3) {
