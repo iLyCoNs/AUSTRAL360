@@ -40,58 +40,17 @@ function clipLine2D(x0, y0, x1, y1, xmin, ymin, xmax, ymax) {
     return accept ? { x1: x0, y1: y0, x2: x1, y2: y1 } : null;
 }
 
-function arq2_subdivideForProjection(pts, isClosed) {
-    if (!pts || pts.length < 2) return pts;
-    const subPts = [];
-    for (let i = 0; i < pts.length; i++) {
-        const p1 = pts[i];
-        subPts.push(p1);
-        if (!isClosed && i === pts.length - 1) break;
-        const p2 = pts[(i + 1) % pts.length];
-        let dp = Math.abs(p1[0] - p2[0]);
-        let dy = Math.abs(p1[1] - p2[1]);
-        if (dy > 180) dy = 360 - dy;
-        const maxDist = Math.max(dp, dy);
-        if (maxDist > 4) {
-            const numSegments = Math.min(50, Math.ceil(maxDist / 4));
-            const p1r = p1[0] * Math.PI / 180, y1r = p1[1] * Math.PI / 180;
-            const p2r = p2[0] * Math.PI / 180, y2r = p2[1] * Math.PI / 180;
-            const v1 = [Math.cos(p1r)*Math.sin(y1r), Math.sin(p1r), Math.cos(p1r)*Math.cos(y1r)];
-            const v2 = [Math.cos(p2r)*Math.sin(y2r), Math.sin(p2r), Math.cos(p2r)*Math.cos(y2r)];
-            const dot = v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
-            const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
-            if (angle > 0.01) {
-                const sinOmega = Math.sin(angle);
-                for (let j = 1; j < numSegments; j++) {
-                    const t = j / numSegments;
-                    const s1 = Math.sin((1 - t) * angle) / sinOmega;
-                    const s2 = Math.sin(t * angle) / sinOmega;
-                    const x = s1 * v1[0] + s2 * v2[0];
-                    const y = s1 * v1[1] + s2 * v2[1];
-                    const z = s1 * v1[2] + s2 * v2[2];
-                    const r = Math.hypot(x, z);
-                    const pitch = Math.atan2(y, r) * 180 / Math.PI;
-                    const yaw = Math.atan2(x, z) * 180 / Math.PI;
-                    subPts.push([pitch, yaw]);
-                }
-            }
-        }
-    }
-    return subPts;
-}
-
 function arq2_projectPolylineD(pts, isClosed, getCamFn, cx, cySc, f) {
     if (!pts || pts.length < 2) return '';
-    const subPts = arq2_subdivideForProjection(pts, isClosed);
     const NEAR = 0.0001;
     const W = cx * 2, H = cySc * 2;
     const padding = Math.max(W, H);
     const bounds = [-padding, -padding, W + padding, H + padding];
     
     let d = '', hasVisible = false;
-    for (let i = 0; i < subPts.length; i++) {
-        const p1 = subPts[i], p2 = subPts[(i + 1) % subPts.length];
-        if (!isClosed && i === subPts.length - 1) break;
+    for (let i = 0; i < pts.length; i++) {
+        const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
+        if (!isClosed && i === pts.length - 1) break;
         
         const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
         if (c1.z <= NEAR && c2.z <= NEAR) continue;

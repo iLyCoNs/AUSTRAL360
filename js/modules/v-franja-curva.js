@@ -82,19 +82,15 @@ function runSplashScreen() { setTimeout(() => { document.getElementById('js-prog
 
 function getHotspotsConfig() {
     const hotspots = []; const activeBtn = document.querySelector(".filter-btn.active"); const filtroStatus = activeBtn ? activeBtn.getAttribute("data-status") : "todos"; let favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]');
-    
-    // FIX: Ocultar los pines de lotes y horizonte (números flotantes) cuando estamos dibujando polígonos.
-    if (!isArquitecto2Active && !isDevModeDrawActive) {
-        BaseDatosLotes.forEach((item, index) => { let uniqueId = item.id ? "lote_" + item.id : "lote_fallback_" + index; if (item.tipo === "lote") { if (filtroStatus === "todos" || item.status === filtroStatus || (filtroStatus === "favoritos" && favs.includes(item.id))) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarSmartPin, "createTooltipArgs": item }); } } else if (item.tipo === "vista360" && (filtroStatus === "todos" || filtroStatus === "favoritos")) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarPin360, "createTooltipArgs": item }); } else if (item.tipo === "casa360" && (filtroStatus === "todos" || filtroStatus === "favoritos")) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarMarcadorCasa360, "createTooltipArgs": item }); } });
-        PuntosHorizonte.forEach((punto, index) => { 
-            let uniqueId = punto.id ? "horiz_" + punto.id : "horiz_fallback_" + index; 
-            if(punto.tipo === 'ruta') {
-                hotspots.push({ "id": uniqueId, "pitch": punto.pitch, "yaw": punto.yaw, "createTooltipFunc": generarMarcadorRuta, "createTooltipArgs": punto });
-            } else {
-                hotspots.push({ "id": uniqueId, "pitch": punto.pitch, "yaw": punto.yaw, "createTooltipFunc": generarMarcadorHorizonte, "createTooltipArgs": punto }); 
-            }
-        });
-    }
+    BaseDatosLotes.forEach((item, index) => { let uniqueId = item.id ? "lote_" + item.id : "lote_fallback_" + index; if (item.tipo === "lote") { if (filtroStatus === "todos" || item.status === filtroStatus || (filtroStatus === "favoritos" && favs.includes(item.id))) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarSmartPin, "createTooltipArgs": item }); } } else if (item.tipo === "vista360" && (filtroStatus === "todos" || filtroStatus === "favoritos")) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarPin360, "createTooltipArgs": item }); } else if (item.tipo === "casa360" && (filtroStatus === "todos" || filtroStatus === "favoritos")) { hotspots.push({ "id": uniqueId, "pitch": item.pitch, "yaw": item.yaw, "createTooltipFunc": generarMarcadorCasa360, "createTooltipArgs": item }); } });
+    PuntosHorizonte.forEach((punto, index) => { 
+        let uniqueId = punto.id ? "horiz_" + punto.id : "horiz_fallback_" + index; 
+        if(punto.tipo === 'ruta') {
+            hotspots.push({ "id": uniqueId, "pitch": punto.pitch, "yaw": punto.yaw, "createTooltipFunc": generarMarcadorRuta, "createTooltipArgs": punto });
+        } else {
+            hotspots.push({ "id": uniqueId, "pitch": punto.pitch, "yaw": punto.yaw, "createTooltipFunc": generarMarcadorHorizonte, "createTooltipArgs": punto }); 
+        }
+    });
     if (isSvgRenderAllowed()) {
         allDrawnLines.forEach(linea => {
             if (linea.tipo === 'calle' && linea.puntos.length >= 2) {
@@ -164,17 +160,9 @@ function getHotspotsConfig() {
                     hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
                 });
             } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
-                // FIX: Para lote-organico, mostrar SOLAMENTE los vértices originales del click (ejeOriginal)
-                // y no todos los cientos de puntos interpolados/adheridos del calco a la calle.
-                if (linea.tipo === 'lote-organico' && linea.ejeOriginal) {
-                    linea.ejeOriginal.forEach((coord, pIdx) => {
-                        hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
-                    });
-                } else if (linea.tipo !== 'lote-organico') {
-                    linea.puntos.forEach((coord, pIdx) => {
-                        hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
-                    });
-                }
+                linea.puntos.forEach((coord, pIdx) => {
+                    hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
+                });
             }
             if (linea.tipo === 'area-invisible' && linea.franjaNumero && linea.puntos.length >= 3) {
                 const parentStrip = getFranjaStripById(linea.franjaGrupo);
@@ -184,9 +172,16 @@ function getHotspotsConfig() {
                 cP /= linea.puntos.length; cY /= linea.puntos.length;
                 hotspots.push({ "id": "franja_lbl_" + linea.id, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: linea.franjaNumero } });
             }
-            // FIX: Removido el renderizado automático de etiquetas numéricas (.franja-lot-label) 
-            // para 'fila-variable-lote' y 'lote-organico' mientras se dibuja, a petición del usuario
-            // para mantener la vista limpia en el Modo Arquitecto 2.0.
+            if (linea.tipo === 'fila-variable-lote' && linea.arq2FilaLotes?.length) {
+                linea.arq2FilaLotes.forEach((lot, li) => {
+                    if (!lot?.centroid) return;
+                    hotspots.push({ "id": "arq2_fila_lbl_" + linea.id + "_" + li, "pitch": lot.centroid[0], "yaw": lot.centroid[1], "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: lot.numero } });
+                });
+            } else if (linea.tipo === 'lote-organico' && linea.franjaNumero && linea.puntos.length >= 3) {
+                let cP = 0, cY = 0; linea.puntos.forEach(pt => { cP += pt[0]; cY += pt[1]; });
+                cP /= linea.puntos.length; cY /= linea.puntos.length;
+                hotspots.push({ "id": "arq2_lbl_" + linea.id, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: linea.franjaNumero } });
+            }
         });
         currentLinePoints.forEach((coord, idx) => { hotspots.push({ "id": "temp_base_" + currentTempLineId + "_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: currentTempLineId, type: currentLineType, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: idx, hsId: "temp_base_" + currentTempLineId + "_" + idx } }); });
         if (isArquitecto2Active) {

@@ -1,47 +1,10 @@
-window.arq2_getSnapGeometry = function(rawPoints, useCostura = false, excludeLineId = null) {
-    let snappedOriginals = arq2_snapVerticesToExisting(rawPoints, excludeLineId);
-    let snappedRaw = snappedOriginals;
-    
-    if (!useCostura && snappedRaw.length >= 3) {
-        let tracedPoints = [];
-        for (let i = 0; i < snappedRaw.length; i++) {
-            let curr = snappedRaw[i];
-            let next = snappedRaw[(i + 1) % snappedRaw.length];
-            tracedPoints.push(curr);
-            
-            let snap1 = curr[2];
-            let snap2 = next[2];
-            
-            if (snap1 && snap2 && snap1.lineId === snap2.lineId && snap1.edgeType === snap2.edgeType) {
-                const street = allDrawnLines.find(l => l.id === snap1.lineId);
-                if (street) {
-                    const edgePts = snap1.edgeType === 'left' ? street.left : (snap1.edgeType === 'right' ? street.right : street.puntosSuavizados);
-                    if (edgePts && edgePts.length > 0) {
-                        let idx1 = snap1.pointIndex;
-                        let idx2 = snap2.pointIndex;
-                        let step = idx2 > idx1 ? 1 : -1;
-                        for (let j = idx1 + step; j !== idx2; j += step) {
-                            if (edgePts[j]) {
-                                tracedPoints.push([edgePts[j][0], edgePts[j][1], { ...snap1, pointIndex: j }]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        snappedRaw = tracedPoints;
-    }
-    const anchors = snappedRaw.map(p => [...p]);
-    return { snappedRaw, anchors, snappedOriginals };
-};
-
 function arq2_finishLoteOrganico(rawPoints, useCostura) {
     const minPts = useCostura ? 2 : 3;
     if (!rawPoints || rawPoints.length < minPts) return;
-    
-    const geoSnap = window.arq2_getSnapGeometry(rawPoints, useCostura);
-    let snappedRaw = geoSnap.snappedRaw;
-    const anchors = geoSnap.anchors;
+    // Snap vertices to existing neighbor polygons for both costura and standard lote-libre
+    // so they align perfectly without gaps or overlaps
+    const snappedRaw = arq2_snapVerticesToExisting(rawPoints);
+    const anchors = snappedRaw.map(p => [...p]);
     const smoothIntensity = arq2SmoothIntensity;
     let smoothed;
 
@@ -54,7 +17,6 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
         const entry = {
             id, tipo: 'lote-organico',
             puntos: snappedRaw.map(p => [...p]),
-            ejeOriginal: arq2LinePoints.map(p => [...p]),
             sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {},
             costuraStyle: costuraEstiloGuardado,
             costuraEstilo: costuraEstiloGuardado,
@@ -86,7 +48,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     if (smoothed.length < 3) return;
     const id = 'arq2_org_' + Date.now();
     const costuraEstiloGuardado = useCostura ? (arq2CosturaStyle || 'punteada') : null;
-    const entry = { id, tipo: 'lote-organico', puntos: smoothed, ejeOriginal: arq2LinePoints.map(p => [...p]), sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {}, suavizadoIntensidad: smoothIntensity };
+    const entry = { id, tipo: 'lote-organico', puntos: smoothed, sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {}, suavizadoIntensidad: smoothIntensity };
     if (useCostura) {
         entry.costuraStyle = costuraEstiloGuardado;
         entry.costuraEstilo = costuraEstiloGuardado;

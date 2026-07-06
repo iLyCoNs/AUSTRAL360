@@ -243,38 +243,22 @@ function setupDevModes() {
                 // If it is an input field, stop event propagation so it never bubbles to Pannellum
                 e.stopPropagation();
             } else {
-                // EXCEPTO combos de herramientas (Alt+A, Ctrl+P, Ctrl+Space, Ctrl+Z)
+                // Si no es un input, bloquear teclas de movimiento (WASD, flechas)
+                // EXCEPTO combos modificados como Ctrl+A (modo Arquitecto 2.0)
                 const keysToBlock = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Equal', 'Minus'];
                 const isArq2Combo = e.code === 'KeyA' && e.altKey && !e.ctrlKey;
-                const isArqAntiguoCombo = e.ctrlKey && e.code === 'Space';
-                const isPinesCombo = e.ctrlKey && (e.code === 'KeyP' || e.key.toLowerCase() === 'p');
-                const isUndoCombo = e.ctrlKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z');
-                
-                if (evtType === 'keydown') {
-                    if (isArq2Combo) { e.preventDefault(); e.stopPropagation(); arq2_toggleArquitecto2(); return; }
-                    if (isArqAntiguoCombo) { e.preventDefault(); e.stopPropagation(); if(isDevModePinsActive) togglePinsMode(false); toggleDrawMode(!isDevModeDrawActive); return; }
-                    if (isPinesCombo) { e.preventDefault(); e.stopPropagation(); if(isDevModeDrawActive) toggleDrawMode(false); togglePinsMode(!isDevModePinsActive); return; }
-                    if (isUndoCombo) {
-                        e.preventDefault(); e.stopPropagation();
-                        if (isDevModeDrawActive) {
-                            if (currentLinePoints.length > 0) document.getElementById('btn-undo-point')?.click();
-                            else if (allDrawnLines.length > 0) document.getElementById('btn-delete-last-line')?.click();
-                        }
-                        return;
-                    }
-                }
-                
                 if (!isArq2Combo && (keysToBlock.includes(e.code) || keysToBlock.includes(e.key))) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
             }
-        }, { capture: true, passive: false });
+        }, true); // Capture phase is critical here!
     });
 
     document.querySelectorAll('.dev-toolbar').forEach(tb => { tb.addEventListener('mousedown', e => e.stopPropagation()); tb.addEventListener('mouseup', e => e.stopPropagation()); tb.addEventListener('touchstart', e => e.stopPropagation(), {passive: true}); tb.addEventListener('touchend', e => e.stopPropagation()); });
-    window.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', (e) => {
         if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+        if (e.altKey && !e.ctrlKey && e.code === 'KeyA') { e.preventDefault(); arq2_toggleArquitecto2(); return; }
         if (isArquitecto2Active && e.code === 'Escape') {
             e.preventDefault();
             arq2_clearDraft();
@@ -295,19 +279,21 @@ function setupDevModes() {
             finishCalleDrawing();
             return;
         }
-        if (e.code === 'Backspace' && isDevModeDrawActive && currentLinePoints.length > 0) {
+        if (e.code === 'Escape' && isLineaPinesActive) {
             e.preventDefault();
-            document.getElementById('btn-undo-point')?.click();
+            clearLineaPinesDraft();
+            refreshAllHotspots(true);
             return;
         }
-        if (e.code === 'Escape' && isLineaPinesActive) {
+        if (e.ctrlKey && e.code === 'KeyZ' && isLineaPinesActive && lineaPinesPoints.length > 0) {
             e.preventDefault();
             lineaPinesPoints.pop();
             syncLineaPinesPanelUI();
             refreshAllHotspots(true);
             return;
         }
-    }, { capture: true, passive: false });
+        if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); if(isDevModePinsActive) togglePinsMode(false); toggleDrawMode(!isDevModeDrawActive); } if (e.ctrlKey && (e.code === 'KeyP' || e.key.toLowerCase() === 'p')) { e.preventDefault(); if(isDevModeDrawActive) toggleDrawMode(false); togglePinsMode(!isDevModePinsActive); } if (e.ctrlKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) { e.preventDefault(); if (isDevModeDrawActive) { if (currentLinePoints.length > 0) document.getElementById('btn-undo-point')?.click(); else if (allDrawnLines.length > 0) document.getElementById('btn-delete-last-line')?.click(); } }
+    });
     
     document.getElementById('btn-draw-solid')?.addEventListener('click', (e) => { setDrawMode('solida', e.target); }); 
     document.getElementById('btn-draw-dash')?.addEventListener('click', (e) => { setDrawMode('punteada', e.target); }); 
@@ -399,7 +385,7 @@ function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a bo
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
-    const payload = { timestamp: Date.now(), configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
+    const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
     return payload;
 }
@@ -578,9 +564,9 @@ function renderFranjaDivHandle(hotSpotDiv, args) {
 
 function renderHiddenVertex(hotSpotDiv, args) { 
     hotSpotDiv.classList.add('vertex-marker'); hotSpotDiv.id = args.hsId;
+    // if (args.isFranjaCorner || args.type === 'franja-grupo') hotSpotDiv.classList.add('franja-corner-marker');
     if (args.isFranjaElastic) hotSpotDiv.classList.add('franja-elastic-node');
     if (!DOMCache.markers[args.lineId]) DOMCache.markers[args.lineId] = { base: [] }; DOMCache.markers[args.lineId].base[args.idx] = hotSpotDiv; 
-    
     if (args.lineId === currentTempLineId) { hotSpotDiv.classList.add('drawing-node'); }
     if (args.lineId === currentTempLineId && args.idx === 0 && currentLinePoints.length >= 3 && currentLineType !== 'cortar' && currentLineType !== 'eraser') { hotSpotDiv.classList.add('origin-vertex'); }
     if (args.lineId === arq2TempLineId && args.idx === 0 && arq2LinePoints.length >= 3 && isArquitecto2Active) { hotSpotDiv.classList.add('origin-vertex'); }

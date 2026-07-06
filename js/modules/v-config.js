@@ -287,32 +287,10 @@ function applyProjectConfig() {
         banner.style.background = grad; banner.style.display = 'block'; setTimeout(() => { banner.classList.add('show'); document.body.classList.add('has-banner'); }, 500);
     } else if (banner) { banner.classList.remove('show'); document.body.classList.remove('has-banner'); setTimeout(() => { banner.style.display = 'none'; }, 500); }
     const waBtn = document.querySelector('a.dock-btn.primary'); if(waBtn && ConfigProyecto.whatsapp) { waBtn.href = `https://wa.me/${ConfigProyecto.whatsapp.replace(/\D/g,'')}`; }
-    
-    const panoramaContainer = document.getElementById('panorama-container');
-    if (panoramaContainer) {
-        panoramaContainer.className = '';
-        if (ConfigProyecto.filtro360 && ConfigProyecto.filtro360 !== 'ninguno') {
-            panoramaContainer.classList.add('filtro-' + ConfigProyecto.filtro360);
-        }
-    }
-    
     initMasterplanPremiumFromData();
 }
 
-window.toggleFiltrosMenu = function() {
-    const menu = document.getElementById('filtros-menu');
-    if (menu) menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
-};
-
-window.aplicarFiltro360 = function(tipo) {
-    ConfigProyecto.filtro360 = tipo;
-    applyProjectConfig();
-    const menu = document.getElementById('filtros-menu');
-    if (menu) menu.style.display = 'none';
-    mostrarToast("Filtro aplicado y guardado en memoria", true);
-};
-
-function saveToLocal() { localStorage.setItem(FRESIA_CFG.autosaveKey, JSON.stringify({ timestamp: Date.now(), configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines })); }
+function saveToLocal() { localStorage.setItem(FRESIA_CFG.autosaveKey, JSON.stringify({ configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines })); }
 function loadFromLocal() { const savedData = localStorage.getItem(FRESIA_CFG.autosaveKey); if (savedData) { try { const parsed = JSON.parse(savedData); if((parsed.lotes && parsed.lotes.length > 0) || (parsed.trazos && parsed.trazos.length > 0)) { ConfigProyecto = parsed.configProyecto || ConfigProyecto; OrigenDrone = parsed.origen || OrigenDrone; NorteOffset = parsed.norte || 0; BaseDatosLotes = parsed.lotes || BaseDatosLotes; PuntosHorizonte = parsed.horizontes || PuntosHorizonte; allDrawnLines = parsed.trazos || allDrawnLines; } } catch(e) {} } }
 async function fetchValorUFOnline() { try { const response = await fetch('https://mindicador.cl/api/uf', { cache: 'no-store' }); if (response.ok) { const data = await response.json(); if(data && data.serie && data.serie.length > 0) { UF_Online = data.serie[0].valor; return; } } } catch (error) {} }
 function arq2_migrateCallesGeometry() {
@@ -351,7 +329,7 @@ function arq2_migrateCallesGeometry() {
         }
     }
 }
-async function fetchMasterData() { try { const response = await fetch(FRESIA_CFG.datosJson + '?v=' + new Date().getTime()); if(response.ok) { const data = await response.json(); let useLocal = false; const savedDataStr = localStorage.getItem(FRESIA_CFG.autosaveKey); if (savedDataStr) { try { const localData = JSON.parse(savedDataStr); const cloudTs = data.timestamp || 0; const localTs = localData.timestamp || 0; if (localTs > cloudTs && localTs > 0) { useLocal = true; ConfigProyecto = localData.configProyecto || ConfigProyecto; OrigenDrone = localData.origen || null; NorteOffset = localData.norte || 0; BaseDatosLotes = localData.lotes || []; PuntosHorizonte = localData.horizontes || []; allDrawnLines = localData.trazos || []; } } catch(e) {} } if (!useLocal) { ConfigProyecto = data.configProyecto || ConfigProyecto; OrigenDrone = data.origen || null; NorteOffset = data.norte || 0; BaseDatosLotes = data.lotes || []; PuntosHorizonte = data.horizontes || []; allDrawnLines = data.trazos || []; } } else { loadFromLocal(); } } catch(e) { loadFromLocal(); } applyProjectConfig(); await syncRutasDesdeOrigen(); }
+async function fetchMasterData() { try { const response = await fetch(FRESIA_CFG.datosJson + '?v=' + new Date().getTime()); if(response.ok) { const data = await response.json(); ConfigProyecto = data.configProyecto || ConfigProyecto; OrigenDrone = data.origen || null; NorteOffset = data.norte || 0; BaseDatosLotes = data.lotes || []; PuntosHorizonte = data.horizontes || []; allDrawnLines = data.trazos || []; } else { loadFromLocal(); } } catch(e) { loadFromLocal(); } applyProjectConfig(); await syncRutasDesdeOrigen(); }
 
 let visor360, currentPinSizeIndex = 1, isIntroAnimating = true, isDevModeDrawActive = false, isDevModePinsActive = false, isArquitecto2Active = false, arq2Tool = 'lote-libre', arq2LinePoints = [], arq2TempLineId = 'arq2_temp_' + Date.now(), arq2CosturaSnap = null, arq2CosturaStyle = 'punteada', arq2SelectedLineId = null, arq2FilaVariableContorno = null, arq2PendingFila = null, arq2InvasionActive = false, arq2SmoothCurves = true, arq2DemoActive = false, arq2DemoTimers = [], arq2DemoLoopInterval = null, arq2DemoPY = null, currentLineType = 'solida', currentLinePoints = [], currentPinTypeMap = 'disponible', currentTempLineId = 'temp_' + Date.now(), draggingVertex = null, draggingFranjaDiv = null, draggingCalleMove = null, pickedPin = null, snapCursor = null, ghostPin = null, snappedCoords = null, activePinArgs = null, isCreatingNewPin = false, isSnapToClose = false, franjaCornerA = null, franjaPreviewQuad = null, franjaPreviewDivs = [], franjaCurvaPreviewStrip = null, franjaDraftCount = 10, franjaDraftBaseM2 = 5000, franjaPendingCreate = null, guardarNubeEnCurso = false, draftCalleAncho = 8, draftCalleAlpha = 0, draftCalleLabelScale = 1, draftCalleShowLabel = true, draftCalleSnapFranja = false, calleSnapIsFranjaEdge = false, lastCalleTap = null, isLineaPinesActive = false, lineaPinesPoints = [], lineaPinesTempId = 'linea_pins_' + Date.now(), franjaCurvaFrente = [], franjaCurvaFase = 0;
 function revealLoteoOverlay() {
@@ -503,22 +481,19 @@ function arq2_buildSharedEdgePaths(pts, sharedSegs, sharedStyles, isClosed, getC
     for (let i = 0; i < segN; i++) {
         if (!sharedSegs || !sharedSegs.includes(i)) continue;
         const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
-        
-        let pA = p1, pB = p2;
-        if (p1[0] < p2[0] || (p1[0] === p2[0] && p1[1] < p2[1])) {
-            pA = p1; pB = p2;
+        const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
+        if (c1.z <= 0.0001 && c2.z <= 0.0001) continue;
+        let s1, s2;
+        if (c1.z > 0.0001) s1 = { x: cx + (c1.x / c1.z) * f, y: cySc - (c1.y / c1.z) * f };
+        else { const t = c1.z / (c1.z - c2.z); s1 = { x: cx + ((c1.x + t * (c2.x - c1.x)) / 0.0001) * f, y: cySc - ((c1.y + t * (c2.y - c1.y)) / 0.0001) * f }; }
+        if (c2.z > 0.0001) s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f };
+        else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
+        let segStr;
+        if (s1.x < s2.x || (s1.x === s2.x && s1.y < s2.y)) {
+            segStr = `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
         } else {
-            pA = p2; pB = p1;
+            segStr = `M ${s2.x},${s2.y} L ${s1.x},${s1.y} `;
         }
-        
-        let segStr = '';
-        if (window.arq2_projectPolylineD) {
-            segStr = window.arq2_projectPolylineD([pA, pB], false, getCamFn, cx, cySc, f).trim();
-            if (segStr) segStr += ' ';
-        }
-        
-        if (!segStr) continue;
-
         const style = (sharedStyles && sharedStyles[i]) || defaultStyle;
         if (style === 'solida') dSolida += segStr;
         else dPunteada += segStr;
@@ -631,20 +606,7 @@ function arq2_syncOrganicLotePaths(lineData, cacheObj, getCamFn, cx, cySc, f) {
         paths[1].style.cssText = '';
         paths[2].style.cssText = '';
         paths[3].style.cssText = '';
-        
-        // FIX: Evitar que ambos lotes dibujen la misma línea punteada compartida y se vea doble.
-        // Solo el lote con el ID (string) menor dibuja la línea divisoria.
-        let renderSharedSegs = [];
-        if (lineData.sharedSegs) {
-            lineData.sharedSegs.forEach(segIdx => {
-                const meta = lineData.sharedSegMeta?.[segIdx];
-                if (!meta || meta.isStreet || lineData.id < meta.lineId) {
-                    renderSharedSegs.push(segIdx);
-                }
-            });
-        }
-        
-        const shared = arq2_buildSharedEdgePaths(lineData.puntos, renderSharedSegs, lineData.sharedSegStyles, true, getCamFn, cx, cySc, f, costuraEstilo);
+        const shared = arq2_buildSharedEdgePaths(lineData.puntos, lineData.sharedSegs, lineData.sharedSegStyles, true, getCamFn, cx, cySc, f, costuraEstilo);
         const dPerimeter = arq2_buildNonSharedEdgePaths(lineData.puntos, lineData.sharedSegs, true, getCamFn, cx, cySc, f);
         paths[1].setAttribute('d', dPerimeter.trim() || 'M -999 -999');
         arq2_applyOrganicPathAttrs(paths[1], 'perimeter');

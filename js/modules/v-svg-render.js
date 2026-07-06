@@ -52,24 +52,14 @@ function syncSVGElements() {
                 lAristas.appendChild(pGuide);
                 DOMCache.paths[line.id] = { base: [pGuide] };
             } else if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
-                let lFills = document.getElementById('layer-calles-arq2-fills');
-                let lBordes = document.getElementById('layer-calles-arq2-bordes');
-                let lCenters = document.getElementById('layer-calles-arq2-centers');
-                if (!lFills) {
-                    lBordes = document.createElementNS("http://www.w3.org/2000/svg", "g"); lBordes.id = 'layer-calles-arq2-bordes';
-                    lFills = document.createElementNS("http://www.w3.org/2000/svg", "g"); lFills.id = 'layer-calles-arq2-fills';
-                    lCenters = document.createElementNS("http://www.w3.org/2000/svg", "g"); lCenters.id = 'layer-calles-arq2-centers';
-                    lCallesArq2.appendChild(lBordes);
-                    lCallesArq2.appendChild(lFills);
-                    lCallesArq2.appendChild(lCenters);
-                }
-                
+                const gCalle = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                gCalle.dataset.lineId = line.id;
+                gCalle.dataset.tipo = line.tipo;
+                gCalle.classList.add('calle-curva-arq2-grupo');
                 const mkPath = (cls, edge) => {
                     const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     p.setAttribute('class', cls);
-                    p.dataset.lineId = line.id;
                     if (edge) p.dataset.edgeRole = edge;
-                    bindSvgEraser(p, line.id);
                     return p;
                 };
                 const pFill = mkPath('linea-calle-arq2-fill');
@@ -78,19 +68,14 @@ function syncSVGElements() {
                 const pCapStart = mkPath('linea-calle-arq2-borde', 'cap-start');
                 const pCapEnd = mkPath('linea-calle-arq2-borde', 'cap-end');
                 const pCenter = mkPath('linea-calle-arq2-centro', 'center');
-                
-                lFills.appendChild(pFill);
-                lBordes.appendChild(pLeft);
-                lBordes.appendChild(pRight);
-                lBordes.appendChild(pCapStart);
-                lBordes.appendChild(pCapEnd);
-                lCenters.appendChild(pCenter);
-                
-                // Virtual gNode for DOMCache compatibility
-                const gCalle = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                gCalle.dataset.lineId = line.id;
-                gCalle.dataset.tipo = line.tipo;
-                
+                gCalle.appendChild(pFill);
+                gCalle.appendChild(pLeft);
+                gCalle.appendChild(pRight);
+                gCalle.appendChild(pCapStart);
+                gCalle.appendChild(pCapEnd);
+                gCalle.appendChild(pCenter);
+                bindSvgEraser(gCalle, line.id);
+                lCallesArq2.appendChild(gCalle);
                 DOMCache.paths[line.id] = { gNode: gCalle, base: [pFill, pLeft, pRight, pCapStart, pCapEnd, pCenter] };
             } else if (line.tipo === 'lote-organico' || line.tipo === 'fila-variable-lote') {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -152,20 +137,6 @@ function syncSVGElements() {
                 const target = lAristas;
                 if (pEl && pEl.parentNode !== target) target.appendChild(pEl);
                 if (pEl) DOMCache.paths[line.id] = { base: [pEl] };
-            } else if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
-                const paths = Array.from(svg.querySelectorAll(`path[data-line-id="${line.id}"]`));
-                if (paths.length > 0) {
-                    const pFill = paths.find(p => p.classList.contains('linea-calle-arq2-fill'));
-                    const pLeft = paths.find(p => p.dataset.edgeRole === 'left');
-                    const pRight = paths.find(p => p.dataset.edgeRole === 'right');
-                    const pCapStart = paths.find(p => p.dataset.edgeRole === 'cap-start');
-                    const pCapEnd = paths.find(p => p.dataset.edgeRole === 'cap-end');
-                    const pCenter = paths.find(p => p.dataset.edgeRole === 'center');
-                    const gDummy = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                    gDummy.dataset.lineId = line.id;
-                    gDummy.dataset.tipo = line.tipo;
-                    DOMCache.paths[line.id] = { gNode: gDummy, base: [pFill, pLeft, pRight, pCapStart, pCapEnd, pCenter] };
-                }
             } else {
                 const gNode = svg.querySelector(`g[data-line-id="${line.id}"]`);
                 if (gNode) {
@@ -178,6 +149,17 @@ function syncSVGElements() {
                         gNode.style.isolation = 'isolate';
                         gNode.style.mixBlendMode = 'normal';
                         arq2_ensureOrganicPathLayers(gNode, line);
+                    } else if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
+                        const targetLayer = lCallesArq2 || resolveSvgLayerForLine(line, { lBordes, lAsfalto, lLotes, lAristas });
+                        if (targetLayer && gNode.parentNode !== targetLayer) targetLayer.appendChild(gNode);
+                        let paths = Array.from(gNode.querySelectorAll('path'));
+                        while (paths.length < 6) {
+                            const pExtra = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            pExtra.setAttribute('class', paths.length === 0 ? 'linea-calle-arq2-fill' : (paths.length === 5 ? 'linea-calle-arq2-centro' : 'linea-calle-arq2-borde'));
+                            if (paths.length === 5) pExtra.dataset.edgeRole = 'center';
+                            gNode.appendChild(pExtra);
+                            paths = Array.from(gNode.querySelectorAll('path'));
+                        }
                     }
                     bindSvgEraser(gNode, line.id);
                     if (pBase) bindSvgEraser(pBase, line.id);
@@ -191,11 +173,6 @@ function syncSVGElements() {
 
 function updateSVGPaths() {
     if (!visor360 || !isSvgRenderAllowed()) return;
-    
-    // FIX: Aplicar transparencia global al grupo de calles GIS para lograr empalmes sin costuras.
-    const lCallesArq2 = document.getElementById('layer-calles-arq2');
-    if (lCallesArq2) lCallesArq2.setAttribute('opacity', String(typeof draftCalleCurvaAlpha !== 'undefined' ? draftCalleCurvaAlpha : 0.55));
-    
     // Refresh fila-calle preview when camera changes
     if (arq2Tool === 'fila-calle' && arq2FilaCalle?.borderPts) arq2_updateFilaCallePreview();
     const container = document.getElementById('panorama-container'); if(!container) return;
@@ -203,76 +180,59 @@ function updateSVGPaths() {
     const sin_cp = Math.sin(cp), cos_cp = Math.cos(cp), f = 0.5 * w / Math.tan(hfov * Math.PI / 360), cx = w / 2, cy_screen = h / 2;
     function getCam(pitch, yaw) { const p = pitch * Math.PI / 180, y = yaw * Math.PI / 180, sin_p = Math.sin(p), cos_p = Math.cos(p); let y_diff = y - cy; while (y_diff > Math.PI) y_diff -= 2 * Math.PI; while (y_diff < -Math.PI) y_diff += 2 * Math.PI; const sin_yd = Math.sin(y_diff), cos_yd = Math.cos(y_diff); return { x: cos_p * sin_yd, y: sin_p * cos_cp - cos_p * cos_yd * sin_cp, z: sin_p * sin_cp + cos_p * cos_yd * cos_cp }; }
     Object.keys(DOMCache.paths).forEach(lineId => {
-        try {
-            const cacheObj = DOMCache.paths[lineId]; if (!cacheObj) return;
-            let lineData = allDrawnLines.find(l => l.id === lineId);
-            if (!lineData && lineId === currentTempLineId) lineData = { tipo: currentLineType, puntos: currentLinePoints, calleAncho: currentLineType === 'calle' ? draftCalleAncho : undefined, calleAlpha: currentLineType === 'calle' ? draftCalleAlpha : undefined, calleLabelScale: currentLineType === 'calle' ? draftCalleLabelScale : undefined, calleShowLabel: currentLineType === 'calle' ? draftCalleShowLabel : undefined };
-            if (!lineData && lineId === lineaPinesTempId) lineData = { tipo: 'linea-pines-guia', puntos: lineaPinesPoints };
-            if (!lineData && lineId === 'franja_preview_quad' && franjaPreviewQuad) lineData = { tipo: 'franja-preview', puntos: franjaPreviewQuad };
-            if (!lineData && lineId === 'franja_curva_preview_frente' && franjaCurvaFrente.length >= 2) lineData = { tipo: 'franja-preview', puntos: franjaCurvaFrente };
-            if (!lineData && lineId === 'franja_curva_preview_strip' && franjaCurvaPreviewStrip?.length >= 3) lineData = { tipo: 'franja-preview', puntos: franjaCurvaPreviewStrip };
-            if (!lineData && lineId.startsWith('franja_preview_div_')) lineData = franjaPreviewDivs.find(d => d.id === lineId);
-            if (!lineData && lineId === arq2TempLineId && arq2LinePoints.length > 0) {
-                lineData = arq2Tool === 'calle-curva-arq2' ? arq2_getCalleCurvaPreviewLineData() : { tipo: 'lote-organico-preview', puntos: arq2LinePoints };
-            }
-            if (!lineData) return;
-            let isClosed = shouldClosePolygonLine(lineId, lineData);
-            if (cacheObj.gNode && lineData.tipo !== 'calle' && lineData.tipo !== 'calle-curva-arq2' && lineData.tipo !== 'calle-curva-arq2-preview' && lineData.tipo !== 'franja-grupo' && lineData.tipo !== 'franja-curva-grupo') { 
-                if (lineData.puntos && lineData.puntos.length > 0) { 
-                    let polyStatus = lineData.loteStatus || 'disponible';
-                    if (cacheObj.gNode.getAttribute('data-status') !== polyStatus) {
-                        cacheObj.gNode.setAttribute('data-status', polyStatus);
-                    }
-                } 
-            }
-            if ((lineData.tipo === 'calle-curva-arq2' || lineData.tipo === 'calle-curva-arq2-preview') && cacheObj.base?.length >= 5) {
-                const geoLine = lineData.tipo === 'calle-curva-arq2-preview' ? arq2_getCalleCurvaPreviewLineData() : lineData;
-                
-                // Backward compat: if old street doesn't have left/right, recompute geometry!
-                if (!geoLine.left?.length || !geoLine.right?.length) {
-                    if (geoLine.ejeOriginal) {
-                        const geo = arq2_buildCalleCurvaGeometry(geoLine.ejeOriginal, geoLine.ancho, geoLine.calleCurvaAlpha, geoLine.calleRetorno);
-                        if (geo) {
-                            geoLine.left = geo.left;
-                            geoLine.right = geo.right;
-                            geoLine.puntosSuavizados = geo.puntosSuavizados;
-                            geoLine.puntos = geo.fillPoly;
-                            geoLine.ejeIsClosed = geo.ejeIsClosed;
-                        }
-                    }
+        const cacheObj = DOMCache.paths[lineId]; if (!cacheObj) return;
+        let lineData = allDrawnLines.find(l => l.id === lineId);
+        if (!lineData && lineId === currentTempLineId) lineData = { tipo: currentLineType, puntos: currentLinePoints, calleAncho: currentLineType === 'calle' ? draftCalleAncho : undefined, calleAlpha: currentLineType === 'calle' ? draftCalleAlpha : undefined, calleLabelScale: currentLineType === 'calle' ? draftCalleLabelScale : undefined, calleShowLabel: currentLineType === 'calle' ? draftCalleShowLabel : undefined };
+        if (!lineData && lineId === lineaPinesTempId) lineData = { tipo: 'linea-pines-guia', puntos: lineaPinesPoints };
+        if (!lineData && lineId === 'franja_preview_quad' && franjaPreviewQuad) lineData = { tipo: 'franja-preview', puntos: franjaPreviewQuad };
+        if (!lineData && lineId === 'franja_curva_preview_frente' && franjaCurvaFrente.length >= 2) lineData = { tipo: 'franja-preview', puntos: franjaCurvaFrente };
+        if (!lineData && lineId === 'franja_curva_preview_strip' && franjaCurvaPreviewStrip?.length >= 3) lineData = { tipo: 'franja-preview', puntos: franjaCurvaPreviewStrip };
+        if (!lineData && lineId.startsWith('franja_preview_div_')) lineData = franjaPreviewDivs.find(d => d.id === lineId);
+        if (!lineData && lineId === arq2TempLineId && arq2LinePoints.length > 0) {
+            lineData = arq2Tool === 'calle-curva-arq2' ? arq2_getCalleCurvaPreviewLineData() : { tipo: 'lote-organico-preview', puntos: arq2LinePoints };
+        }
+        if (!lineData) return;
+        let isClosed = shouldClosePolygonLine(lineId, lineData);
+        if (cacheObj.gNode && lineData.tipo !== 'calle' && lineData.tipo !== 'calle-curva-arq2' && lineData.tipo !== 'calle-curva-arq2-preview' && lineData.tipo !== 'franja-grupo' && lineData.tipo !== 'franja-curva-grupo') { 
+            if (lineData.puntos && lineData.puntos.length > 0) { 
+                let polyStatus = lineData.loteStatus || 'disponible';
+                if (cacheObj.gNode.getAttribute('data-status') !== polyStatus) {
+                    cacheObj.gNode.setAttribute('data-status', polyStatus);
                 }
-                if (!geoLine.left?.length || !geoLine.right?.length) return;
-                
-                // Backward compat: compute ejeIsClosed if not stored
-                if (geoLine.ejeIsClosed === undefined && geoLine.ejeOriginal) {
-                    geoLine.ejeIsClosed = arq2_isCalleEjeClosed(geoLine.ejeOriginal);
-                }
-                const projected = arq2_projectCalleCurvaPaths(geoLine, getCam, cx, cy_screen, f);
-                if (!projected) return;
-                cacheObj.base[0].setAttribute('d', projected.dFill || 'M -999 -999');
-                
-                // Render explicit border outline paths and caps for visual realism
-                cacheObj.base[1].setAttribute('d', projected.dLeft || 'M -999 -999');
-                cacheObj.base[2].setAttribute('d', projected.dRight || 'M -999 -999');
-                if (cacheObj.base[3]) cacheObj.base[3].setAttribute('d', projected.capStart || 'M -999 -999');
-                if (cacheObj.base[4]) cacheObj.base[4].setAttribute('d', projected.capEnd || 'M -999 -999');
-                
-                // Draw centerline (6th path in base)
-                if (cacheObj.base[5] && geoLine.puntosSuavizados) {
-                    const dCenter = arq2_projectOpenPolylineD(geoLine.puntosSuavizados, getCam, cx, cy_screen, f);
-                    cacheObj.base[5].setAttribute('d', dCenter || 'M -999 -999');
-                }
-                
-                arq2_applyCalleCurvaFillStyle(cacheObj.base[0], projected.calleCurvaAlpha ?? geoLine.calleCurvaAlpha);
-                return;
+            } 
+        }
+        if ((lineData.tipo === 'calle-curva-arq2' || lineData.tipo === 'calle-curva-arq2-preview') && cacheObj.base?.length >= 5) {
+            const geoLine = lineData.tipo === 'calle-curva-arq2-preview' ? arq2_getCalleCurvaPreviewLineData() : lineData;
+            if (!geoLine.left?.length || !geoLine.right?.length) return;
+            // Backward compat: compute ejeIsClosed if not stored
+            if (geoLine.ejeIsClosed === undefined && geoLine.ejeOriginal) {
+                geoLine.ejeIsClosed = arq2_isCalleEjeClosed(geoLine.ejeOriginal);
             }
+            const projected = arq2_projectCalleCurvaPaths(geoLine, getCam, cx, cy_screen, f);
+            if (!projected) return;
+            cacheObj.base[0].setAttribute('d', projected.dFill || 'M -999 -999');
+            
+            // Render explicit border outline paths and caps for visual realism
+            cacheObj.base[1].setAttribute('d', projected.dLeft || 'M -999 -999');
+            cacheObj.base[2].setAttribute('d', projected.dRight || 'M -999 -999');
+            if (cacheObj.base[3]) cacheObj.base[3].setAttribute('d', projected.capStart || 'M -999 -999');
+            if (cacheObj.base[4]) cacheObj.base[4].setAttribute('d', projected.capEnd || 'M -999 -999');
+            
+            // Draw centerline (6th path in base)
+            if (cacheObj.base[5] && geoLine.puntosSuavizados) {
+                const dCenter = arq2_projectOpenPolylineD(geoLine.puntosSuavizados, getCam, cx, cy_screen, f);
+                cacheObj.base[5].setAttribute('d', dCenter || 'M -999 -999');
+            }
+            
+            arq2_applyCalleCurvaFillStyle(cacheObj.base[0], projected.calleCurvaAlpha ?? geoLine.calleCurvaAlpha);
+            return;
+        }
 
-            if ((lineData.tipo === 'lote-organico' || lineData.tipo === 'fila-variable-lote') && cacheObj.base) {
-                arq2_syncOrganicLotePaths(lineData, cacheObj, getCam, cx, cy_screen, f);
-                return;
-            }
-        
-            let dBase = '';
+        if ((lineData.tipo === 'lote-organico' || lineData.tipo === 'fila-variable-lote') && cacheObj.base) {
+            arq2_syncOrganicLotePaths(lineData, cacheObj, getCam, cx, cy_screen, f);
+            return;
+        }
+        let dBase = '';
         let pts = lineData.puntos;
         if (lineData.tipo === 'franja-curva-grupo') pts = [...lineData.frente, ...[...lineData.fondo].reverse()];
         let hasVisiblePoints = false;
@@ -318,7 +278,6 @@ function updateSVGPaths() {
                 applyCallePathStyles(cacheObj.base, st.ancho, st.alpha);
             }
         }
-        } catch (err) { console.error("ANTI-FRESIA360: Floating loop crash prevented:", lineId, err); }
     });
     const guideEl = document.getElementById('arq2-guideline-svg');
     if (arq2Guideline && isArquitecto2Active && arq2LinePoints.length > 0 && svg) {

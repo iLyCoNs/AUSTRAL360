@@ -310,7 +310,7 @@ function arq2_migrateCallesGeometry() {
         }
     }
 }
-async function fetchMasterData() { try { const response = await fetch(FRESIA_CFG.datosJson + '?v=' + new Date().getTime(), { cache: 'no-store', headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' } }); if(response.ok) { const data = await response.json(); let localData = null; try { const saved = localStorage.getItem(FRESIA_CFG.autosaveKey); if (saved) localData = JSON.parse(saved); } catch(e) {} const cdnTime = data.configProyecto?.lastUpdate || 0; const localTime = localData?.configProyecto?.lastUpdate || 0; if (localData && localTime > cdnTime && ((localData.trazos && localData.trazos.length > 0) || (localData.lotes && localData.lotes.length > 0) || localTime > 0)) { ConfigProyecto = localData.configProyecto || ConfigProyecto; OrigenDrone = localData.origen || null; NorteOffset = localData.norte || 0; BaseDatosLotes = localData.lotes || []; PuntosHorizonte = localData.horizontes || []; allDrawnLines = localData.trazos || []; } else { ConfigProyecto = data.configProyecto || ConfigProyecto; OrigenDrone = data.origen || null; NorteOffset = data.norte || 0; BaseDatosLotes = data.lotes || []; PuntosHorizonte = data.horizontes || []; allDrawnLines = data.trazos || []; } } else { loadFromLocal(); } } catch(e) { loadFromLocal(); } applyProjectConfig(); await syncRutasDesdeOrigen(); }
+async function fetchMasterData() { try { const response = await fetch(FRESIA_CFG.datosJson + '?v=' + new Date().getTime()); if(response.ok) { const data = await response.json(); ConfigProyecto = data.configProyecto || ConfigProyecto; OrigenDrone = data.origen || null; NorteOffset = data.norte || 0; BaseDatosLotes = data.lotes || []; PuntosHorizonte = data.horizontes || []; allDrawnLines = data.trazos || []; } else { loadFromLocal(); } } catch(e) { loadFromLocal(); } applyProjectConfig(); await syncRutasDesdeOrigen(); }
 
 let visor360, currentPinSizeIndex = 1, isIntroAnimating = true, isDevModeDrawActive = false, isDevModePinsActive = false, isArquitecto2Active = false, arq2Tool = 'lote-libre', arq2LinePoints = [], arq2TempLineId = 'arq2_temp_' + Date.now(), arq2CosturaSnap = null, arq2CosturaStyle = 'punteada', arq2SelectedLineId = null, arq2FilaVariableContorno = null, arq2PendingFila = null, arq2InvasionActive = false, arq2SmoothCurves = true, arq2DemoActive = false, arq2DemoTimers = [], arq2DemoLoopInterval = null, arq2DemoPY = null, currentLineType = 'solida', currentLinePoints = [], currentPinTypeMap = 'disponible', currentTempLineId = 'temp_' + Date.now(), draggingVertex = null, draggingFranjaDiv = null, draggingCalleMove = null, pickedPin = null, snapCursor = null, ghostPin = null, snappedCoords = null, activePinArgs = null, isCreatingNewPin = false, isSnapToClose = false, franjaCornerA = null, franjaPreviewQuad = null, franjaPreviewDivs = [], franjaCurvaPreviewStrip = null, franjaDraftCount = 10, franjaDraftBaseM2 = 5000, franjaPendingCreate = null, guardarNubeEnCurso = false, draftCalleAncho = 8, draftCalleAlpha = 0, draftCalleLabelScale = 1, draftCalleShowLabel = true, draftCalleSnapFranja = false, calleSnapIsFranjaEdge = false, lastCalleTap = null, isLineaPinesActive = false, lineaPinesPoints = [], lineaPinesTempId = 'linea_pins_' + Date.now(), franjaCurvaFrente = [], franjaCurvaFase = 0;
 function revealLoteoOverlay() {
@@ -456,22 +456,19 @@ function arq2_buildSharedEdgePaths(pts, sharedSegs, sharedStyles, isClosed, getC
     for (let i = 0; i < segN; i++) {
         if (!sharedSegs || !sharedSegs.includes(i)) continue;
         const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
-        
-        let pA = p1, pB = p2;
-        if (p1[0] < p2[0] || (p1[0] === p2[0] && p1[1] < p2[1])) {
-            pA = p1; pB = p2;
+        const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
+        if (c1.z <= 0.0001 && c2.z <= 0.0001) continue;
+        let s1, s2;
+        if (c1.z > 0.0001) s1 = { x: cx + (c1.x / c1.z) * f, y: cySc - (c1.y / c1.z) * f };
+        else { const t = c1.z / (c1.z - c2.z); s1 = { x: cx + ((c1.x + t * (c2.x - c1.x)) / 0.0001) * f, y: cySc - ((c1.y + t * (c2.y - c1.y)) / 0.0001) * f }; }
+        if (c2.z > 0.0001) s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f };
+        else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
+        let segStr;
+        if (s1.x < s2.x || (s1.x === s2.x && s1.y < s2.y)) {
+            segStr = `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
         } else {
-            pA = p2; pB = p1;
+            segStr = `M ${s2.x},${s2.y} L ${s1.x},${s1.y} `;
         }
-        
-        let segStr = '';
-        if (window.arq2_projectPolylineD) {
-            segStr = window.arq2_projectPolylineD([pA, pB], false, getCamFn, cx, cySc, f).trim();
-            if (segStr) segStr += ' ';
-        }
-        
-        if (!segStr) continue;
-
         const style = (sharedStyles && sharedStyles[i]) || defaultStyle;
         if (style === 'solida') dSolida += segStr;
         else dPunteada += segStr;
@@ -1156,20 +1153,8 @@ function purgeAllNonFranjaLoteTrazos() {
     });
 }
 function promoteClusterToFranja(children) {
-    return false;
+    if (!children || children.length < 2) return false;
     const sorted = sortLotesAlongStrip(children);
-    let isContinuous = true;
-    for (let i = 0; i < sorted.length - 1; i++) {
-        let sharesVertex = false;
-        const p1s = sorted[i].puntos, p2s = sorted[i+1].puntos;
-        for (let a = 0; a < p1s.length; a++) {
-            for (let b = 0; b < p2s.length; b++) {
-                if (Math.hypot(p1s[a][0] - p2s[b][0], p1s[a][1] - p2s[b][1]) < 0.2) sharesVertex = true;
-            }
-        }
-        if (!sharesVertex) { isContinuous = false; break; }
-    }
-    if (!isContinuous) return false;
     const N = sorted.length;
     const first = sorted[0].puntos, last = sorted[N - 1].puntos;
     if (!first || first.length < 4 || !last || last.length < 4) return false;
@@ -1637,13 +1622,8 @@ function runAutoMacroTransform(explicitLotes) {
     allDrawnLines = [...others, ...invisibleFills, ...macroLines];
     purgeAllNonFranjaLoteTrazos();
     const orphanFills = allDrawnLines.filter(l => l.tipo === 'area-invisible' && !l.franjaGrupo);
-    if (orphanFills.length >= 2) {
-        if (!promoteClusterToFranja(orphanFills)) {
-            orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
-        }
-    } else {
-        orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
-    }
+    if (orphanFills.length >= 2) promoteClusterToFranja(orphanFills);
+    else orphanFills.forEach((f, i) => { f.franjaNumero = String(i + 1).padStart(2, '0'); });
     document.body.classList.add('auto-macro-active');
     return true;
 }
@@ -1695,8 +1675,7 @@ function initAutoMacroFromData() {
     allDrawnLines.filter(l => l.tipo === 'franja-curva-grupo').forEach(g => rebuildFranjaCurvaGroup(g.id));
     const fills = allDrawnLines.filter(l => isAutoMacroLotePoly(l) && l.tipo !== 'franja-grupo');
     const hasMacroEdges = allDrawnLines.some(l => isMacroEdgeType(l.tipo));
-    const isModern = fills.some(l => l.tipo === 'lote-organico' || l.tipo === 'fila-variable-lote');
-    if (fills.length >= 2 && !hasMacroEdges && !isModern) { runAutoMacroTransform(fills); finalizeAutoMacroSession(); }
+    if (fills.length >= 2 && !hasMacroEdges) { runAutoMacroTransform(fills); finalizeAutoMacroSession(); }
     else if (hasMacroEdges && fills.some(l => l.tipo === 'area-invisible' || l.tipo === 'masterplan_fill')) document.body.classList.add('auto-macro-active');
     else syncFranjaVisualsOnReady();
 }
@@ -4774,18 +4753,15 @@ function arq2_buildNonSharedEdgePaths(pts, sharedSegs, isClosed, getCamFn, cx, c
     for (let i = 0; i < segN; i++) {
         if (sharedSegs && sharedSegs.includes(i)) continue;
         const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
-        
-        let pA = p1, pB = p2;
-        if (p1[0] < p2[0] || (p1[0] === p2[0] && p1[1] < p2[1])) {
-            pA = p1; pB = p2;
-        } else {
-            pA = p2; pB = p1;
-        }
-        
-        if (window.arq2_projectPolylineD) {
-            let segStr = window.arq2_projectPolylineD([pA, pB], false, getCamFn, cx, cySc, f).trim();
-            if (segStr) d += segStr + ' ';
-        }
+        const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
+        if (c1.z <= 0.0001 && c2.z <= 0.0001) continue;
+        let s1, s2;
+        if (c1.z > 0.0001) s1 = { x: cx + (c1.x / c1.z) * f, y: cySc - (c1.y / c1.z) * f };
+        else { const t = c1.z / (c1.z - c2.z); s1 = { x: cx + ((c1.x + t * (c2.x - c1.x)) / 0.0001) * f, y: cySc - ((c1.y + t * (c2.y - c1.y)) / 0.0001) * f }; }
+        if (c2.z > 0.0001) s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f };
+        else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
+        const seg = `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
+        d += seg;
     }
     return d;
 }
@@ -6642,8 +6618,6 @@ function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a bo
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
-    if(!ConfigProyecto) ConfigProyecto = {};
-    ConfigProyecto.lastUpdate = Date.now();
     const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
     return payload;

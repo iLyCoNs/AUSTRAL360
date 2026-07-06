@@ -42,10 +42,9 @@ function arq2_getSnapPolylinePoints(line) {
     }
     return line.puntos || [];
 }
-function arq2_isUniversalSnapTarget(line, excludeLineId) {
+function arq2_isUniversalSnapTarget(line) {
     if (!line || line.tipo === 'divisoria' || line.tipo === 'cortar' || line.tipo === 'linea-pines-guia') return false;
     if (line.tipo === 'franja-preview' || line.tipo === 'franja-preview-div') return false;
-    if (excludeLineId && line.id === excludeLineId) return false;
     return arq2_getSnapPolylinePoints(line).length >= 2;
 }
 function arq2_isLineClosedForSnap(line) {
@@ -532,14 +531,14 @@ function arq2_trySplitParentLote(costuraPoints) {
     return true;
 }
 
-function arq2_snapVerticesToExisting(points, excludeLineId) {
+function arq2_snapVerticesToExisting(points) {
     if (!points || !points.length) return points;
     const proj = getPanoramaScreenProjector();
     return points.map(pt => {
         // Threshold: 0.15 degrees (3x more permissive than before)
         let best = null, bestD = 0.15;
         allDrawnLines.forEach(line => {
-            if (!arq2_isUniversalSnapTarget(line, excludeLineId)) return;
+            if (!arq2_isUniversalSnapTarget(line)) return;
             let linePts;
             if (line.tipo === 'calle-curva-arq2' || line.tipo === 'calle-curva-arq2-preview') {
                 linePts = [...(line.left || []), ...(line.right || [])];
@@ -567,8 +566,7 @@ function arq2_snapVerticesToExisting(points, excludeLineId) {
                 if (d < bestD) { bestD = d; best = [nearX, nearY]; }
             }
         });
-        // FIX: Preservar el tercer elemento (pt[2]) que contiene los metadatos del anclaje (CosturaSnap).
-        return best ? [parseFloat(best[0].toFixed(4)), parseFloat(best[1].toFixed(4)), pt[2]] : [...pt];
+        return best ? [parseFloat(best[0].toFixed(4)), parseFloat(best[1].toFixed(4))] : [...pt];
     });
 }
 

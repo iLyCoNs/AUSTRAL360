@@ -173,12 +173,7 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     if (arq2Tool === 'fila-variable' && arq2LinePoints.length === 0) arq2_stopDemoAnimation();
     arq2SelectedLineId = null;
     document.querySelectorAll('.arq2-costura-selected').forEach(g => g.classList.remove('arq2-costura-selected'));
-    
-    // FIX: Guardar el metadato del snap magnético (arq2CosturaSnap) en el vértice. 
-    // Esto permitirá que el algoritmo de Lote Libre detecte si dos puntos consecutivos están anclados al mismo borde, 
-    // y dibuje automáticamente la curva de la calle en lugar de una línea recta.
-    arq2LinePoints.push([p, y, arq2CosturaSnap ? { ...arq2CosturaSnap } : null]);
-    
+    arq2LinePoints.push([p, y]);
     arq2_updateGuideline();
     lastArq2DrawClickMs = Date.now();
     arq2_refreshFeedbackVisuals(mock);
