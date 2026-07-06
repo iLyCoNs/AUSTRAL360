@@ -96,7 +96,7 @@
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783314451803,
+      "rutaCalculadaEn": 1783316795318,
       "rutaEscenarioTrafico": "libre"
     },
     {
@@ -113,7 +113,7 @@
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783314452249,
+      "rutaCalculadaEn": 1783316795766,
       "rutaEscenarioTrafico": "libre"
     },
     {
@@ -715,6 +715,520 @@
       "suavizadoIntensidad": 5,
       "arq2Numero": "14",
       "franjaNumero": "14",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783316876814",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -50.34523004815017,
+          16.747557492916567
+        ],
+        [
+          -53.088686293123324,
+          23.801522490069306
+        ],
+        [
+          -53.724106001570696,
+          25.627772678650167
+        ],
+        [
+          -58.34388090800232,
+          20.21804103855189
+        ],
+        [
+          -55.350109795771594,
+          7.986818515782012
+        ],
+        [
+          -53.93152980028518,
+          10.691172458103281
+        ],
+        [
+          -51.59244325459232,
+          14.615928790845208
+        ]
+      ],
+      "sharedSegs": [
+        2
+      ],
+      "sharedSegStyles": {
+        "2": "punteada"
+      },
+      "sharedSegMeta": {
+        "2": {
+          "lineId": "arq2_org_1783317005743",
+          "segIdx": 0,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "15",
+      "franjaNumero": "15",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317005743",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -53.724106001570696,
+          25.627772678650167
+        ],
+        [
+          -58.306,
+          20.269
+        ],
+        [
+          -58.96570686062748,
+          24.243842442981467
+        ],
+        [
+          -62.55489307896055,
+          41.8330078191218
+        ],
+        [
+          -57.78326872068846,
+          43.3982893680923
+        ]
+      ],
+      "sharedSegs": [
+        0,
+        3
+      ],
+      "sharedSegStyles": {
+        "0": "punteada",
+        "3": "punteada"
+      },
+      "sharedSegMeta": {
+        "0": {
+          "lineId": "arq2_org_1783316876814",
+          "segIdx": 2,
+          "isStreet": false
+        },
+        "3": {
+          "lineId": "arq2_org_1783317170341",
+          "segIdx": 4,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "16",
+      "franjaNumero": "16",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317170341",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -59.47123499228442,
+          79.93934897503655
+        ],
+        [
+          -56.94464089443274,
+          75.57732540416222
+        ],
+        [
+          -60.45626603150933,
+          74.18093512559709
+        ],
+        [
+          -59.930465404153466,
+          62.240654224428376
+        ],
+        [
+          -57.78326872068846,
+          43.3982893680923
+        ],
+        [
+          -62.55489307896055,
+          41.8330078191218
+        ],
+        [
+          -63.06058373642088,
+          68.58148263480476
+        ],
+        [
+          -62.02622774308228,
+          73.95934202207025
+        ],
+        [
+          -60.68683011857709,
+          77.74497691721409
+        ]
+      ],
+      "sharedSegs": [
+        4
+      ],
+      "sharedSegStyles": {
+        "4": "punteada"
+      },
+      "sharedSegMeta": {
+        "4": {
+          "lineId": "arq2_org_1783317005743",
+          "segIdx": 3,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "17",
+      "franjaNumero": "17",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317285579",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -68.013,
+          144.698
+        ],
+        [
+          -75.367,
+          173.432
+        ],
+        [
+          -81.638,
+          76.288
+        ],
+        [
+          -71.16,
+          97.181
+        ]
+      ],
+      "sharedSegs": [
+        2
+      ],
+      "sharedSegStyles": {
+        "2": "punteada"
+      },
+      "sharedSegMeta": {
+        "2": {
+          "lineId": "arq2_org_1783317357754",
+          "segIdx": 1,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "18",
+      "franjaNumero": "18",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317328919",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -67.273,
+          147.597
+        ],
+        [
+          -57.27279924943161,
+          51.38856208004997
+        ]
+      ],
+      "sharedSegs": [],
+      "sharedSegStyles": {},
+      "sharedSegMeta": {},
+      "costuraStyle": "punteada",
+      "costuraEstilo": "punteada",
+      "esDivisoria": true
+    },
+    {
+      "id": "arq2_org_1783317357754",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -65.998,
+          68.566
+        ],
+        [
+          -71.161,
+          97.195
+        ],
+        [
+          -81.638,
+          76.288
+        ],
+        [
+          -71.367,
+          42.003
+        ]
+      ],
+      "sharedSegs": [
+        1,
+        3
+      ],
+      "sharedSegStyles": {
+        "1": "punteada",
+        "3": "punteada"
+      },
+      "sharedSegMeta": {
+        "1": {
+          "lineId": "arq2_org_1783317285579",
+          "segIdx": 2,
+          "isStreet": false
+        },
+        "3": {
+          "lineId": "arq2_org_1783317431393",
+          "segIdx": 3,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "19",
+      "franjaNumero": "19",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317431393",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -66.034,
+          68.675
+        ],
+        [
+          -64.772,
+          65.137
+        ],
+        [
+          -62.395,
+          34.383
+        ],
+        [
+          -71.367,
+          42.003
+        ]
+      ],
+      "sharedSegs": [
+        3,
+        0
+      ],
+      "sharedSegStyles": {
+        "0": "punteada",
+        "3": "punteada"
+      },
+      "sharedSegMeta": {
+        "0": {
+          "lineId": "arq2_org_1783317695868",
+          "segIdx": 0,
+          "isStreet": false
+        },
+        "3": {
+          "lineId": "arq2_org_1783317357754",
+          "segIdx": 3,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "20",
+      "franjaNumero": "20",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317541383",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -54.293,
+          108.994
+        ],
+        [
+          -62.916,
+          108.343
+        ],
+        [
+          -60.179,
+          82.929
+        ],
+        [
+          -52.54,
+          90.393
+        ]
+      ],
+      "sharedSegs": [
+        0
+      ],
+      "sharedSegStyles": {
+        "0": "punteada"
+      },
+      "sharedSegMeta": {
+        "0": {
+          "lineId": "arq2_org_1783318106538",
+          "segIdx": 0,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "24",
+      "franjaNumero": "24",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783317695868",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -65.966,
+          68.469
+        ],
+        [
+          -64.799,
+          65.207
+        ],
+        [
+          -63.665982254762625,
+          73.57970915947278
+        ],
+        [
+          -62.1420856170692,
+          78.6223741851497
+        ],
+        [
+          -60.06832068412955,
+          82.43149383357891
+        ],
+        [
+          -61.898301115685584,
+          92.9789656183549
+        ],
+        [
+          -69.715,
+          84.285
+        ]
+      ],
+      "sharedSegs": [
+        0,
+        5
+      ],
+      "sharedSegStyles": {
+        "0": "punteada",
+        "5": "punteada"
+      },
+      "sharedSegMeta": {
+        "0": {
+          "lineId": "arq2_org_1783317431393",
+          "segIdx": 0,
+          "isStreet": false
+        },
+        "5": {
+          "lineId": "arq2_org_1783318041736",
+          "segIdx": 6,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "25",
+      "franjaNumero": "25",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783318041736",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -61.899,
+          92.978
+        ],
+        [
+          -58.1427818387947,
+          144.84630556572688
+        ],
+        [
+          -60.7079737784264,
+          143.25496376308683
+        ],
+        [
+          -63.393,
+          143.523
+        ],
+        [
+          -65.485,
+          143.769
+        ],
+        [
+          -67.988,
+          144.803
+        ],
+        [
+          -69.715,
+          84.285
+        ]
+      ],
+      "sharedSegs": [
+        6
+      ],
+      "sharedSegStyles": {
+        "6": "punteada"
+      },
+      "sharedSegMeta": {
+        "6": {
+          "lineId": "arq2_org_1783317695868",
+          "segIdx": 5,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "26",
+      "franjaNumero": "26",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783318106538",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -54.293,
+          108.994
+        ],
+        [
+          -62.95,
+          108.34
+        ],
+        [
+          -58.1427818387947,
+          144.84630556572688
+        ],
+        [
+          -53.65,
+          146.02
+        ],
+        [
+          -52.003,
+          146.523
+        ],
+        [
+          -50.566,
+          148.15
+        ],
+        [
+          -49.004,
+          148.748
+        ],
+        [
+          -47.113,
+          150.023
+        ]
+      ],
+      "sharedSegs": [
+        0
+      ],
+      "sharedSegStyles": {
+        "0": "punteada"
+      },
+      "sharedSegMeta": {
+        "0": {
+          "lineId": "arq2_org_1783317541383",
+          "segIdx": 0,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "27",
+      "franjaNumero": "27",
       "loteStatus": "disponible"
     }
   ],
