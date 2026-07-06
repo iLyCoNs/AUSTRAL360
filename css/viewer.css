@@ -517,7 +517,10 @@ g.lote-organico.arq2-costura-selected path.linea-organico-perimetro { stroke: #0
 .arq2-demo-replay-btn { color: #fde68a; border-color: rgba(245,158,11,0.35); }
 ...vertex-marker.origin-vertex.origin-vertex-ready { transform: scale(1.5); transform-origin: center center; }
 #layer-calles-arq2 { pointer-events: none; transition: opacity 0.2s ease; }
-.linea-calle-arq2-fill { fill: rgb(30, 35, 45) !important; stroke: none; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; }
+body.calle-mode-active #layer-calles-arq2 { pointer-events: auto; }
+.linea-calle-arq2-fill { fill: rgb(90, 95, 105) !important; stroke: none; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; transition: fill 0.2s; }
+body.calle-mode-active .linea-calle-arq2-fill { pointer-events: auto; cursor: pointer; }
+body.calle-mode-active .linea-calle-arq2-fill:hover { fill: rgb(110, 115, 125) !important; }
 /* Borde de la calle curva Arq2 — mismo estilo premium y delgado (1.2px) */
 .linea-calle-arq2-borde { fill: none; stroke: rgba(255,255,255,0.94); stroke-width: calc(var(--stroke-dyn) * 0.48); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); }
 /* Línea central de la calle curva — punteada premium amarilla y delgada */
