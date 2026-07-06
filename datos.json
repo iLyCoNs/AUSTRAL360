@@ -83,8 +83,8 @@
       "coordenadasDestino": ""
     },
     {
-      "pitch": -29.35,
-      "yaw": -62.09,
+      "pitch": -27.03,
+      "yaw": 24.97,
       "tipo": "ruta",
       "titulo": "RUTA  V-362",
       "descripcion": "Acceso Principal",
@@ -96,24 +96,24 @@
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783316795318,
+      "rutaCalculadaEn": 1783318584621,
       "rutaEscenarioTrafico": "libre"
     },
     {
-      "pitch": -26.77,
-      "yaw": -93.88,
+      "pitch": -54.97,
+      "yaw": 6.18,
       "tipo": "ruta",
-      "titulo": "RUTA V-30 A FRESIA",
+      "titulo": "ACCESO PRINCIPAL",
       "descripcion": "Entrar a V-362",
-      "coordenadasDestino": "-41.219378217559395, -73.30913366110684",
+      "coordenadasDestino": "41°52'30.39",
       "id": "nuevo_1782709687467",
-      "numero": "30",
+      "numero": "00",
       "distancia": "1.7 KM",
       "tiempo": "2 MIN",
       "rutaFactorTrafico": 0.88,
       "rutaEtiquetaTrafico": "Tráfico libre / madrugada",
       "rutaFuente": "osrm",
-      "rutaCalculadaEn": 1783316795766,
+      "rutaCalculadaEn": 1783318585074,
       "rutaEscenarioTrafico": "libre"
     },
     {
@@ -915,26 +915,6 @@
       "arq2Numero": "18",
       "franjaNumero": "18",
       "loteStatus": "disponible"
-    },
-    {
-      "id": "arq2_org_1783317328919",
-      "tipo": "lote-organico",
-      "puntos": [
-        [
-          -67.273,
-          147.597
-        ],
-        [
-          -57.27279924943161,
-          51.38856208004997
-        ]
-      ],
-      "sharedSegs": [],
-      "sharedSegStyles": {},
-      "sharedSegMeta": {},
-      "costuraStyle": "punteada",
-      "costuraEstilo": "punteada",
-      "esDivisoria": true
     },
     {
       "id": "arq2_org_1783317357754",
