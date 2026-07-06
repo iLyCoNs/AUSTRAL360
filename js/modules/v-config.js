@@ -503,19 +503,22 @@ function arq2_buildSharedEdgePaths(pts, sharedSegs, sharedStyles, isClosed, getC
     for (let i = 0; i < segN; i++) {
         if (!sharedSegs || !sharedSegs.includes(i)) continue;
         const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
-        const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
-        if (c1.z <= 0.0001 && c2.z <= 0.0001) continue;
-        let s1, s2;
-        if (c1.z > 0.0001) s1 = { x: cx + (c1.x / c1.z) * f, y: cySc - (c1.y / c1.z) * f };
-        else { const t = c1.z / (c1.z - c2.z); s1 = { x: cx + ((c1.x + t * (c2.x - c1.x)) / 0.0001) * f, y: cySc - ((c1.y + t * (c2.y - c1.y)) / 0.0001) * f }; }
-        if (c2.z > 0.0001) s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f };
-        else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
-        let segStr;
-        if (s1.x < s2.x || (s1.x === s2.x && s1.y < s2.y)) {
-            segStr = `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
+        
+        let pA = p1, pB = p2;
+        if (p1[0] < p2[0] || (p1[0] === p2[0] && p1[1] < p2[1])) {
+            pA = p1; pB = p2;
         } else {
-            segStr = `M ${s2.x},${s2.y} L ${s1.x},${s1.y} `;
+            pA = p2; pB = p1;
         }
+        
+        let segStr = '';
+        if (window.arq2_projectPolylineD) {
+            segStr = window.arq2_projectPolylineD([pA, pB], false, getCamFn, cx, cySc, f).trim();
+            if (segStr) segStr += ' ';
+        }
+        
+        if (!segStr) continue;
+
         const style = (sharedStyles && sharedStyles[i]) || defaultStyle;
         if (style === 'solida') dSolida += segStr;
         else dPunteada += segStr;
