@@ -6,7 +6,143 @@
   "norte": 129.97994690958353,
   "lotes": [],
   "horizontes": [],
-  "trazos": [],
+  "trazos": [
+    {
+      "id": "arq2_org_1783301621608",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -74.44,
+          -125.424
+        ],
+        [
+          -79.4882,
+          -106.6447
+        ],
+        [
+          -70.726,
+          -85.076
+        ],
+        [
+          -70.362,
+          -97.757
+        ],
+        [
+          -69.207,
+          -108.375
+        ]
+      ],
+      "ejeOriginal": [
+        [
+          -74.44,
+          -125.424,
+          null
+        ],
+        [
+          -79.48823746071787,
+          -106.64472286671068
+        ],
+        [
+          -70.726,
+          -85.076,
+          null
+        ],
+        [
+          -70.362,
+          -97.757,
+          null
+        ],
+        [
+          -69.207,
+          -108.375,
+          null
+        ]
+      ],
+      "sharedSegs": [
+        1
+      ],
+      "sharedSegStyles": {
+        "1": "punteada"
+      },
+      "sharedSegMeta": {
+        "1": {
+          "lineId": "arq2_org_1783301634315",
+          "segIdx": 3,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "01",
+      "franjaNumero": "01",
+      "loteStatus": "disponible"
+    },
+    {
+      "id": "arq2_org_1783301634315",
+      "tipo": "lote-organico",
+      "puntos": [
+        [
+          -81.355,
+          -60.311
+        ],
+        [
+          -73.2027,
+          -61.6329
+        ],
+        [
+          -72.2372,
+          -72.1707
+        ],
+        [
+          -70.7796,
+          -85.208
+        ],
+        [
+          -79.4882,
+          -106.6447
+        ]
+      ],
+      "ejeOriginal": [
+        [
+          -81.355,
+          -60.311,
+          null
+        ],
+        [
+          -73.2027303007645,
+          -61.63285629190352
+        ],
+        [
+          -72.23722221405524,
+          -72.170706573379
+        ],
+        [
+          -70.7796,
+          -85.208
+        ],
+        [
+          -79.4882,
+          -106.6447
+        ]
+      ],
+      "sharedSegs": [
+        3
+      ],
+      "sharedSegStyles": {
+        "3": "punteada"
+      },
+      "sharedSegMeta": {
+        "3": {
+          "lineId": "arq2_org_1783301621608",
+          "segIdx": 1,
+          "isStreet": false
+        }
+      },
+      "suavizadoIntensidad": 5,
+      "arq2Numero": "02",
+      "franjaNumero": "02",
+      "loteStatus": "disponible"
+    }
+  ],
   "configProyecto": {
     "titulo": "PROYECTO ALERCEPATAGON 360°",
     "subtitulo": "TERRENOS DESDE 5.000 M²",
