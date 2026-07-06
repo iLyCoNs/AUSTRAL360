@@ -323,7 +323,69 @@ function arq2_insertVerticesIntoMatchingEdges(lineId) {
         }
     });
 }
+window.arq2_recalcLoteOrganico = function(linea) {
+    if (!linea.ejeOriginal) return;
+    const smoothIntensity = typeof linea.suavizadoIntensidad !== 'undefined' ? linea.suavizadoIntensidad : (typeof arq2SmoothIntensity !== 'undefined' ? arq2SmoothIntensity : 5);
+    const useCostura = !!(linea.costuraEstilo || linea.costuraStyle);
+    let smoothed;
+    if (useCostura) {
+        smoothed = typeof arq2_adaptiveSmooth === 'function' ? arq2_adaptiveSmooth(linea.ejeOriginal, null, Math.min(smoothIntensity, 2)) : linea.ejeOriginal;
+        if (typeof arq2_restoreAnchoredVertices === 'function') smoothed = arq2_restoreAnchoredVertices(smoothed, linea.ejeOriginal, 0.04);
+        if (typeof arq2_clipCosturaToParent === 'function') smoothed = arq2_clipCosturaToParent(smoothed);
+    } else {
+        smoothed = typeof arq2_adaptiveSmooth === 'function' ? arq2_adaptiveSmooth(linea.ejeOriginal, null, smoothIntensity) : linea.ejeOriginal;
+        if (typeof arq2_restoreAnchoredVertices === 'function') smoothed = arq2_restoreAnchoredVertices(smoothed, linea.ejeOriginal, 0.08);
+    }
+    if (typeof arq2_sanitizePolylinePoints === 'function') smoothed = arq2_sanitizePolylinePoints(smoothed);
+    if (smoothed && smoothed.length >= 3) linea.puntos = smoothed;
+};
+
+function arq2_crossInjectVertices(lineId) {
+    const nue = allDrawnLines.find(l => l.id === lineId);
+    if (!nue || nue.tipo !== 'lote-organico' || !nue.ejeOriginal) return;
+
+    const checkInject = (sourceLot, targetLot) => {
+        let mod = false;
+        for (let v of sourceLot.ejeOriginal) {
+            const n = targetLot.ejeOriginal.length;
+            for (let k = 0; k < n; k++) {
+                const p1 = targetLot.ejeOriginal[k], p2 = targetLot.ejeOriginal[(k + 1) % n];
+                if (Math.hypot(v[0]-p1[0], v[1]-p1[1]) < 1e-3 || Math.hypot(v[0]-p2[0], v[1]-p2[1]) < 1e-3) continue;
+                const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+                const len2 = dx * dx + dy * dy;
+                if (len2 < 1e-10) continue;
+                let t = ((v[0] - p1[0]) * dx + (v[1] - p1[1]) * dy) / len2;
+                if (t > 0.001 && t < 0.999) {
+                    const projX = p1[0] + t * dx, projY = p1[1] + t * dy;
+                    if (Math.hypot(v[0] - projX, v[1] - projY) < 1e-3) {
+                        targetLot.ejeOriginal.splice(k + 1, 0, [...v]);
+                        mod = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return mod;
+    };
+
+    let modifiedNue = false;
+    allDrawnLines.forEach(other => {
+        if (other.id === nue.id || other.tipo !== 'lote-organico' || !other.ejeOriginal) return;
+        
+        let modOther = false;
+        let loopSafety = 10;
+        while(checkInject(nue, other) && loopSafety-- > 0) modOther = true;
+        loopSafety = 10;
+        while(checkInject(other, nue) && loopSafety-- > 0) modifiedNue = true;
+
+        if (modOther) window.arq2_recalcLoteOrganico(other);
+    });
+
+    if (modifiedNue) window.arq2_recalcLoteOrganico(nue);
+}
+
 function arq2_registerSharedEdges(newLineId) {
+    arq2_crossInjectVertices(newLineId);
     const nue = allDrawnLines.find(l => l.id === newLineId);
     const nuePts = arq2_getSewPolygonPoints(nue);
     if (!nue || !nuePts || nuePts.length < 3) return;
