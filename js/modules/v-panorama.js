@@ -442,19 +442,41 @@ async function initPannellum() {
     window.visor360 = {
         getPitch: () => threePitch,
         getYaw: () => threeYaw,
-        setPitch: (p) => { threeTargetPitch = p; threePitch = p; },
-        setYaw: (y) => { threeTargetYaw = y; threeYaw = y; },
+        setPitch: (p, time) => { if (time) window.visor360.lookAt(p, undefined, undefined, time); else { threeTargetPitch = p; threePitch = p; } },
+        setYaw: (y, time) => { if (time) window.visor360.lookAt(undefined, y, undefined, time); else { threeTargetYaw = y; threeYaw = y; } },
         getHfov: () => threeCamera.fov,
-        setHfov: (f) => { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); },
+        setHfov: (f, time) => { if (time) window.visor360.lookAt(undefined, undefined, f, time); else { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); } },
         resize: () => {
             threeCamera.aspect = window.innerWidth / window.innerHeight;
             threeCamera.updateProjectionMatrix();
             threeRenderer.setSize(window.innerWidth, window.innerHeight);
         },
         lookAt: (pitch, yaw, hfov, time) => {
-            if (pitch !== undefined) threeTargetPitch = pitch;
-            if (yaw !== undefined) threeTargetYaw = yaw;
-            if (hfov !== undefined) { threeCamera.fov = hfov; threeCamera.updateProjectionMatrix(); }
+            if (time && time > 0) {
+                const startTime = Date.now();
+                const startPitch = threeTargetPitch;
+                const startYaw = threeTargetYaw;
+                const startFov = threeCamera.fov;
+                
+                const step = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / time, 1);
+                    const ease = progress * progress * (3 - 2 * progress); // smoothstep
+                    
+                    if (pitch !== undefined) threeTargetPitch = startPitch + (pitch - startPitch) * ease;
+                    if (yaw !== undefined) threeTargetYaw = startYaw + (yaw - startYaw) * ease;
+                    if (hfov !== undefined) {
+                        threeCamera.fov = startFov + (hfov - startFov) * ease;
+                        threeCamera.updateProjectionMatrix();
+                    }
+                    if (progress < 1) requestAnimationFrame(step);
+                };
+                requestAnimationFrame(step);
+            } else {
+                if (pitch !== undefined) threeTargetPitch = pitch;
+                if (yaw !== undefined) threeTargetYaw = yaw;
+                if (hfov !== undefined) { threeCamera.fov = hfov; threeCamera.updateProjectionMatrix(); }
+            }
         },
         getConfig: () => ({ hotSpots: window.fresia2DVertices || [] }),
         addHotSpot: (hs) => { 
@@ -497,6 +519,21 @@ async function initPannellum() {
                 }
             }
             return [threePitch, threeYaw];
+        },
+        projectToScreen: (pitch, yaw) => {
+            const phi = pitch * Math.PI / 180;
+            const theta = yaw * Math.PI / 180;
+            const r = 500;
+            const pos3D = new THREE.Vector3(
+                r * Math.cos(phi) * Math.sin(theta),
+                r * Math.sin(phi),
+                -r * Math.cos(phi) * Math.cos(theta)
+            );
+            pos3D.project(threeCamera);
+            if (pos3D.z > 1) return { x: 0, y: 0, z: -1 }; // behind camera
+            const screenX = (pos3D.x * 0.5 + 0.5) * window.innerWidth;
+            const screenY = (1 - (pos3D.y * 0.5 + 0.5)) * window.innerHeight;
+            return { x: screenX, y: screenY, z: 1 };
         }
     };
 
