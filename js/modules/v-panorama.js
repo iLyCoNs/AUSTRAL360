@@ -389,6 +389,15 @@ function bindPanoramaPointerEvents() {
             if (!isArquitecto2Active) return;
             const mock = getMockEvent(e);
             const dx = mock.clientX - (svgPinStartX || mock.clientX);
+            const dy = mock.clientY - (svgPinStartY || mock.clientY);
+            const dt = Date.now() - (svgPinStartTime || Date.now());
+            if (dt < 500 && Math.hypot(dx, dy) < 18) {
+                arq2_onPanoramaClick(mock, false);
+            }
+        }, { passive: true });
+    }
+}
+
 let threeScene, threeCamera, threeRenderer, threeMesh;
 let threePitch = 60, threeYaw = -45, threeHFov = 100;
 let threeTargetPitch = 60, threeTargetYaw = -45;
