@@ -43,47 +43,45 @@ window.arquitecto3D = {
             });
         }
         
-        const btnCalleCurva = document.getElementById('arq2-tool-calle-curva');
-        if (btnCalleCurva) {
-            btnCalleCurva.addEventListener('click', () => {
-                if (this.isActive) {
-                    this.currentTool = 'calle-curva';
-                    this.clearTemp();
-                    const row = document.getElementById('arq2-calle-curva-row');
-                    if (row) row.style.display = 'flex';
-                }
-            });
-        }
-        
-        // El botón Lote Libre debe ocultar el panel de Calle
-        const btnLote = document.querySelector('.arq2-tool-btn[data-arq2-tool="lote-libre"]');
-        if (btnLote) {
-            btnLote.addEventListener('click', () => {
-                if (this.isActive) {
-                    this.currentTool = 'draw';
-                    this.clearTemp();
-                    const row = document.getElementById('arq2-calle-curva-row');
-                    if (row) row.style.display = 'none';
-                }
-            });
-        }
+        // Delegación de eventos global para botones de herramientas dinámicos (como Calle Curva)
+        document.addEventListener('click', (e) => {
+            const b = e.target.closest('.arq2-tool-btn');
+            if (!b || !this.isActive) return;
+            
+            const tool = b.getAttribute('data-arq2-tool');
+            let toolHandled = false;
+            
+            if (tool === 'eraser') {
+                this.currentTool = 'eraser';
+                toolHandled = true;
+            } 
+            else if (tool === 'lote-libre') {
+                this.currentTool = 'draw';
+                const row = document.getElementById('arq2-calle-curva-row');
+                if (row) row.style.display = 'none';
+                toolHandled = true;
+            }
+            else if (tool === 'calle-curva-arq2') {
+                this.currentTool = 'calle-curva';
+                const row = document.getElementById('arq2-calle-curva-row');
+                if (row) row.style.display = 'flex';
+                toolHandled = true;
+            }
+            else if (tool === 'smart-pin-v2') {
+                this.currentTool = 'smart-pin';
+                const row = document.getElementById('arq2-calle-curva-row');
+                if (row) row.style.display = 'none';
+                if (typeof window.abrirSubMenuPines === 'function') window.abrirSubMenuPines();
+                toolHandled = true;
+            }
 
-        // El botón Pin V2
-        const btnPin = document.querySelector('.arq2-tool-btn[data-arq2-tool="smart-pin-v2"]');
-        if (btnPin) {
-            btnPin.addEventListener('click', () => {
-                if (this.isActive) {
-                    this.currentTool = 'smart-pin';
-                    this.clearTemp();
-                    const row = document.getElementById('arq2-calle-curva-row');
-                    if (row) row.style.display = 'none';
-                    // Abrir el sub-menú de pines de Arq 2.0 si existe
-                    if (typeof window.abrirSubMenuPines === 'function') {
-                        window.abrirSubMenuPines();
-                    }
-                }
-            });
-        }
+            if (toolHandled) {
+                document.querySelectorAll('.arq2-tool-btn').forEach(btn => btn.classList.remove('active'));
+                b.classList.add('active');
+                this.clearTemp();
+            }
+        });
+
 
         // Checkbox para ocultar nodos de arrastre
         const hideVerticesChk = document.getElementById('arq2-lote-libre-hide-streets');
@@ -109,19 +107,7 @@ window.arquitecto3D = {
                     this.tempMarkerGroup = new THREE.Group();
                     scene.add(this.tempMarkerGroup);
                     
-                    // Conectar botones de la barra de herramientas
-                    document.querySelectorAll('.arq2-tool-btn').forEach(b => {
-                        b.addEventListener('click', (ev) => {
-                            if (!this.isActive) return;
-                            const tool = b.getAttribute('data-arq2-tool');
-                            if (tool === 'eraser') this.currentTool = 'eraser';
-                            else if (tool === 'lote-libre') this.currentTool = 'draw';
-                            
-                            document.querySelectorAll('.arq2-tool-btn').forEach(btn => btn.classList.remove('active'));
-                            b.classList.add('active');
-                            this.clearTemp();
-                        });
-                    });
+                    // Eventos asíncronos ahora son manejados por delegación de eventos.
 
                     this.startHologramLoop();
                     this.bindEvents();
