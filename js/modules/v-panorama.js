@@ -377,7 +377,13 @@ function bindPanoramaPointerEvents() {
         
         try { const coords = visor360.mouseEventToCoords(mock); updateDrawModeSnap(mock, coords); } catch (err) {}
     }
-    container.addEventListener('mousedown', handleStart, { capture: true }); container.addEventListener('touchstart', handleStart, { passive: false, capture: true }); window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd); window.addEventListener('mousemove', handleMove); window.addEventListener('touchmove', handleMove, { passive: false });
+    container.addEventListener('mousedown', handleStart, { capture: true });
+    container.addEventListener('touchstart', handleStart, { passive: false, capture: true });
+    container.addEventListener('pointerdown', handleStart, { passive: false, capture: true });
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove, { passive: false });
 
     // =====================================================================
     // FIX RAÍZ — Smart Pin sobre polígono SVG
