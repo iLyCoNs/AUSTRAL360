@@ -525,15 +525,15 @@ async function initPannellum() {
                     const radius = 500;
                     const pitch = Math.asin(p.y / radius) * (180 / Math.PI);
                     const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
-                    return [pitch, yaw];
+                    return [-pitch, -yaw];
                 }
             }
             return [threePitch, threeYaw];
         },
         getVectorFromPitchYaw: (pitch, yaw) => {
-            const phi = pitch * Math.PI / 180;
-            const theta = yaw * Math.PI / 180;
-            const r = 495; // Ligeramente más pequeño que 500 para evitar z-fighting con la textura panorámica
+            const phi = -pitch * Math.PI / 180;
+            const theta = -yaw * Math.PI / 180;
+            const r = 495; 
             return new THREE.Vector3(
                 r * Math.cos(phi) * Math.sin(theta),
                 r * Math.sin(phi),
@@ -576,7 +576,8 @@ async function initPannellum() {
             if (!line.puntos || line.puntos.length < 2) return;
             
             const points = line.puntos.map(p => window.visor360.getVectorFromPitchYaw(p[0], p[1]));
-            const isClosed = line.tipo.includes('organico') || line.tipo.includes('franja');
+            const tipo = line.tipo || '';
+            const isClosed = tipo.includes('organico') || tipo.includes('franja');
             if (isClosed && points.length > 2) {
                 points.push(points[0].clone()); // Cerrar el polígono
             }
@@ -659,8 +660,11 @@ async function initPannellum() {
         requestAnimationFrame(animate);
         threeYaw += (threeTargetYaw - threeYaw) * 0.12;
         threePitch += (threeTargetPitch - threePitch) * 0.12;
-        threeCamera.rotation.y = THREE.MathUtils.degToRad(-threeYaw);
-        threeCamera.rotation.x = THREE.MathUtils.degToRad(threePitch);
+        // Pannellum: yaw > 0 es derecha, pitch > 0 es arriba.
+        // Three.js con scale(-1, 1, 1): para ver la derecha de la imagen hay que mirar a la izquierda (+Y).
+        // Para ver arriba de la imagen hay que rotar hacia arriba (-X) pero wait, Pannellum usa pitch invertido.
+        threeCamera.rotation.y = THREE.MathUtils.degToRad(threeYaw);
+        threeCamera.rotation.x = THREE.MathUtils.degToRad(threePitch); // Lo dejamos así temporalmente para probar, modificaremos getVectorFromPitchYaw
         threeRenderer.render(threeScene, threeCamera);
         if (window.__fresia_svgSyncFn) window.__fresia_svgSyncFn();
     }
