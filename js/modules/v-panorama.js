@@ -118,6 +118,32 @@ function bindPanoramaPointerEvents() {
         startY = mock.clientY; 
         startTime = Date.now(); 
         
+        // --- Hit-Testing Espacial para Vértices Batch Rendering ---
+        if ((typeof isDevModeDrawActive !== 'undefined' && isDevModeDrawActive) || (typeof isArquitecto2Active !== 'undefined' && isArquitecto2Active)) {
+            if (window.DOMCache && window.DOMCache.svgVerticesList) {
+                let hit = null, minDist = 20; // Radio táctil virtual (20px)
+                for (let i = 0; i < window.DOMCache.svgVerticesList.length; i++) {
+                    const v = window.DOMCache.svgVerticesList[i];
+                    if (v.sx === -999) continue;
+                    const d = Math.hypot(v.sx - startX, v.sy - startY);
+                    if (d < minDist) { minDist = d; hit = v; }
+                }
+                if (hit) {
+                    if (currentLineType === 'eraser' || (typeof arq2Tool !== 'undefined' && arq2Tool === 'eraser')) {
+                        if (typeof applyEraserDelete === 'function') applyEraserDelete(hit.lineId);
+                        if (typeof refreshAllHotspots === 'function') refreshAllHotspots(true);
+                        if (typeof saveToLocal === 'function') saveToLocal();
+                    } else {
+                        draggingVertex = { lineId: hit.lineId, idx: hit.idx, startX, startY, target: hit.target, hsId: hit.hsId };
+                        // Forzar el estilo de dragging localmente hasta redibujar
+                        document.body.classList.add('vertex-is-dragging'); 
+                    }
+                    e.preventDefault(); e.stopPropagation();
+                    return; // Detiene el paneo de cámara
+                }
+            }
+        } 
+        
         if (e.target && e.target.tagName && e.target.tagName.toLowerCase() === 'path') {
             const dragfix = document.querySelector('.pnlm-dragfix');
             if (dragfix) {
@@ -158,6 +184,7 @@ function bindPanoramaPointerEvents() {
         }
         if (draggingVertex) { 
             if(draggingVertex.el) draggingVertex.el.classList.remove('is-dragging'); 
+            document.body.classList.remove('vertex-is-dragging'); // Batch rendering clear
             let mock = getMockEvent(e);
             const sx = draggingVertex.startX ?? mock.clientX;
             const sy = draggingVertex.startY ?? mock.clientY;

@@ -229,45 +229,19 @@ function syncSVGVerticesLayer(svg) {
     if (currentLineType === 'franja_curva' && franjaCurvaFrente.length > 0) {
         franjaCurvaFrente.forEach((coord, idx) => needed.push({ lineId: 'franja_curva_preview_frente', type: 'franja-preview', isGuide: true, idx: idx, hsId: "temp_fcurva_frente_" + idx, pitch: coord[0], yaw: coord[1] }));
     }
-    
-    // Sincronizar DOM
-    const currentIds = needed.map(n => n.hsId);
-    Array.from(lVertices.querySelectorAll('g.svg-vertex-group')).forEach(el => {
-        if (!currentIds.includes(el.id)) el.remove();
-    });
-    
-    if (!DOMCache.svgMarkers) DOMCache.svgMarkers = {};
-    Object.keys(DOMCache.svgMarkers).forEach(id => {
-        if (!currentIds.includes(id)) {
-            delete DOMCache.svgMarkers[id];
-        }
-    });
+      // Inicializar paths globales si no existen
+    if (!document.getElementById('vertices-base-path')) {
+        lVertices.innerHTML = '';
+        ['vertices-base-path', 'vertices-franja-path', 'vertices-drawing-path', 'vertices-origin-path'].forEach(pid => {
+            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            p.id = pid;
+            lVertices.appendChild(p);
+        });
+    }
 
-    needed.forEach(n => {
-        let gNode = document.getElementById(n.hsId);
-        if (!gNode) {
-            gNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            gNode.id = n.hsId;
-            gNode.classList.add('svg-vertex-group');
-            
-            const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            outerCircle.setAttribute('class', 'svg-vertex-touch-target');
-            outerCircle.setAttribute('r', '20'); // Ãrea tÃ¡ctil amplia
-            
-            const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            innerCircle.setAttribute('class', 'svg-vertex');
-            
-            gNode.appendChild(outerCircle);
-            gNode.appendChild(innerCircle);
-            
-            if (typeof renderHiddenVertex === 'function') {
-                renderHiddenVertex(gNode, n); // Reutilizamos tu lÃ³gica exacta de binding
-                gNode.classList.remove('vertex-marker');
-            }
-            lVertices.appendChild(gNode);
-        }
-        DOMCache.svgMarkers[n.hsId] = { gNode, pitch: n.pitch, yaw: n.yaw };
-    });
+    // Almacenar en caché matemáticamente (0 DOM operations)
+    if (!DOMCache) window.DOMCache = {};
+    DOMCache.svgVerticesList = needed;
 }
 function updateSVGPaths() {
     if (!visor360 || !isSvgRenderAllowed()) return;
@@ -402,22 +376,43 @@ function updateSVGPaths() {
     } else if (guideEl) {
         guideEl.setAttribute('d', 'M -999 -999');
     }
-    
-    // NOTA CIRUJANO: SincronizaciÃ³n a 60FPS de los vÃ©rtices SVG
-    if (DOMCache.svgMarkers) {
-        Object.keys(DOMCache.svgMarkers).forEach(id => {
-            const m = DOMCache.svgMarkers[id];
-            if (!m.gNode) return;
-            const c = getCam(m.pitch, m.yaw);
+    // Batch Rendering de Vértices a 60FPS
+    if (DOMCache.svgVerticesList) {
+        let dBase = '', dDrawing = '', dOrigin = '', dFranja = '';
+        const R_BASE = 5, R_ORIGIN = 8;
+        
+        DOMCache.svgVerticesList.forEach(v => {
+            const c = getCam(v.pitch, v.yaw);
             if (c.z > 0.0001) {
                 const sx = cx + (c.x / c.z) * f;
                 const sy = cy_screen - (c.y / c.z) * f;
-                m.gNode.setAttribute('transform', `translate(${sx}, ${sy})`);
-                m.gNode.style.display = 'block';
+                v.sx = sx; v.sy = sy; // Cache for spatial hit testing
+                
+                const isOrigin = (v.lineId === currentTempLineId && v.idx === 0 && currentLinePoints.length >= 3 && currentLineType !== 'cortar' && currentLineType !== 'eraser');
+                const isDrawing = (v.lineId === currentTempLineId);
+                
+                let r = isOrigin ? R_ORIGIN : R_BASE;
+                // Dibujar cuadrado rápido (M x,y h 2r v 2r h -2r Z) centrado
+                const drawStr = `M ${sx-r},${sy-r} h ${r*2} v ${r*2} h -${r*2} Z `;
+                
+                if (v.isFranjaElastic) dFranja += drawStr;
+                else if (isOrigin) dOrigin += drawStr;
+                else if (isDrawing) dDrawing += drawStr;
+                else dBase += drawStr;
             } else {
-                m.gNode.style.display = 'none';
+                v.sx = -999; v.sy = -999;
             }
         });
+
+        const pBase = document.getElementById('vertices-base-path');
+        const pFranja = document.getElementById('vertices-franja-path');
+        const pDrawing = document.getElementById('vertices-drawing-path');
+        const pOrigin = document.getElementById('vertices-origin-path');
+        
+        if (pBase) pBase.setAttribute('d', dBase || 'M -999 -999');
+        if (pFranja) pFranja.setAttribute('d', dFranja || 'M -999 -999');
+        if (pDrawing) pDrawing.setAttribute('d', dDrawing || 'M -999 -999');
+        if (pOrigin) pOrigin.setAttribute('d', dOrigin || 'M -999 -999');
     }
 
     arq2_updateDemoLayer();
