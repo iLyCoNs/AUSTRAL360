@@ -112,7 +112,28 @@ function runPannellumIntroBootstrap() {
 
 function bindPanoramaPointerEvents() {
     const container = document.getElementById('panorama-container'); let startX, startY, startTime; let lastClickTime = 0;
-    function handleStart(e) { let mock = getMockEvent(e); startX = mock.clientX; startY = mock.clientY; startTime = Date.now(); }
+    function handleStart(e) { 
+        let mock = getMockEvent(e); 
+        startX = mock.clientX; 
+        startY = mock.clientY; 
+        startTime = Date.now(); 
+        
+        if (e.target && e.target.tagName && e.target.tagName.toLowerCase() === 'path') {
+            const dragfix = document.querySelector('.pnlm-dragfix');
+            if (dragfix) {
+                try {
+                    let clonedEvent;
+                    if (typeof MouseEvent !== 'undefined' && e.type.includes('mouse')) clonedEvent = new MouseEvent(e.type, e);
+                    else if (typeof TouchEvent !== 'undefined' && e.type.includes('touch')) clonedEvent = new TouchEvent(e.type, e);
+                    else {
+                        clonedEvent = new CustomEvent(e.type);
+                        Object.assign(clonedEvent, e);
+                    }
+                    dragfix.dispatchEvent(clonedEvent);
+                } catch(err) {}
+            }
+        }
+    }
     function handleEnd(e) {
         if (draggingCalleMove) {
             if (draggingCalleMove.el) draggingCalleMove.el.classList.remove('is-dragging');

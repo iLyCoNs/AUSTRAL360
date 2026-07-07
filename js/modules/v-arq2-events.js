@@ -136,6 +136,7 @@ function arq2_onPanoramaClick(mock, isDblClick) {
         
         try {
             visor360.addHotSpot(nuevoPin);
+            window.BaseDatosLotes.push(nuevoPin);
             if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
             if (typeof window.saveToLocal === 'function') window.saveToLocal();
         } catch(e) {}
