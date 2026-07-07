@@ -641,9 +641,17 @@ async function initPannellum() {
         const dy = e.clientY - threeLastMouseY;
         threeLastMouseX = e.clientX; threeLastMouseY = e.clientY;
         threeTargetYaw += dx * 0.15;
-        threeTargetPitch -= dy * 0.15;
+        threeTargetPitch += dy * 0.15;
         threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
     });
+    
+    container.addEventListener('wheel', (e) => {
+        const delta = e.deltaY > 0 ? 1 : -1;
+        let newFov = threeCamera.fov + (delta * 5);
+        newFov = Math.max(20, Math.min(120, newFov));
+        threeCamera.fov = newFov;
+        threeCamera.updateProjectionMatrix();
+    }, {passive: true});
     
     container.addEventListener('touchstart', (e) => { 
         if (e.target.closest('.pnlm-hotspot-base') || e.target.closest('.qa-btn') || e.target.closest('.dev-toolbar') || e.target.closest('#js-dock')) return;
@@ -656,7 +664,7 @@ async function initPannellum() {
         const dy = e.touches[0].clientY - threeLastMouseY;
         threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY;
         threeTargetYaw += dx * 0.25;
-        threeTargetPitch -= dy * 0.25;
+        threeTargetPitch += dy * 0.25;
         threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
     }, {passive: true});
 

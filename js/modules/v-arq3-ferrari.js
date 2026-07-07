@@ -6,6 +6,7 @@ window.arquitecto3D = {
     isActive: false,
     currentTool: 'draw',
     tempPoints: [],
+    tempLabels: [], // Elementos HTML de Vértice 1, 2...
     draggingInfo: null, // { loteId, index }
     
     // Objetos Three.js
@@ -226,6 +227,27 @@ window.arquitecto3D = {
     },
 
     addPoint: function(e) {
+        // Lógica del "Imán" (Magnet) para cerrar el polígono
+        const renderer = window.visor360.getThreeRenderer();
+        const rect = renderer.domElement.getBoundingClientRect();
+        if (this.tempPoints.length >= 3) {
+            const mouse = new THREE.Vector2();
+            mouse.x = ( (e.clientX - rect.left) / rect.width ) * 2 - 1;
+            mouse.y = - ( (e.clientY - rect.top) / rect.height ) * 2 + 1;
+            
+            const pt = this.tempPoints[0].clone();
+            pt.project(window.visor360.getThreeCamera());
+            
+            const dx = (pt.x - mouse.x) * rect.width/2;
+            const dy = (pt.y - mouse.y) * rect.height/2;
+            
+            // Si está cerca del origen (imán)
+            if (Math.hypot(dx, dy) < 30) {
+                this.finishPolygon();
+                return;
+            }
+        }
+
         const v3 = this.getVectorFromEvent(e);
         if (!v3) return;
         
@@ -237,6 +259,22 @@ window.arquitecto3D = {
         const marker = new THREE.Mesh(markerGeo, markerMat);
         marker.position.copy(v3);
         this.tempMarkerGroup.add(marker);
+        
+        // Añadir etiqueta de Vértice HTML
+        const label = document.createElement('div');
+        label.className = 'arq3-vertex-label';
+        label.style.position = 'absolute';
+        label.style.color = '#fff';
+        label.style.background = 'rgba(0,0,0,0.5)';
+        label.style.padding = '2px 6px';
+        label.style.borderRadius = '4px';
+        label.style.fontSize = '12px';
+        label.style.pointerEvents = 'none';
+        label.style.zIndex = '1000';
+        label.style.fontWeight = 'bold';
+        label.textContent = 'Vértice ' + this.tempPoints.length;
+        document.getElementById('panorama-container').appendChild(label);
+        this.tempLabels.push(label);
 
         this.renderTemp();
     },
@@ -302,19 +340,27 @@ window.arquitecto3D = {
 
     clearTemp: function() {
         this.tempPoints = [];
+        // Limpiar el grupo de marcadores (esferas temporales)
+        while(this.tempMarkerGroup.children.length > 0) { 
+            const child = this.tempMarkerGroup.children[0];
+            if(child.geometry) child.geometry.dispose();
+            if(child.material) child.material.dispose();
+            this.tempMarkerGroup.remove(child); 
+        }
+        
         if (this.tempLineMesh) {
             this.group.remove(this.tempLineMesh);
             this.tempLineMesh.geometry.dispose();
             this.tempLineMesh.material.dispose();
-            this.tempLineMesh = null;
         }
+        this.tempLineMesh = null;
         
-        // Limpiar esferas
-        while(this.tempMarkerGroup.children.length > 0) {
-            const child = this.tempMarkerGroup.children[0];
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-            this.tempMarkerGroup.remove(child);
+        // Limpiar etiquetas de vértices
+        if (this.tempLabels) {
+            this.tempLabels.forEach(lbl => {
+                if(lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
+            });
+            this.tempLabels = [];
         }
     },
 
@@ -442,6 +488,40 @@ window.arquitecto3D = {
                 }
             }
         });
+        
+        // Actualizar posiciones de las etiquetas 2D de Vértices temporales
+        if (this.tempPoints.length > 0 && this.tempLabels.length === this.tempPoints.length) {
+            const camera = window.visor360.getThreeCamera();
+            const renderer = window.visor360.getThreeRenderer();
+            const rect = renderer.domElement.getBoundingClientRect();
+            
+            this.tempPoints.forEach((pt3d, idx) => {
+                const pt = pt3d.clone();
+                pt.project(camera);
+                
+                // Si está detrás de la cámara
+                if (pt.z > 1) {
+                    this.tempLabels[idx].style.display = 'none';
+                    return;
+                }
+                
+                const screenX = (pt.x * 0.5 + 0.5) * rect.width;
+                const screenY = (1 - (pt.y * 0.5 + 0.5)) * rect.height;
+                
+                this.tempLabels[idx].style.display = 'block';
+                this.tempLabels[idx].style.left = (screenX + 10) + 'px';
+                this.tempLabels[idx].style.top = (screenY - 10) + 'px';
+                
+                // Destellar el primer vértice (Imán) si hay >= 3 puntos
+                if (idx === 0 && this.tempPoints.length >= 3) {
+                    this.tempLabels[idx].style.background = 'rgba(6, 182, 212, 0.8)'; // Cian
+                    this.tempLabels[idx].style.boxShadow = '0 0 10px #06b6d4';
+                } else {
+                    this.tempLabels[idx].style.background = 'rgba(0,0,0,0.5)';
+                    this.tempLabels[idx].style.boxShadow = 'none';
+                }
+            });
+        }
     }
 };
 
