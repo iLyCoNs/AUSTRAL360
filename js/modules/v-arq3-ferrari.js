@@ -4,6 +4,7 @@
 window.arquitecto3D = {
     lotes: [], // array de { id, color, points, lineMesh, fillMesh, markerMeshes }
     isActive: false,
+    currentTool: 'draw',
     tempPoints: [],
     draggingInfo: null, // { loteId, index }
     
@@ -50,6 +51,20 @@ window.arquitecto3D = {
                     this.tempMarkerGroup = new THREE.Group();
                     scene.add(this.tempMarkerGroup);
                     
+                    // Conectar botones de la barra de herramientas
+                    document.querySelectorAll('.arq2-tool-btn').forEach(b => {
+                        b.addEventListener('click', (ev) => {
+                            if (!this.isActive) return;
+                            const tool = b.getAttribute('data-arq2-tool');
+                            if (tool === 'eraser') this.currentTool = 'eraser';
+                            else if (tool === 'lote-libre') this.currentTool = 'draw';
+                            
+                            document.querySelectorAll('.arq2-tool-btn').forEach(btn => btn.classList.remove('active'));
+                            b.classList.add('active');
+                            this.clearTemp();
+                        });
+                    });
+
                     this.bindEvents();
                     clearInterval(checkFerrari);
                     console.log("Arquitecto 3.0 enlazado al Motor Ferrari.");
@@ -102,6 +117,27 @@ window.arquitecto3D = {
         return null;
     },
 
+    getIntersectedLote: function(e) {
+        if (!window.visor360 || !window.visor360.getThreeRenderer || this.group.children.length === 0) return null;
+        const renderer = window.visor360.getThreeRenderer();
+        const camera = window.visor360.getThreeCamera();
+        
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2();
+        mouse.x = ( (e.clientX - rect.left) / rect.width ) * 2 - 1;
+        mouse.y = - ( (e.clientY - rect.top) / rect.height ) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.params.Line.threshold = 10;
+        raycaster.setFromCamera(mouse, camera);
+        
+        const intersects = raycaster.intersectObjects(this.group.children);
+        if (intersects.length > 0 && intersects[0].object.userData.loteId) {
+            return intersects[0].object.userData; // { loteId }
+        }
+        return null;
+    },
+
     bindEvents: function() {
         const container = document.getElementById('panorama-container');
         let startX, startY, startTime;
@@ -109,6 +145,24 @@ window.arquitecto3D = {
         container.addEventListener('pointerdown', (e) => {
             if (!this.isActive) return;
             
+            // Si estamos en modo goma
+            if (this.currentTool === 'eraser') {
+                const loteInfo = this.getIntersectedLote(e);
+                if (loteInfo) {
+                    const idx = this.lotes.findIndex(l => l.id === loteInfo.loteId);
+                    if (idx > -1) {
+                        const lote = this.lotes[idx];
+                        if(lote.lineMesh) { lote.lineMesh.geometry.dispose(); lote.lineMesh.material.dispose(); this.group.remove(lote.lineMesh); }
+                        if(lote.fillMesh) { lote.fillMesh.geometry.dispose(); lote.fillMesh.material.dispose(); this.group.remove(lote.fillMesh); }
+                        if(lote.markerMeshes) {
+                            lote.markerMeshes.forEach(m => { m.geometry.dispose(); m.material.dispose(); this.vertexMarkerGroup.remove(m); });
+                        }
+                        this.lotes.splice(idx, 1);
+                    }
+                }
+                return;
+            }
+
             // 1. Intentar agarrar un vértice para edición
             const vertexInfo = this.getIntersectedVertex(e);
             if (vertexInfo) {
@@ -232,7 +286,8 @@ window.arquitecto3D = {
         const newLote = {
             id: loteId,
             points: finalPts,
-            color: 0x22c55e // Verde
+            color: 0x22c55e, // Verde
+            animStartTime: Date.now() // Iniciar flash de animación
         };
 
         this.lotes.push(newLote);
@@ -277,6 +332,7 @@ window.arquitecto3D = {
             opacity: 0.8
         });
         lote.lineMesh = new THREE.Line(geo, mat);
+        lote.lineMesh.userData = { loteId: lote.id };
 
         // Relleno
         const vertices = [];
@@ -296,6 +352,7 @@ window.arquitecto3D = {
             depthTest: false
         });
         lote.fillMesh = new THREE.Mesh(fillGeo, fillMat);
+        lote.fillMesh.userData = { loteId: lote.id };
         
         // Nodos (Vértices) arrastrables
         lote.markerMeshes = [];
@@ -342,6 +399,49 @@ window.arquitecto3D = {
         
         // Actualizar el mesh de la esfera (nodo) que estamos moviendo
         lote.markerMeshes[info.index].position.copy(v3);
+    },
+
+    animate: function() {
+        if (!this.isActive || this.lotes.length === 0) return;
+        const now = Date.now();
+        
+        this.lotes.forEach(lote => {
+            if (lote.animStartTime) {
+                const elapsed = now - lote.animStartTime;
+                
+                if (elapsed < 1000) {
+                    const progress = elapsed / 1000;
+                    
+                    // Flash inicial: Blanco brillante (primeros 200ms)
+                    if (progress < 0.2) {
+                        if (lote.lineMesh) lote.lineMesh.material.color.setHex(0xffffff);
+                        if (lote.fillMesh) {
+                            lote.fillMesh.material.color.setHex(0xffffff);
+                            lote.fillMesh.material.opacity = 0.6;
+                        }
+                    } else {
+                        // Fade out progresivo hacia el verde base
+                        const ease = (progress - 0.2) / 0.8; 
+                        const baseColor = new THREE.Color(lote.color);
+                        const whiteColor = new THREE.Color(0xffffff);
+                        
+                        if (lote.lineMesh) lote.lineMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
+                        if (lote.fillMesh) {
+                            lote.fillMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
+                            lote.fillMesh.material.opacity = 0.6 - (0.3 * ease); // Pasa de 0.6 a 0.3
+                        }
+                    }
+                } else {
+                    // Finaliza la animación de forma segura
+                    lote.animStartTime = null;
+                    if (lote.lineMesh) lote.lineMesh.material.color.setHex(lote.color);
+                    if (lote.fillMesh) {
+                        lote.fillMesh.material.color.setHex(lote.color);
+                        lote.fillMesh.material.opacity = 0.3;
+                    }
+                }
+            }
+        });
     }
 };
 

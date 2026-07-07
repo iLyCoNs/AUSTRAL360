@@ -621,6 +621,67 @@ async function initPannellum() {
                     color: color,
                     transparent: true,
                     opacity: 0.2,
+        // Limpiar grupo actual
+        while(threeLotesGroup.children.length > 0) { 
+            const child = threeLotesGroup.children[0];
+            if(child.geometry) child.geometry.dispose();
+            if(child.material) child.material.dispose();
+            threeLotesGroup.remove(child); 
+        }
+
+        const linesToDraw = [...allDrawnLines];
+        if (typeof currentLinePoints !== 'undefined' && currentLinePoints.length > 0) {
+            linesToDraw.push({ id: 'temp', tipo: currentLineType, puntos: currentLinePoints });
+        }
+        if (typeof arq2LinePoints !== 'undefined' && arq2LinePoints.length > 0) {
+            linesToDraw.push({ id: 'arq2_temp', tipo: 'lote-organico-preview', puntos: arq2LinePoints });
+        }
+
+        linesToDraw.forEach(line => {
+            if (!line.puntos || line.puntos.length < 2) return;
+            
+            const points = line.puntos.map(p => window.visor360.getVectorFromPitchYaw(p[0], p[1]));
+            const tipo = line.tipo || '';
+            const isClosed = tipo.includes('organico') || tipo.includes('franja');
+            if (isClosed && points.length > 2) {
+                points.push(points[0].clone()); // Cerrar el polígono
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            
+            let color = 0xffffff;
+            if (line.tipo === 'calle') color = 0xaaaaaa;
+            else if (line.loteStatus === 'vendido') color = 0xff4444;
+            else if (line.loteStatus === 'reservado') color = 0xffaa00;
+            else if (line.tipo === 'franja-preview') color = 0x00ffaa;
+            
+            const material = new THREE.LineBasicMaterial({ 
+                color: color, 
+                linewidth: 2, 
+                depthTest: false,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const lineMesh = new THREE.Line(geometry, material);
+            threeLotesGroup.add(lineMesh);
+
+            // Si es un lote cerrado, añadir relleno tenue
+            if (isClosed && points.length > 3) {
+                // Triangulación simple tipo abanico (fan)
+                const vertices = [];
+                const origin = points[0];
+                for (let i = 1; i < points.length - 2; i++) {
+                    vertices.push(origin.x, origin.y, origin.z);
+                    vertices.push(points[i].x, points[i].y, points[i].z);
+                    vertices.push(points[i+1].x, points[i+1].y, points[i+1].z);
+                }
+                const fillGeometry = new THREE.BufferGeometry();
+                fillGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                const fillMaterial = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.2,
                     side: THREE.DoubleSide,
                     depthTest: false
                 });
@@ -640,8 +701,8 @@ async function initPannellum() {
         const dx = e.clientX - threeLastMouseX;
         const dy = e.clientY - threeLastMouseY;
         threeLastMouseX = e.clientX; threeLastMouseY = e.clientY;
-        threeTargetYaw -= dx * 0.15;
-        threeTargetPitch += dy * 0.15;
+        threeTargetYaw += dx * 0.15;
+        threeTargetPitch -= dy * 0.15;
         threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
     });
     
@@ -655,8 +716,8 @@ async function initPannellum() {
         const dx = e.touches[0].clientX - threeLastMouseX;
         const dy = e.touches[0].clientY - threeLastMouseY;
         threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY;
-        threeTargetYaw -= dx * 0.25;
-        threeTargetPitch += dy * 0.25;
+        threeTargetYaw += dx * 0.25;
+        threeTargetPitch -= dy * 0.25;
         threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
     }, {passive: true});
 
@@ -671,6 +732,7 @@ async function initPannellum() {
         threeCamera.rotation.x = THREE.MathUtils.degToRad(threePitch); // Lo dejamos así temporalmente para probar, modificaremos getVectorFromPitchYaw
         threeRenderer.render(threeScene, threeCamera);
         if (window.__fresia_svgSyncFn) window.__fresia_svgSyncFn();
+        if (window.arquitecto3D && window.arquitecto3D.animate) window.arquitecto3D.animate();
     }
     animate();
 
