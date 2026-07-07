@@ -5733,7 +5733,18 @@ function getHotspotsConfig() {
             if (mid) hotspots.push({ "id": "calle_lbl_" + currentTempLineId, "pitch": mid[0], "yaw": mid[1], "createTooltipFunc": renderCalleServidumbreLabel, "createTooltipArgs": { lineId: currentTempLineId, isDraft: true, labelScale: draftCalleLabelScale } });
         }
     }
-    return hotspots;
+    window.fresia2DVertices = [];
+    const pannellumHotspots = hotspots.filter(hs => {
+        const isPin = hs.createTooltipFunc === generarSmartPin || 
+                      hs.createTooltipFunc === generarPin360 || 
+                      hs.createTooltipFunc === generarMarcadorCasa360 || 
+                      hs.createTooltipFunc === generarMarcadorRuta || 
+                      hs.createTooltipFunc === generarMarcadorHorizonte;
+        if (isPin) return true;
+        window.fresia2DVertices.push(hs);
+        return false;
+    });
+    return pannellumHotspots;
 }
 
 function syncSVGElements() {
@@ -6951,7 +6962,23 @@ function refreshAllHotspots(skipIntegrity) {
     if(!visor360) return; if (!skipIntegrity) ensureFranjaIntegrity(); DOMCache.markers = {}; const currentSpots = visor360.getConfig().hotSpots || [];
     for (let i = currentSpots.length - 1; i >= 0; i--) { if(currentSpots[i].id) { try { visor360.removeHotSpot(currentSpots[i].id); } catch(err) {} } }
     document.querySelectorAll('.pnlm-hotspot-base').forEach(el => { try { if(el.parentNode) el.parentNode.removeChild(el); } catch(err) {} });
-    setTimeout(() => { getHotspotsConfig().forEach(hs => { try { visor360.addHotSpot(hs); } catch(err) {} }); syncSVGElements(); updateSVGPaths(); renderSidebarList(BaseDatosLotes); }, 10);
+    setTimeout(() => { 
+        getHotspotsConfig().forEach(hs => { try { visor360.addHotSpot(hs); } catch(err) {} }); 
+        const layer2D = document.getElementById('fresia-2d-layer');
+        if (layer2D && window.fresia2DVertices) {
+            layer2D.innerHTML = '';
+            window.fresia2DVertices.forEach(hs => {
+                const div = document.createElement('div');
+                div.className = 'pnlm-hotspot-base';
+                div.id = hs.id;
+                div.dataset.pitch = hs.pitch;
+                div.dataset.yaw = hs.yaw;
+                hs.createTooltipFunc(div, hs.createTooltipArgs);
+                layer2D.appendChild(div);
+            });
+        }
+        syncSVGElements(); updateSVGPaths(); renderSidebarList(BaseDatosLotes); 
+    }, 10);
 }
 
 function bindPinEvents(element, args, hotSpotDiv) {

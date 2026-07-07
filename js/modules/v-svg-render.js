@@ -318,5 +318,24 @@ function updateSVGPaths() {
     } else if (guideEl) {
         guideEl.style.display = 'none';
     }
+
+    const layer2D = document.getElementById('fresia-2d-layer');
+    if (layer2D && window.fresia2DVertices) {
+        Array.from(layer2D.children).forEach(el => {
+            const pitch = parseFloat(el.dataset.pitch);
+            const yaw = parseFloat(el.dataset.yaw);
+            if (isNaN(pitch) || isNaN(yaw)) return;
+            const c = getCam(pitch, yaw);
+            if (c.z > 0.0001) {
+                const sx = cx + (c.x / c.z) * f;
+                const sy = cy_screen - (c.y / c.z) * f;
+                el.style.transform = `translate(calc(${sx}px - 50%), calc(${sy}px - 50%))`;
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
     arq2_updateDemoLayer();
 }

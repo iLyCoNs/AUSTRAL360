@@ -575,3 +575,7 @@ body.pin-v2-active .lote-interactivo { pointer-events: none !important; }
 /* Ghost Mode extendido: arq2-pin-active desactiva eventos en polígonos SVG */
 body.arq2-pin-active .lote-interactivo { pointer-events: none !important; }
 
+
+/* FRESIA 2D FAST-TRACK LAYER */
+#fresia-2d-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; transform: translateZ(0); overflow: hidden; }
+#fresia-2d-layer .pnlm-hotspot-base { pointer-events: auto; }
