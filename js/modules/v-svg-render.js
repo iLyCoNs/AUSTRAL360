@@ -168,9 +168,100 @@ function syncSVGElements() {
             }
         }
     });
+    syncSVGVerticesLayer(svg);
     ensureSvgLayerOrder(svg);
 }
 
+function syncSVGVerticesLayer(svg) {
+    if (!isDevModeDrawActive && !isArquitecto2Active) {
+        const lv = document.getElementById('layer-vertices');
+        if (lv) lv.innerHTML = '';
+        return;
+    }
+    let lVertices = document.getElementById('layer-vertices');
+    if (!lVertices) {
+        lVertices = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        lVertices.id = 'layer-vertices';
+        svg.appendChild(lVertices);
+    }
+    
+    // Recopilar qué vértices necesitamos (igual que antes en getHotspotsConfig)
+    const needed = [];
+    allDrawnLines.forEach((linea) => {
+        if (linea.tipo === 'franja-grupo' || linea.tipo === 'franja-curva-grupo') {
+            if (linea.tipo === 'franja-grupo') {
+                linea.puntos.forEach((coord, pIdx) => needed.push({ lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: true, idx: pIdx, hsId: "vert_franja_corner_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] }));
+            } else {
+                const nF = linea.frente.length - 1, nB = linea.fondo.length - 1;
+                linea.frente.forEach((coord, pIdx) => needed.push({ lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: (pIdx === 0 || pIdx === nF), isFranjaElastic: (pIdx !== 0 && pIdx !== nF), idx: pIdx, target: 'frente', hsId: "vert_fcurva_frente_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] }));
+                linea.fondo.forEach((coord, pIdx) => needed.push({ lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: (pIdx === 0 || pIdx === nB), isFranjaElastic: (pIdx !== 0 && pIdx !== nB), idx: pIdx, target: 'fondo', hsId: "vert_fcurva_fondo_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] }));
+            }
+        } else if (linea.tipo === 'calle-curva-arq2') {
+            const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+            if (!hideStreets && linea.ejeOriginal) {
+                linea.ejeOriginal.forEach((coord, pIdx) => needed.push({ lineId: linea.id, type: 'calle-curva-arq2-vertex', isGuide: true, idx: pIdx, hsId: "vert_calle_curva_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] }));
+            }
+        } else if (linea.tipo === 'calle') {
+            const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
+            if (!hideStreets) {
+                linea.puntos.forEach((coord, pIdx) => needed.push({ lineId: linea.id, type: 'calle', isGuide: true, idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] }));
+            }
+        } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
+            const isOrg = linea.tipo === 'lote-organico' || linea.tipo === 'fila-variable-lote';
+            const arr = (isOrg && linea.ejeOriginal) ? linea.ejeOriginal : linea.puntos;
+            arr.forEach((coord, pIdx) => {
+                let show = true;
+                if (arr === linea.puntos && arr.length > 10) {
+                    const prev = arr[(pIdx - 1 + arr.length) % arr.length];
+                    const next = arr[(pIdx + 1) % arr.length];
+                    const dx1 = coord[0] - prev[0], dy1 = coord[1] - prev[1];
+                    const dx2 = next[0] - coord[0], dy2 = next[1] - coord[1];
+                    if (dx1*dx2 + dy1*dy2 > 0.996 * Math.sqrt((dx1*dx1+dy1*dy1)*(dx2*dx2+dy2*dy2))) show = false;
+                }
+                if (show) needed.push({ lineId: linea.id, type: linea.tipo, isGuide: true, idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx, pitch: coord[0], yaw: coord[1] });
+            });
+        }
+    });
+    currentLinePoints.forEach((coord, idx) => needed.push({ lineId: currentTempLineId, type: currentLineType, isGuide: true, idx: idx, hsId: "temp_base_" + currentTempLineId + "_" + idx, pitch: coord[0], yaw: coord[1] }));
+    if (isArquitecto2Active) {
+        arq2LinePoints.forEach((coord, idx) => needed.push({ lineId: arq2TempLineId, type: arq2Tool === 'fila-variable' ? 'lote-organico-preview' : 'lote-libre', isGuide: true, idx, hsId: "arq2_temp_" + idx, pitch: coord[0], yaw: coord[1] }));
+    }
+    if (currentLineType === 'franja_curva' && franjaCurvaFrente.length > 0) {
+        franjaCurvaFrente.forEach((coord, idx) => needed.push({ lineId: 'franja_curva_preview_frente', type: 'franja-preview', isGuide: true, idx: idx, hsId: "temp_fcurva_frente_" + idx, pitch: coord[0], yaw: coord[1] }));
+    }
+    
+    // Sincronizar DOM
+    const currentIds = needed.map(n => n.hsId);
+    Array.from(lVertices.querySelectorAll('g.svg-vertex-group')).forEach(el => {
+        if (!currentIds.includes(el.id)) el.remove();
+    });
+    
+    if (!DOMCache.svgMarkers) DOMCache.svgMarkers = {};
+    needed.forEach(n => {
+        let gNode = document.getElementById(n.hsId);
+        if (!gNode) {
+            gNode = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            gNode.id = n.hsId;
+            gNode.classList.add('svg-vertex-group');
+            
+            const outerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            outerCircle.setAttribute('class', 'svg-vertex-touch-target');
+            outerCircle.setAttribute('r', '20'); // Área táctil amplia
+            
+            const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            innerCircle.setAttribute('class', 'svg-vertex');
+            
+            gNode.appendChild(outerCircle);
+            gNode.appendChild(innerCircle);
+            
+            if (typeof renderHiddenVertex === 'function') {
+                renderHiddenVertex(gNode, n); // Reutilizamos tu lógica exacta de binding
+            }
+            lVertices.appendChild(gNode);
+        }
+        DOMCache.svgMarkers[n.hsId] = { gNode, pitch: n.pitch, yaw: n.yaw };
+    });
+}
 function updateSVGPaths() {
     if (!visor360 || !isSvgRenderAllowed()) return;
     // Refresh fila-calle preview when camera changes
@@ -297,26 +388,31 @@ function updateSVGPaths() {
             const sy1 = cy_screen - (sc1.y / sc1.z) * f;
             const sx2 = cx + (sc2.x / sc2.z) * f;
             const sy2 = cy_screen - (sc2.y / sc2.z) * f;
-            let gLine = document.getElementById('arq2-guideline-svg');
-            if (!gLine) {
-                gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                gLine.id = 'arq2-guideline-svg';
-                gLine.setAttribute('stroke', '#10b981');
-                gLine.setAttribute('stroke-width', '2.5');
-                gLine.setAttribute('stroke-dasharray', '6,6');
-                gLine.setAttribute('pointer-events', 'none');
-                svg.appendChild(gLine);
-            }
-            gLine.setAttribute('x1', String(sx1));
-            gLine.setAttribute('y1', String(sy1));
-            gLine.setAttribute('x2', String(sx2));
-            gLine.setAttribute('y2', String(sy2));
-            gLine.style.display = 'block';
+            if (guideEl) guideEl.setAttribute('d', `M ${sx1},${sy1} L ${sx2},${sy2}`);
         } else if (guideEl) {
-            guideEl.style.display = 'none';
+            guideEl.setAttribute('d', 'M -999 -999');
         }
     } else if (guideEl) {
-        guideEl.style.display = 'none';
+        guideEl.setAttribute('d', 'M -999 -999');
     }
+    
+    // NOTA CIRUJANO: Sincronización a 60FPS de los vértices SVG
+    if (DOMCache.svgMarkers) {
+        Object.keys(DOMCache.svgMarkers).forEach(id => {
+            const m = DOMCache.svgMarkers[id];
+            if (!m.gNode) return;
+            const c = getCam(m.pitch, m.yaw);
+            if (c.z > 0.0001) {
+                const sx = cx + (c.x / c.z) * f;
+                const sy = cy_screen - (c.y / c.z) * f;
+                m.gNode.setAttribute('transform', `translate(${sx}, ${sy})`);
+                m.gNode.style.display = 'block';
+            } else {
+                m.gNode.style.display = 'none';
+            }
+        });
+    }
+
     arq2_updateDemoLayer();
+}r();
 }

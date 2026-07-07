@@ -101,29 +101,10 @@ function getHotspotsConfig() {
             }
         });
     }
-    if (isSvgRenderAllowed() && isDevModePinsActive && isLineaPinesActive) {
-        lineaPinesPoints.forEach((coord, idx) => {
-            hotspots.push({ "id": "linea_pins_pt_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: lineaPinesTempId, type: 'linea-pines-guia', isGuide: false, idx: idx, hsId: "linea_pins_pt_" + idx } });
-        });
-    }
+    // NOTA CIRUJANO: Nodos eliminados (renderHiddenVertex) para evitar Layout Thrashing de Pannellum.
     if(isSvgRenderAllowed() && (isDevModeDrawActive || isArquitecto2Active)) {
         allDrawnLines.forEach((linea) => {
             if (linea.tipo === 'franja-grupo' || linea.tipo === 'franja-curva-grupo') {
-                if (linea.tipo === 'franja-grupo') {
-                    linea.puntos.forEach((coord, pIdx) => {
-                        hotspots.push({ "id": "vert_franja_corner_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: true, idx: pIdx, hsId: "vert_franja_corner_" + linea.id + "_" + pIdx } });
-                    });
-                } else {
-                    const nF = linea.frente.length - 1, nB = linea.fondo.length - 1;
-                    linea.frente.forEach((coord, pIdx) => {
-                        const isEnd = pIdx === 0 || pIdx === nF;
-                        hotspots.push({ "id": "vert_fcurva_frente_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: isEnd, isFranjaElastic: !isEnd, idx: pIdx, target: 'frente', hsId: "vert_fcurva_frente_" + linea.id + "_" + pIdx } });
-                    });
-                    linea.fondo.forEach((coord, pIdx) => {
-                        const isEnd = pIdx === 0 || pIdx === nB;
-                        hotspots.push({ "id": "vert_fcurva_fondo_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: true, isFranjaCorner: isEnd, isFranjaElastic: !isEnd, idx: pIdx, target: 'fondo', hsId: "vert_fcurva_fondo_" + linea.id + "_" + pIdx } });
-                    });
-                }
                 const N = linea.franjaCount || 2;
                 const splits = ensureFranjaSplits(linea);
                 let built = null;
@@ -149,40 +130,6 @@ function getHotspotsConfig() {
                         hotspots.push({ "id": "franja_div_" + linea.id + "_" + di, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaDivHandle, "createTooltipArgs": { gid: linea.id, splitIdx: di } });
                     }
                 }
-            } else if (linea.tipo === 'calle-curva-arq2') {
-                const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
-                if (!hideStreets && linea.ejeOriginal) {
-                    linea.ejeOriginal.forEach((coord, pIdx) => {
-                        hotspots.push({ "id": "vert_calle_curva_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle-curva-arq2-vertex', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_curva_" + linea.id + "_" + pIdx } });
-                    });
-                }
-            } else if (linea.tipo === 'calle') {
-                const hideStreets = arq2Tool === 'lote-libre' && document.getElementById('arq2-lote-libre-hide-streets')?.checked;
-                if (!hideStreets) {
-                    linea.puntos.forEach((coord, pIdx) => {
-                        hotspots.push({ "id": "vert_calle_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: 'calle', isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_calle_" + linea.id + "_" + pIdx } });
-                    });
-                }
-            } else if (linea.tipo !== 'divisoria' && linea.tipo !== 'borde-macro' && !linea.franjaGrupo) {
-                const isOrg = linea.tipo === 'lote-organico' || linea.tipo === 'fila-variable-lote';
-                const arr = (isOrg && linea.ejeOriginal) ? linea.ejeOriginal : linea.puntos;
-                arr.forEach((coord, pIdx) => {
-                    let show = true;
-                    if (arr === linea.puntos && arr.length > 10) {
-                        const prev = arr[(pIdx - 1 + arr.length) % arr.length];
-                        const next = arr[(pIdx + 1) % arr.length];
-                        const dx1 = coord[0] - prev[0], dy1 = coord[1] - prev[1];
-                        const dx2 = next[0] - coord[0], dy2 = next[1] - coord[1];
-                        const dot = dx1*dx2 + dy1*dy2;
-                        const lenSq1 = dx1*dx1 + dy1*dy1;
-                        const lenSq2 = dx2*dx2 + dy2*dy2;
-                        if (lenSq1 > 0 && lenSq2 > 0) {
-                            const cosAng = dot / Math.sqrt(lenSq1 * lenSq2);
-                            if (cosAng > 0.996) show = false;
-                        }
-                    }
-                    if (show) hotspots.push({ "id": "vert_base_" + linea.id + "_" + pIdx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: linea.id, type: linea.tipo, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: pIdx, hsId: "vert_base_" + linea.id + "_" + pIdx } });
-                });
             }
             if (linea.tipo === 'area-invisible' && linea.franjaNumero && linea.puntos.length >= 3) {
                 const parentStrip = getFranjaStripById(linea.franjaGrupo);
@@ -203,15 +150,6 @@ function getHotspotsConfig() {
                 hotspots.push({ "id": "arq2_lbl_" + linea.id, "pitch": cP, "yaw": cY, "createTooltipFunc": renderFranjaLotLabel, "createTooltipArgs": { numero: linea.franjaNumero } });
             }
         });
-        currentLinePoints.forEach((coord, idx) => { hotspots.push({ "id": "temp_base_" + currentTempLineId + "_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: currentTempLineId, type: currentLineType, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: idx, hsId: "temp_base_" + currentTempLineId + "_" + idx } }); });
-        if (isArquitecto2Active) {
-            arq2LinePoints.forEach((coord, idx) => hotspots.push({ "id": "arq2_temp_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: arq2TempLineId, type: arq2Tool === 'fila-variable' ? 'lote-organico-preview' : 'lote-libre', isGuide: true, idx, hsId: "arq2_temp_" + idx } }));
-        }
-        if (currentLineType === 'franja_curva' && franjaCurvaFrente.length > 0) {
-            franjaCurvaFrente.forEach((coord, idx) => {
-                hotspots.push({ "id": "temp_fcurva_frente_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: 'franja_curva_preview_frente', type: 'franja-preview', isGuide: true, idx: idx, hsId: "temp_fcurva_frente_" + idx } });
-            });
-        }
         if (currentLineType === 'calle' && currentLinePoints.length >= 2 && draftCalleShowLabel) {
             const mid = getCalleMidpointPY(currentLinePoints);
             if (mid) hotspots.push({ "id": "calle_lbl_" + currentTempLineId, "pitch": mid[0], "yaw": mid[1], "createTooltipFunc": renderCalleServidumbreLabel, "createTooltipArgs": { lineId: currentTempLineId, isDraft: true, labelScale: draftCalleLabelScale } });
