@@ -2,15 +2,16 @@
 // Motor de dibujo 100% nativo Three.js (Arquitecto 3.0)
 
 window.arquitecto3D = {
-    lotes: [], // array de { id, color, points: [THREE.Vector3...] }
+    lotes: [], // array de { id, color, points, lineMesh, fillMesh, markerMeshes }
     isActive: false,
     tempPoints: [],
+    draggingInfo: null, // { loteId, index }
     
     // Objetos Three.js
     group: null,
+    vertexMarkerGroup: null, // Para los nodos finales
+    tempMarkerGroup: null,   // Para los nodos temporales al dibujar
     tempLineMesh: null,
-    tempFillMesh: null,
-    tempMarkerGroup: null,
 
     init: function() {
         console.log("Inicializando Arquitecto 3.0 (Motor Ferrari)...");
@@ -35,7 +36,7 @@ window.arquitecto3D = {
             });
         }
         
-        // Inyectar grupo al encontrar el Motor Ferrari activo
+        // Inyectar grupos al encontrar el Motor Ferrari activo
         const checkFerrari = setInterval(() => {
             if (window.visor360 && window.visor360.getThreeScene) {
                 const scene = window.visor360.getThreeScene();
@@ -43,6 +44,9 @@ window.arquitecto3D = {
                     this.group = new THREE.Group();
                     scene.add(this.group);
                     
+                    this.vertexMarkerGroup = new THREE.Group();
+                    scene.add(this.vertexMarkerGroup);
+
                     this.tempMarkerGroup = new THREE.Group();
                     scene.add(this.tempMarkerGroup);
                     
@@ -76,32 +80,82 @@ window.arquitecto3D = {
         return null;
     },
 
+    getIntersectedVertex: function(e) {
+        if (!window.visor360 || !window.visor360.getThreeRenderer || this.vertexMarkerGroup.children.length === 0) return null;
+        const renderer = window.visor360.getThreeRenderer();
+        const camera = window.visor360.getThreeCamera();
+        
+        const rect = renderer.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2();
+        mouse.x = ( (e.clientX - rect.left) / rect.width ) * 2 - 1;
+        mouse.y = - ( (e.clientY - rect.top) / rect.height ) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        // Aumentamos el umbral para que sea más fácil agarrar el vértice
+        raycaster.params.Points.threshold = 5; 
+        raycaster.setFromCamera(mouse, camera);
+        
+        const intersects = raycaster.intersectObjects(this.vertexMarkerGroup.children);
+        if (intersects.length > 0) {
+            return intersects[0].object.userData; // { loteId, index }
+        }
+        return null;
+    },
+
     bindEvents: function() {
         const container = document.getElementById('panorama-container');
         let startX, startY, startTime;
 
         container.addEventListener('pointerdown', (e) => {
             if (!this.isActive) return;
+            
+            // 1. Intentar agarrar un vértice para edición
+            const vertexInfo = this.getIntersectedVertex(e);
+            if (vertexInfo) {
+                this.draggingInfo = vertexInfo;
+                e.stopPropagation(); // Bloquea el arrastre de cámara de v-panorama
+                document.body.style.cursor = 'grabbing';
+                return;
+            }
+
+            // 2. Si no agarramos nada, preparamos un posible click para dibujar
             startX = e.clientX;
             startY = e.clientY;
             startTime = Date.now();
-        });
+        }, { capture: true });
 
         container.addEventListener('pointerup', (e) => {
             if (!this.isActive) return;
+            
+            // Soltar vértice si estábamos arrastrando
+            if (this.draggingInfo) {
+                this.draggingInfo = null;
+                document.body.style.cursor = 'crosshair';
+                return;
+            }
+
             const dt = Date.now() - startTime;
             const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
             
             if (dt < 400 && dist < 10) {
-                // Es un click
+                // Es un click rápido para añadir punto
                 this.addPoint(e);
             }
         });
         
         container.addEventListener('pointermove', (e) => {
             if (!this.isActive) return;
+
+            if (this.draggingInfo) {
+                e.stopPropagation(); // Evitar arrastre de cámara
+                const v3 = this.getVectorFromEvent(e);
+                if (v3) this.updateVertexPosition(this.draggingInfo, v3);
+                return;
+            }
+
+            // Previsualizar la línea al dibujar
             this.updatePreview(e);
-        });
+        }, { capture: true });
 
         // Doble clic o clic derecho cierra el lote
         container.addEventListener('dblclick', (e) => {
@@ -123,8 +177,8 @@ window.arquitecto3D = {
         
         this.tempPoints.push(v3);
         
-        // Agregar esfera visual (marcador)
-        const markerGeo = new THREE.SphereGeometry(2, 16, 16); // Radio ligeramente más grande para que se vea
+        // Agregar esfera visual temporal
+        const markerGeo = new THREE.SphereGeometry(3, 16, 16); 
         const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const marker = new THREE.Mesh(markerGeo, markerMat);
         marker.position.copy(v3);
@@ -155,7 +209,7 @@ window.arquitecto3D = {
 
         const geo = new THREE.BufferGeometry().setFromPoints(renderPts);
         const mat = new THREE.LineBasicMaterial({ 
-            color: 0xef4444, 
+            color: 0x22c55e, // Verde
             linewidth: 4, 
             depthTest: false, 
             transparent: true, 
@@ -175,15 +229,20 @@ window.arquitecto3D = {
         const loteId = 'LOTE_3D_' + Date.now();
         const finalPts = [...this.tempPoints];
         
-        // Crear polígono cerrado en la base de datos local
-        this.lotes.push({
+        const newLote = {
             id: loteId,
             points: finalPts,
-            color: 0xffffff // Blanco por defecto
-        });
+            color: 0x22c55e // Verde
+        };
 
+        this.lotes.push(newLote);
         this.clearTemp();
-        this.renderAllLotes();
+        this.buildLoteMeshes(newLote);
+        
+        // Agregar los meshes a la escena
+        this.group.add(newLote.lineMesh);
+        this.group.add(newLote.fillMesh);
+        newLote.markerMeshes.forEach(m => this.vertexMarkerGroup.add(m));
     },
 
     clearTemp: function() {
@@ -204,53 +263,85 @@ window.arquitecto3D = {
         }
     },
 
-    renderAllLotes: function() {
-        // Limpiar lotes consolidados excepto los estáticos que no son parte de los lotes guardados en arq3
-        // Pero primero limpiamos solo los meshes creados por arq3
-        while(this.group.children.length > 0) {
-            const child = this.group.children[0];
-            if (child === this.tempLineMesh) break;
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-            this.group.remove(child);
-        }
+    buildLoteMeshes: function(lote) {
+        const pts = [...lote.points];
+        pts.push(pts[0].clone()); // cerrar loop
 
-        this.lotes.forEach(lote => {
-            const pts = [...lote.points];
-            pts.push(pts[0].clone()); // cerrar loop
-
-            // Línea perimetral
-            const geo = new THREE.BufferGeometry().setFromPoints(pts);
-            const mat = new THREE.LineBasicMaterial({ 
-                color: lote.color, 
-                linewidth: 3, 
-                depthTest: false,
-                transparent: true,
-                opacity: 0.8
-            });
-            const lineMesh = new THREE.Line(geo, mat);
-            this.group.add(lineMesh);
-
-            // Relleno
-            const vertices = [];
-            const origin = pts[0];
-            for (let i = 1; i < pts.length - 2; i++) {
-                vertices.push(origin.x, origin.y, origin.z);
-                vertices.push(pts[i].x, pts[i].y, pts[i].z);
-                vertices.push(pts[i+1].x, pts[i+1].y, pts[i+1].z);
-            }
-            const fillGeo = new THREE.BufferGeometry();
-            fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            const fillMat = new THREE.MeshBasicMaterial({
-                color: lote.color,
-                transparent: true,
-                opacity: 0.2,
-                side: THREE.DoubleSide,
-                depthTest: false
-            });
-            const fillMesh = new THREE.Mesh(fillGeo, fillMat);
-            this.group.add(fillMesh);
+        // Línea
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ 
+            color: lote.color, 
+            linewidth: 3, 
+            depthTest: false,
+            transparent: true,
+            opacity: 0.8
         });
+        lote.lineMesh = new THREE.Line(geo, mat);
+
+        // Relleno
+        const vertices = [];
+        const origin = pts[0];
+        for (let i = 1; i < pts.length - 2; i++) {
+            vertices.push(origin.x, origin.y, origin.z);
+            vertices.push(pts[i].x, pts[i].y, pts[i].z);
+            vertices.push(pts[i+1].x, pts[i+1].y, pts[i+1].z);
+        }
+        const fillGeo = new THREE.BufferGeometry();
+        fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        const fillMat = new THREE.MeshBasicMaterial({
+            color: lote.color,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide,
+            depthTest: false
+        });
+        lote.fillMesh = new THREE.Mesh(fillGeo, fillMat);
+        
+        // Nodos (Vértices) arrastrables
+        lote.markerMeshes = [];
+        const markerGeo = new THREE.SphereGeometry(4, 16, 16);
+        const markerMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.8,
+            depthTest: false 
+        });
+        
+        lote.points.forEach((p, index) => {
+            const m = new THREE.Mesh(markerGeo, markerMat);
+            m.position.copy(p);
+            m.userData = { loteId: lote.id, index: index };
+            lote.markerMeshes.push(m);
+        });
+    },
+
+    updateVertexPosition: function(info, v3) {
+        const lote = this.lotes.find(l => l.id === info.loteId);
+        if (!lote) return;
+        
+        // Actualizar el vector en memoria
+        lote.points[info.index].copy(v3);
+        
+        // === ACTUALIZACIÓN RÁPIDA DE BUFFERS (CERO LAG) ===
+        const pts = [...lote.points];
+        pts.push(pts[0].clone());
+        
+        // Actualizar línea
+        lote.lineMesh.geometry.setFromPoints(pts);
+        
+        // Actualizar relleno (triangulación fan-shape)
+        const vertices = [];
+        const origin = pts[0];
+        for (let i = 1; i < pts.length - 2; i++) {
+            vertices.push(origin.x, origin.y, origin.z);
+            vertices.push(pts[i].x, pts[i].y, pts[i].z);
+            vertices.push(pts[i+1].x, pts[i+1].y, pts[i+1].z);
+        }
+        lote.fillMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        lote.fillMesh.geometry.attributes.position.needsUpdate = true;
+        
+        // Actualizar el mesh de la esfera (nodo) que estamos moviendo
+        lote.markerMeshes[info.index].position.copy(v3);
     }
 };
 
