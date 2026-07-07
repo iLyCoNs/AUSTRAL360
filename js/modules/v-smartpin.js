@@ -66,7 +66,15 @@ function generarSmartPin(hotSpotDiv, args) {
 }
 
 function generarPin360(hotSpotDiv, args) {
-    hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px'; hotSpotDiv.addEventListener('mouseenter', () => { hotSpotDiv.style.zIndex = '999999'; }); hotSpotDiv.addEventListener('mouseleave', () => { hotSpotDiv.style.zIndex = ''; });
+    hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px'; 
+    hotSpotDiv.addEventListener('mouseenter', () => { hotSpotDiv.style.zIndex = '999999'; }); 
+    hotSpotDiv.addEventListener('mouseleave', () => { hotSpotDiv.style.zIndex = ''; });
+    
+    // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
     const wrapper = document.createElement('div'); wrapper.classList.add('smart-pin-wrapper', 'has-360');
     const scaler = document.createElement('div'); scaler.classList.add('pin-scaler');
     const pin = document.createElement('div'); pin.classList.add('pin-360'); pin.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span style="font-size:12px; margin-left:4px; font-weight:800;">360°</span>`;
@@ -77,6 +85,12 @@ function generarPin360(hotSpotDiv, args) {
 
 function generarMarcadorHorizonte(hotSpotDiv, args) {
     hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px';
+    
+    // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
     const wrapper = document.createElement('div'); wrapper.className = 'horizon-hud-wrapper';
     const links = getNavPinLinks(args);
     const distTxt = args.distancia || '0 KM';
@@ -91,6 +105,12 @@ function generarMarcadorHorizonte(hotSpotDiv, args) {
 
 function generarMarcadorRuta(hotSpotDiv, args) {
     hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px';
+    
+    // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
     const wrapper = document.createElement('div'); wrapper.className = 'ruta-hud-wrapper';
     wrapper.innerHTML = `<div class="ruta-glass-pill">${buildNavGlassPillMarkup(args, { title: args.titulo || 'RUTA', rutaMobileExpand: true })}</div><div class="ruta-line-down"></div><div class="ruta-target-dot"></div>`;
     hotSpotDiv.appendChild(wrapper); addQuickActions(wrapper, args);
@@ -100,6 +120,12 @@ function generarMarcadorRuta(hotSpotDiv, args) {
 
 function generarMarcadorCasa360(hotSpotDiv, args) {
     hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px';
+    
+    // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
     const wrapper = document.createElement('div'); wrapper.className = 'casa-hud-wrapper';
     
     wrapper.innerHTML = `
