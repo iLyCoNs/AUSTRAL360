@@ -22,18 +22,12 @@ function registerSVGSyncCallback() {
     };
 }
 // Mantener hookRendererOverlay como fallback vacío para no romper llamadas existentes
-function hookRendererOverlay(renderer) { /* reemplazado por registerSVGSyncCallback */ }
-
-function attachSmartViewerHandlers(panoramaBase) {
+function hookRendererOverlay(renderer) { /* reemplazado por registerSVGSyncCallback */ }function attachSmartViewerHandlers(panoramaBase) {
     if (!visor360) return;
     const handleLoad = () => { 
         isWebGLSupported = true; viewerGpuReady = true; smartInitAttempts = 0; 
         const renderer = visor360.getRenderer(); 
         if(renderer) { SmartGpuProfile.patchRenderer(renderer); const canvas = typeof renderer.getCanvas === 'function' ? renderer.getCanvas() : null; SmartGpuProfile.bindContextRecovery(canvas, () => retryPannellumSmart(panoramaBase, true) ); }
-        // NOTA ARQUITECTÓNICA PERMANENTE: El SVG #loteo-svg ya vive en el HTML como capa
-        // independiente (hermano de #panorama-container). NO moverlo a .pnlm-ui jamás.
-        // Moverlo dentro de Pannellum lo introduce en su stacking context 3D (translateZ(9999px))
-        // y eso provoca el flotamiento irrecuperable de la calle en todos los dispositivos.
         syncFranjaVisualsOnReady();
         if (!isIntroAnimating) revealLoteoOverlay();
     };
@@ -43,10 +37,26 @@ function attachSmartViewerHandlers(panoramaBase) {
     if (visor360.isLoaded && visor360.isLoaded()) { handleLoad(); } else { setTimeout(() => { if (!viewerGpuReady && visor360.getRenderer()) handleLoad(); }, 300); }
 }
 
+function injectSVGIntoPannellum() {
+    try {
+        const pContainer = document.querySelector('.pnlm-container');
+        const loteoSvg = document.getElementById('loteo-svg');
+        const pUi = document.querySelector('.pnlm-ui');
+        if (pContainer && loteoSvg && pUi) {
+            const dragfix = document.querySelector('.pnlm-dragfix');
+            if (dragfix) pContainer.insertBefore(dragfix, pUi);
+            pContainer.insertBefore(loteoSvg, pUi);
+            loteoSvg.style.zIndex = '1';
+            pUi.style.zIndex = '2';
+        }
+    } catch(e) {}
+}
+
 async function retryPannellumSmart(panoramaBase, forceLite) {
-    if (!isTouchDevice()) return; smartInitAttempts++; if (smartInitAttempts > 3) { const sp = document.getElementById('splash-loading-text'); if (sp) sp.innerText = 'ERROR GPU: RECARGA LA PÁGINA'; return; } if (forceLite) { SmartGpuProfile.maxDPR = 1; SmartGpuProfile.maxTextureSize = 2048; SmartGpuProfile.isHighEnd = false; } viewerGpuReady = false; if (visor360) { try { visor360.destroy(); } catch (e) {} visor360 = null; }
+    if (!isTouchDevice()) return; smartInitAttempts++; if (smartInitAttempts > 3) { const sp = document.getElementById('splash-loading-text'); if (sp) sp.innerText = 'ERROR GPU: RECARGA LA P?GINA'; return; } if (forceLite) { SmartGpuProfile.maxDPR = 1; SmartGpuProfile.maxTextureSize = 2048; SmartGpuProfile.isHighEnd = false; } viewerGpuReady = false; if (visor360) { try { visor360.destroy(); } catch (e) {} visor360 = null; }
     const panoramaUrl = await SmartGpuProfile.preparePanorama( panoramaBase, forceLite || smartInitAttempts > 1 );
     visor360 = pannellum.viewer('panorama-container', { type: 'equirectangular', panorama: panoramaUrl, autoLoad: true, compass: false, hfov: 130, pitch: 60, yaw: -45, hotSpots: getHotspotsConfig(), fallback: PANORAMA_FILE, touchPanSpeedCoeffFactor: 1.35, friction: 0.12, showZoomCtrl: false, });
+    injectSVGIntoPannellum();
     attachSmartViewerHandlers(panoramaBase);
 }
 
@@ -54,11 +64,7 @@ function runPannellumIntroBootstrap() {
     const beginIntro = () => {
         setTimeout(() => {
             const pnlmContainer = document.getElementById('panorama-container'); const uiEngine = document.getElementById('holographic-ui-engine');
-            // FIX PERMANENTE: NO mover #loteo-svg dentro de .pnlm-ui. Ya es una capa independiente en el HTML.
             let fsInterval = setInterval(() => { let fsBtn = document.querySelector('.pnlm-fullscreen-toggle-button'); if (fsBtn) { clearInterval(fsInterval); let newBtn = fsBtn.cloneNode(true); fsBtn.parentNode.replaceChild(newBtn, fsBtn); newBtn.addEventListener('click', () => { let docEl = document.documentElement; if (!document.fullscreenElement) { if (docEl.requestFullscreen) docEl.requestFullscreen(); else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen(); newBtn.classList.add('pnlm-fullscreen-toggle-button-active'); } else { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); newBtn.classList.remove('pnlm-fullscreen-toggle-button-active'); } if (isTouchDevice() && visor360 && viewerGpuReady) { setTimeout(() => { const r = visor360.getRenderer(); if (r && r.resize) r.resize(); }, 300); } }); } }, 500);
-            // FIX PERMANENTE DE Z-INDEX: NO mover #holographic-ui-engine dentro de #panorama-container.
-            // Si lo mueve, el uiEngine queda atrapado en el stacking context z-index:0 del panorama-container,
-            // y el SVG (z-index:1 en body) aparece encima del dock y de toda la UI. Ambos deben vivir en body.
             if (!visor360) return; 
 
             visor360.setHfov(DEFAULT_HFOV, 2500); 
