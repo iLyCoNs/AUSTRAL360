@@ -101,6 +101,48 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     }
     const coords = visor360.mouseEventToCoords(mock);
     if (!coords || isNaN(coords[0])) return;
+    
+    if (arq2Tool === 'smart-pin-v2') {
+        let p = parseFloat(coords[0].toFixed(3)), y = parseFloat(coords[1].toFixed(3));
+        let num = prompt("Número/Nombre del Lote:", "00");
+        if (num === null) return;
+        let precio = prompt("Precio (opcional, ej: 1.500 UF):", "");
+        if (precio === null) return;
+        let estado = prompt("Estado (disponible, reservado, vendido):", "disponible") || "disponible";
+        estado = estado.toLowerCase().trim();
+        let videoUrl = prompt("URL de Recorrido 360 (opcional):", "");
+        
+        let nuevoPin = {
+            id: 'pin_v2_' + Date.now(),
+            pitch: p,
+            yaw: y,
+            numero: num,
+            precio: precio,
+            status: estado,
+            videoUrl: videoUrl,
+            createTooltipFunc: generarSmartPin,
+            createTooltipArgs: { 
+                id: 'pin_v2_' + Date.now(), 
+                numero: num, 
+                precio: precio, 
+                status: estado, 
+                videoUrl: videoUrl 
+            }
+        };
+        
+        // Guardar en array global y renderizar
+        if (!window.BaseDatosLotes) window.BaseDatosLotes = [];
+        window.BaseDatosLotes.push(nuevoPin);
+        
+        try {
+            visor360.addHotSpot(nuevoPin);
+            if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
+            if (typeof window.saveToLocal === 'function') window.saveToLocal();
+        } catch(e) {}
+        
+        return;
+    }
+    
     let p = parseFloat(coords[0].toFixed(3)), y = parseFloat(coords[1].toFixed(3));
     // Snap on click ONLY for costura, calle-curva, and lote-libre (street edges only).
     // For lote-libre: only snap when the snap target is a street (aligns lot to calle inner border).

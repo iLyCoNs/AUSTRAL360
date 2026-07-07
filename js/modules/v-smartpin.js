@@ -1,6 +1,13 @@
 function generarSmartPin(hotSpotDiv, args) {
     hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px'; hotSpotDiv.setAttribute('data-status', args.status || 'disponible');
     hotSpotDiv.addEventListener('mouseenter', () => { hotSpotDiv.style.zIndex = '999999'; }); hotSpotDiv.addEventListener('mouseleave', () => { hotSpotDiv.style.zIndex = ''; });
+    
+    // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
+    
     let numeroLote = args.numero || '00'; let tiene360 = args.videoUrl ? 'has-360' : ''; let favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]'); let isFav = favs.includes(args.id);
     const wrapper = document.createElement('div'); wrapper.className = `smart-pin-wrapper ${tiene360}`; wrapper.setAttribute('data-status', args.status || 'disponible');
     const scaler = document.createElement('div'); scaler.classList.add('pin-scaler');

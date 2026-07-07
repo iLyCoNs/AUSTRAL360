@@ -1160,7 +1160,8 @@ const ARQ2_STEPS = [
     { tool: 'eraser', id: 'corners', text: 'Haz clic o mantén presionado sobre cualquier lote, calle o subdivisión para borrarlo.' },
     { tool: 'fila-calle', id: 'select', text: 'Haz clic sobre el borde INTERIOR de una calle para seleccionarlo como frente de los lotes.' },
     { tool: 'fila-calle', id: 'depth', text: 'Ajusta la profundidad con el slider y haz clic en «Definir Lotes».' },
-    { tool: 'fila-calle', id: 'modal', text: 'Indica cuántos lotes y sus m² en la ventana — se generan alineados a la calle.' }
+    { tool: 'fila-calle', id: 'modal', text: 'Indica cuántos lotes y sus m² en la ventana — se generan alineados a la calle.' },
+    { tool: 'smart-pin-v2', id: 'corners', text: 'Haz clic sobre cualquier lote libre dibujado o zona del terreno para fijar un Smart Pin V2.' }
 ];
 function arq2_applyOrganicPathAttrs(pathEl, role) {
     if (!pathEl) return;
