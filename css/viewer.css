@@ -546,3 +546,7 @@ body.calle-mode-active .linea-calle-arq2-fill:hover { filter: brightness(1.2); }
 @keyframes arq2DemoPop { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
 
+
+/* TRUCO ARQUITECTO 2.0: Pin V2 Ghost Mode */
+body.pin-v2-active .lote-interactivo { pointer-events: none !important; }
+

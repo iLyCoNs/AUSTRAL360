@@ -304,6 +304,7 @@ function arq2_setTool(tool) {
     arq2_ensurePanelExtras();
     document.querySelectorAll('.arq2-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.arq2Tool === tool));
     document.body.classList.toggle('calle-mode-active', tool === 'calle-curva-arq2' || tool === 'calle');
+    document.body.classList.toggle('pin-v2-active', tool === 'smart-pin-v2');
     const hideStreetsRow = document.getElementById('arq2-lote-libre-hide-streets-row');
     if (hideStreetsRow) hideStreetsRow.style.display = (tool === 'lote-libre' || tool === 'fila-variable') ? '' : 'none';
     arq2_updatePanelStep();
