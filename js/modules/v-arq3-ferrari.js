@@ -420,12 +420,15 @@ window.arquitecto3D = {
 
         // Relleno
         const vertices = [];
-        const origin = pts[0];
-        for (let i = 1; i < pts.length - 2; i++) {
-            vertices.push(origin.x, origin.y, origin.z);
-            vertices.push(pts[i].x, pts[i].y, pts[i].z);
-            vertices.push(pts[i+1].x, pts[i+1].y, pts[i+1].z);
-        }
+        const cleanPts = pts.slice(0, -1); // Evitar el último punto duplicado
+        const vec2D = cleanPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+        const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
+        faces.forEach(face => {
+            const pA = cleanPts[face[0]];
+            const pB = cleanPts[face[1]];
+            const pC = cleanPts[face[2]];
+            vertices.push(pA.x, pA.y, pA.z, pB.x, pB.y, pB.z, pC.x, pC.y, pC.z);
+        });
         const fillGeo = new THREE.BufferGeometry();
         fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         const fillMat = new THREE.MeshBasicMaterial({
@@ -540,14 +543,17 @@ window.arquitecto3D = {
         // Actualizar línea
         lote.lineMesh.geometry.setFromPoints(pts);
         
-        // Actualizar relleno (triangulación fan-shape)
+        // Actualizar relleno con triangulación correcta para cóncavos
         const vertices = [];
-        const origin = lote.points[0];
-        for (let i = 1; i < lote.points.length - 2; i++) {
-            vertices.push(origin.x, origin.y, origin.z);
-            vertices.push(lote.points[i].x, lote.points[i].y, lote.points[i].z);
-            vertices.push(lote.points[i+1].x, lote.points[i+1].y, lote.points[i+1].z);
-        }
+        const cleanPts = lote.points.slice(0, -1);
+        const vec2D = cleanPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+        const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
+        faces.forEach(face => {
+            const pA = cleanPts[face[0]];
+            const pB = cleanPts[face[1]];
+            const pC = cleanPts[face[2]];
+            vertices.push(pA.x, pA.y, pA.z, pB.x, pB.y, pB.z, pC.x, pC.y, pC.z);
+        });
         lote.fillMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         lote.fillMesh.geometry.attributes.position.needsUpdate = true;
         
