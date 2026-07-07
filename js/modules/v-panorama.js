@@ -398,15 +398,119 @@ function bindPanoramaPointerEvents() {
     }
 }
 
+let threeScene, threeCamera, threeRenderer, threeMesh;
+let threePitch = 60, threeYaw = -45, threeHFov = 100;
+let threeTargetPitch = 60, threeTargetYaw = -45;
+let threeIsDragging = false, threeLastMouseX = 0, threeLastMouseY = 0;
+
 async function initPannellum() {
     const touchDev = isTouchDevice();
-    if (!touchDev && !isWebGLSupported) { const spText = document.getElementById('splash-loading-text'); if (spText) spText.innerText = 'MODO DE COMPATIBILIDAD (SIN GPU)...'; const svg = document.getElementById('loteo-svg'); if (svg) svg.style.display = 'none'; }
-    let panoramaUrl = PANORAMA_FILE;
-    if (touchDev) { SmartGpuProfile.init(); viewerGpuReady = false; const spText = document.getElementById('splash-loading-text'); if (spText) spText.innerText = 'OPTIMIZANDO GPU PARA MÓVILES...'; panoramaUrl = await SmartGpuProfile.preparePanorama(PANORAMA_FILE, false); if (spText) spText.innerText = 'CARGANDO PANORAMA 360°...'; }
-    const viewerConfig = { type: 'equirectangular', panorama: panoramaUrl, autoLoad: true, compass: false, hfov: 130, pitch: 60, yaw: -45, hotSpots: getHotspotsConfig(), fallback: PANORAMA_FILE, };
-    if (touchDev) { viewerConfig.touchPanSpeedCoeffFactor = 1.35; viewerConfig.friction = 0.12; viewerConfig.showZoomCtrl = false; }
-    visor360 = pannellum.viewer('panorama-container', viewerConfig);
+    const container = document.getElementById('panorama-container');
+    container.innerHTML = ''; 
+    
+    threeScene = new THREE.Scene();
+    threeCamera = new THREE.PerspectiveCamera(threeHFov, window.innerWidth / window.innerHeight, 0.1, 1000);
+    threeCamera.rotation.order = 'YXZ';
+    
+    threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    threeRenderer.setSize(window.innerWidth, window.innerHeight);
+    threeRenderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(threeRenderer.domElement);
+    
+    const geometry = new THREE.SphereGeometry(500, 60, 40);
+    geometry.scale(-1, 1, 1);
+    
+    const spText = document.getElementById('splash-loading-text');
+    if (spText) spText.innerText = 'CARGANDO MOTOR FERRARI 3D...';
+    
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(PANORAMA_FILE, (texture) => {
+        texture.minFilter = THREE.LinearFilter;
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        threeMesh = new THREE.Mesh(geometry, material);
+        threeScene.add(threeMesh);
+        if (!pannellumIntroBootstrapped) { pannellumIntroBootstrapped = true; runPannellumIntroBootstrap(); }
+    });
+
+    window.addEventListener('resize', () => {
+        threeCamera.aspect = window.innerWidth / window.innerHeight;
+        threeCamera.updateProjectionMatrix();
+        threeRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.visor360 = {
+        getPitch: () => threePitch,
+        getYaw: () => threeYaw,
+        setPitch: (p) => { threeTargetPitch = p; threePitch = p; },
+        setYaw: (y) => { threeTargetYaw = y; threeYaw = y; },
+        getHfov: () => threeCamera.fov,
+        setHfov: (f) => { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); },
+        getConfig: () => ({ hotSpots: window.fresia2DVertices || [] }),
+        addHotSpot: (hs) => { },
+        removeHotSpot: (id) => { },
+        destroy: () => { threeRenderer.dispose(); container.innerHTML = ''; },
+        mouseEventToCoords: (e) => {
+            const rect = threeRenderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2();
+            mouse.x = ( (e.clientX - rect.left) / rect.width ) * 2 - 1;
+            mouse.y = - ( (e.clientY - rect.top) / rect.height ) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, threeCamera);
+            if(threeMesh) {
+                const intersects = raycaster.intersectObject(threeMesh);
+                if (intersects.length > 0) {
+                    const p = intersects[0].point;
+                    const radius = 500;
+                    const pitch = Math.asin(p.y / radius) * (180 / Math.PI);
+                    const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
+                    return [pitch, yaw];
+                }
+            }
+            return [threePitch, threeYaw];
+        }
+    };
+
+    container.addEventListener('mousedown', (e) => { 
+        if (e.target.closest('.pnlm-hotspot-base') || e.target.closest('.qa-btn') || e.target.closest('.dev-toolbar') || e.target.closest('#js-dock')) return;
+        threeIsDragging = true; threeLastMouseX = e.clientX; threeLastMouseY = e.clientY; 
+    });
+    window.addEventListener('mouseup', () => { threeIsDragging = false; });
+    window.addEventListener('mousemove', (e) => {
+        if(!threeIsDragging || window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv) return;
+        const dx = e.clientX - threeLastMouseX;
+        const dy = e.clientY - threeLastMouseY;
+        threeLastMouseX = e.clientX; threeLastMouseY = e.clientY;
+        threeTargetYaw -= dx * 0.15;
+        threeTargetPitch += dy * 0.15;
+        threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
+    });
+    
+    container.addEventListener('touchstart', (e) => { 
+        if (e.target.closest('.pnlm-hotspot-base') || e.target.closest('.qa-btn') || e.target.closest('.dev-toolbar') || e.target.closest('#js-dock')) return;
+        threeIsDragging = true; threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY; 
+    }, {passive: true});
+    window.addEventListener('touchend', () => { threeIsDragging = false; });
+    window.addEventListener('touchmove', (e) => {
+        if(!threeIsDragging || window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv) return;
+        const dx = e.touches[0].clientX - threeLastMouseX;
+        const dy = e.touches[0].clientY - threeLastMouseY;
+        threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY;
+        threeTargetYaw -= dx * 0.25;
+        threeTargetPitch += dy * 0.25;
+        threeTargetPitch = Math.max(-85, Math.min(85, threeTargetPitch));
+    }, {passive: true});
+
+    function animate() {
+        requestAnimationFrame(animate);
+        threeYaw += (threeTargetYaw - threeYaw) * 0.12;
+        threePitch += (threeTargetPitch - threePitch) * 0.12;
+        threeCamera.rotation.y = THREE.MathUtils.degToRad(-threeYaw);
+        threeCamera.rotation.x = THREE.MathUtils.degToRad(threePitch);
+        threeRenderer.render(threeScene, threeCamera);
+        if (window.__fresia_svgSyncFn) window.__fresia_svgSyncFn();
+    }
+    animate();
+
     attachSmartViewerHandlers(PANORAMA_FILE);
-    if (!pannellumIntroBootstrapped) { pannellumIntroBootstrapped = true; runPannellumIntroBootstrap(); }
     if (!panoramaEventsBound) { panoramaEventsBound = true; bindPanoramaPointerEvents(); }
 }
