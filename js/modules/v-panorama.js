@@ -456,6 +456,10 @@ async function initPannellum() {
         setYaw: (y, time) => { if (time) window.visor360.lookAt(undefined, y, undefined, time); else { threeTargetYaw = y; threeYaw = y; } },
         getHfov: () => threeCamera.fov,
         setHfov: (f, time) => { if (time) window.visor360.lookAt(undefined, undefined, f, time); else { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); } },
+        getThreeScene: () => threeScene,
+        getThreeCamera: () => threeCamera,
+        getThreeRenderer: () => threeRenderer,
+        getThreeMesh: () => threeMesh,
         resize: () => {
             threeCamera.aspect = window.innerWidth / window.innerHeight;
             threeCamera.updateProjectionMatrix();
