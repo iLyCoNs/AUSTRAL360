@@ -206,7 +206,8 @@ function updateSVGPaths() {
             if (!geoLine.left?.length || !geoLine.right?.length) return;
             
             // Set the dynamic color variable for CSS
-            cacheObj.gNode.style.setProperty('--calle-color', geoLine.calleColor || draftCalleCurvaColor || '#5a5f69');
+            const finalColor = geoLine.calleColor || (typeof draftCalleCurvaColor !== 'undefined' ? draftCalleCurvaColor : '#5a5f69');
+            cacheObj.gNode.style.setProperty('--calle-color', finalColor);
             // Aplicar inline fill-opacity para sortear limitacion CSS rgb
             arq2_applyCalleCurvaFillStyle(cacheObj.base[0], geoLine.calleCurvaAlpha);
             
