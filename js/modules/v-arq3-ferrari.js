@@ -29,7 +29,10 @@ window.arquitecto3D = {
                     if (typeof window.isArquitecto2Active !== 'undefined') window.isArquitecto2Active = false;
                     if (typeof window.isDevModeDrawActive !== 'undefined') window.isDevModeDrawActive = false;
                     document.body.style.cursor = 'crosshair';
-                    if (this.vertexMarkerGroup) this.vertexMarkerGroup.visible = true;
+                    if (this.vertexMarkerGroup) {
+                        const chk = document.getElementById('arq2-lote-libre-hide-streets');
+                        this.vertexMarkerGroup.visible = chk ? !chk.checked : true;
+                    }
                 } else {
                     btn.style.background = '';
                     btn.style.color = '#ef4444';
@@ -78,6 +81,16 @@ window.arquitecto3D = {
                     if (typeof window.abrirSubMenuPines === 'function') {
                         window.abrirSubMenuPines();
                     }
+                }
+            });
+        }
+
+        // Checkbox para ocultar nodos de arrastre
+        const hideVerticesChk = document.getElementById('arq2-lote-libre-hide-streets');
+        if (hideVerticesChk) {
+            hideVerticesChk.addEventListener('change', (e) => {
+                if (this.vertexMarkerGroup) {
+                    this.vertexMarkerGroup.visible = !e.target.checked;
                 }
             });
         }
@@ -415,6 +428,13 @@ window.arquitecto3D = {
         const markerGeo = new THREE.SphereGeometry(3, 16, 16); 
         const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const marker = new THREE.Mesh(markerGeo, markerMat);
+        
+        // Efecto Neon temporal
+        const glowGeoTemp = new THREE.SphereGeometry(5, 16, 16);
+        const glowMatTemp = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthTest: false });
+        const glowTemp = new THREE.Mesh(glowGeoTemp, glowMatTemp);
+        marker.add(glowTemp);
+        
         marker.position.copy(v3);
         this.tempMarkerGroup.add(marker);
         
@@ -678,23 +698,34 @@ window.arquitecto3D = {
         const fillMat = new THREE.MeshBasicMaterial({
             color: lote.color,
             transparent: true,
-            opacity: lote.tipo === 'calle-curva' ? (lote.alpha ?? 0.7) : 0.16,
+            opacity: lote.tipo === 'calle-curva' ? (lote.alpha ?? 0.7) : 0.22,
+            blending: lote.tipo === 'calle-curva' ? THREE.NormalBlending : THREE.AdditiveBlending, // Transparencia macOS premium
             side: THREE.DoubleSide,
             depthTest: false
         });
         lote.fillMesh = new THREE.Mesh(fillGeo, fillMat);
         lote.fillMesh.userData = { loteId: lote.id };
         
-        // Nodos (Vértices) arrastrables
+        // Nodos (Vértices) arrastrables con Neón Blanco Premium
         lote.markerMeshes = [];
         const markerGeo = new THREE.SphereGeometry(3.5, 16, 16);
         const markerMat = new THREE.MeshBasicMaterial({ 
             color: 0xffffff, 
             depthTest: false 
         });
+        const glowGeo = new THREE.SphereGeometry(6.5, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.4, 
+            blending: THREE.AdditiveBlending,
+            depthTest: false 
+        });
         
         lote.points.forEach((p, index) => {
             const m = new THREE.Mesh(markerGeo, markerMat);
+            const mGlow = new THREE.Mesh(glowGeo, glowMat);
+            m.add(mGlow); // Anidar el brillo neón al marcador principal
             m.position.copy(p);
             m.userData = { loteId: lote.id, index: index };
             lote.markerMeshes.push(m);
