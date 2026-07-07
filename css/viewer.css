@@ -64,7 +64,7 @@ body.auto-macro-active .linea-franja-grupo-outline { fill: none !important; stro
 .franja-div-handle:hover, .franja-div-handle.is-dragging { background: #fbbf24; transform: translate(-50%,-50%) scale(1.12); box-shadow: 0 0 14px rgba(245,158,11,0.85); }
 g[data-tipo="franja-grupo"] path,
 g[data-tipo="franja-curva-grupo"] path { fill: rgba(16,185,129,0.04); stroke: rgba(16,185,129,0.45); stroke-width: calc(var(--stroke-dyn) * 0.5); stroke-dasharray: 4 4; pointer-events: none; }
-.btn-franja-lotes::before { content:'ðŸ˜ï¸'; display:inline-block; font-size:10px; margin-right: 3px; }
+.btn-franja-lotes::before { content:'🏘️'; display:inline-block; font-size:10px; margin-right: 3px; }
 #franja-lotes-modal { position: fixed; inset: 0; background: rgba(10, 15, 25, 0.98); z-index: 99999999; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: opacity 0.25s, visibility 0.25s; pointer-events: none; }
 #franja-lotes-modal.open { visibility: visible; opacity: 1; pointer-events: auto; }
 .franja-modal-box { width: min(420px, 94vw); max-height: 88vh; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
@@ -94,7 +94,7 @@ body.linea-pines-active { cursor: crosshair !important; }
 .linea-pines-hint { margin: 0; font-size: 8px; line-height: 1.45; color: #64748b; font-weight: 600; }
 body.is-embedded #linea-pines-panel { bottom: 72px; left: 8px; width: min(248px, calc(100vw - 16px)); }
 #dev-toolbar-pins #btn-linea-pines.active { background: rgba(168, 85, 247, 0.28); border-color: rgba(196, 181, 253, 0.55); color: #e9d5ff; box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35), 0 4px 14px rgba(168, 85, 247, 0.2); }
-/* --- CALLES PREMIUM (anillo blanco fino + nÃºcleo transparente) --- */
+/* --- CALLES PREMIUM (anillo blanco fino + núcleo transparente) --- */
 .linea-calle-borde {
     fill: none;
     stroke: rgba(255, 255, 255, 0.94);
@@ -161,7 +161,6 @@ body.heatmap-mode g.lote-interactivo[data-status="vendido"] path { fill: rgba(23
 body.heatmap-mode g.lote-interactivo[data-status="no_disponible"] path { fill: rgba(148, 163, 184, 0.8) !important; filter: drop-shadow(0 0 15px rgba(148,163,184,0.8)); }
 .pnlm-compass { display: none !important; } .pnlm-load-button { background: #141923 !important; border-radius: 50% !important; }
 .pnlm-hotspot-base { z-index: 10 !important; transition: opacity 0.5s ease-out !important; }
-body.is-panning .pnlm-hotspot-base { display: none !important; pointer-events: none !important; }
 body.panorama-dragging .vertex-marker, body.panorama-dragging .franja-lot-label, body.calle-no-snap-active .vertex-marker { display: none !important; pointer-events: none !important; }
 body.arq2-active .franja-lot-label { display: none !important; pointer-events: none !important; }
 body:not(.loteo-overlay-ready) .pnlm-hotspot-base { opacity: 0 !important; pointer-events: none !important; }
@@ -214,7 +213,7 @@ body.loteo-overlay-ready .ruta-hud-wrapper, body.dev-mode-pins-active .ruta-hud-
 .r-link.gmaps:hover { background: #32d74b; box-shadow: 0 0 10px rgba(50,215,75,0.6); transform: scale(1.12); }
 .ruta-line-down { width: 1px; height: 30px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent); margin-top: 2px; }
 .ruta-target-dot { width: 5px; height: 5px; background: #FD9227; border-radius: 50%; box-shadow: 0 0 8px #FD9227, 0 0 0 1.5px rgba(15,23,42,0.5); margin-top: -2px; }
-.btn-pin-ruta::before { content:'ðŸ›£ï¸'; display:inline-block; font-size:10px; margin-right: 4px; }
+.btn-pin-ruta::before { content:'🛣️'; display:inline-block; font-size:10px; margin-right: 4px; }
 .btn-calc-route:disabled { opacity: 0.55; cursor: wait; }
 .ruta-traffic-badge { font-size: 6px; color: #94a3b8; letter-spacing: 0.3px; margin-left: 2px; vertical-align: super; }
 /* --- UI COLAPSABLE GLOBAL (Desktop & Mobile) --- */
@@ -250,7 +249,7 @@ body.dev-mode-pins-active .horizon-pill-extra { max-width: none !important; opac
 .casa-play-icon { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #FF3B30, #FF453A); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(255, 59, 48, 0.4); }
 .casa-glass-card:hover .casa-play-icon { box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.2); }
 .casa-title { color: #1d1d1f; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-.btn-pin-casa::before { content:'ðŸ '; display:inline-block; font-size:10px; margin-right: 4px; }
+.btn-pin-casa::before { content:'🏠'; display:inline-block; font-size:10px; margin-right: 4px; }
 #mac-gallery-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px); z-index: 999999999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; pointer-events: none;} #mac-gallery-modal.open { opacity: 1; visibility: visible; pointer-events: auto;} .mac-g-window { width: 90vw; height: 85vh; max-width: 1200px; background: rgba(15, 22, 36, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.8); transform: scale(0.95); transition: transform 0.3s; pointer-events: auto; } #mac-gallery-modal.open .mac-g-window { transform: scale(1); } .mac-g-header { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1); } .mac-g-traffic { display: flex; gap: 8px; } .mac-g-traffic span { width: 12px; height: 12px; border-radius: 50%; display: inline-block; cursor: pointer; transition: transform 0.2s; } .mac-g-traffic span:hover { transform: scale(1.2); } .mac-g-close { background-color: #FF453A; } .mac-g-min { background-color: #FFD60A; } .mac-g-max { background-color: #32D74B; } .mac-g-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 0.5px; position: absolute; left: 50%; transform: translateX(-50%); } .mac-g-body { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; } .mac-g-main-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; transition: transform 0.3s ease; user-select: none;} .mac-g-main-img.zoomed { transform: scale(2); cursor: zoom-out; } .mac-g-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.3);} .mac-g-nav:hover { background: rgba(255,255,255,0.25); transform: translateY(-50%) scale(1.1); } .mac-g-prev { left: 20px; } .mac-g-next { right: 20px; } .mac-g-footer { height: 80px; background: rgba(0,0,0,0.6); border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; gap: 12px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; } .mac-g-footer::-webkit-scrollbar { display: none; } .mac-g-thumb { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 2px solid transparent; opacity: 0.5; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.5);} .mac-g-thumb:hover { opacity: 0.8; transform: translateY(-2px); } .mac-g-thumb.active { border-color: #3b82f6; opacity: 1; transform: scale(1.05); }
 #pegman-ghost { position: fixed; pointer-events: none; z-index: 99999999; opacity: 0; transform-origin: 50% 5%; transition: opacity 0.15s; margin-left: -7px; margin-top: -2px; } #pegman-ghost img { width: 14px; height: auto; filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6)); pointer-events: none; } #pegman-ghost.active { opacity: 1; } @keyframes shakeError { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } } .shake { animation: shakeError 0.4s ease-in-out; }
 #ghost-pin { position: fixed; pointer-events: none; z-index: 99999999; opacity: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 40px; height: 80px; transform: translate(-50%, -100%); transition: opacity 0.1s; margin-top: 6px; } #ghost-pin.active { opacity: 1; } .ghost-wrapper { margin-bottom: 25px; animation: ghostFloat 0.6s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); } .ghost-pin-body { width: 32px; height: 32px; background: rgba(6, 182, 212, 0.2); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px dashed #22d3ee; box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); display: flex; align-items: center; justify-content: center; } .ghost-pin-body::after { content: ''; width: 12px; height: 12px; background: rgba(255,255,255,0.8); border-radius: 50%; box-shadow: 0 0 10px #fff; } .ghost-pin-laser { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 2px; height: 35px; background: linear-gradient(to top, rgba(34, 211, 238, 0.8), transparent); } .ghost-pin-target { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: #fff; border: 2px solid #06b6d4; border-radius: 50%; box-shadow: 0 0 15px #06b6d4, 0 0 0 4px rgba(6, 182, 212, 0.3); } @keyframes ghostFloat { from { transform: translateY(0); } to { transform: translateY(-8px); } }
@@ -316,7 +315,7 @@ body.pegman-dragging .smart-pin-wrapper.has-360 .pin-teardrop-container { animat
 .btn-cancel:hover { background: rgba(255,255,255,0.14); }
 .modal-content { background: #0f1624; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; width: 340px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
 .dev-toolbar { position: absolute; top: 20px; left: 50%; z-index: 99999; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.15); padding: 16px 24px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translate(-50%, -200%); visibility: hidden; opacity: 0; pointer-events: auto; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, visibility 0.4s; display: flex; flex-direction: column; align-items: center; min-width: 320px; } .dev-toolbar.show { transform: translate(-50%, 0); visibility: visible; opacity: 1; } .macos-header { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; } .macos-dots { display: flex; gap: 6px; } .macos-dots i { width: 12px; height: 12px; border-radius: 50%; } .macos-dots i:nth-child(1) { background: #ff5f56; } .macos-dots i:nth-child(2) { background: #ffbd2e; } .macos-dots i:nth-child(3) { background: #27c93f; } .dev-toolbar-title { color: #94a3b8; font-size: 11px; font-weight: 700; letter-spacing: 1px; flex: 1; text-align: center; } .dev-tools-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; } .dev-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; pointer-events: auto;} .dev-btn:hover { background: rgba(255,255,255,0.15); color: #fff; } .dev-btn.active { background: rgba(59, 130, 246, 0.3); border-color: #3b82f6; color: #fff; box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); } .dev-btn.action { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; } .dev-btn.action:hover { background: rgba(239, 68, 68, 0.8); color: #fff; } .dev-btn.export { background: rgba(16, 185, 129, 0.8); border-color: #10b981; color: #fff; margin-left: 5px; font-weight: 700; } .dev-btn.export-ai { background: rgba(139, 92, 246, 0.8); border-color: #7c3aed; color: #fff; margin-left: 5px; font-weight: 700; } .dev-btn.export-ai:hover { background: rgba(139, 92, 246, 1); box-shadow: 0 0 15px rgba(139, 92, 246, 0.5); } .dev-btn.nuke { background: rgba(220, 38, 38, 0.2); border-color: rgba(220, 38, 38, 0.5); color: #f87171; } .dev-btn.nuke:hover { background: rgba(220, 38, 38, 0.9); color: #fff; }
-.btn-pin-disp::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; } .btn-pin-res::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; } .btn-pin-vend::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; } .btn-pin-nodisp::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#94a3b8; } .btn-pin-360::before { content:'ðŸ‘ï¸'; display:inline-block; font-size:10px; } .btn-pin-hor::before { content:'â›°ï¸'; display:inline-block; font-size:10px; }
+.btn-pin-disp::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; } .btn-pin-res::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; } .btn-pin-vend::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#ef4444; } .btn-pin-nodisp::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; background:#94a3b8; } .btn-pin-360::before { content:'👁️'; display:inline-block; font-size:10px; } .btn-pin-hor::before { content:'⛰️'; display:inline-block; font-size:10px; }
 
 /* --- MODO EMBEBIDO (IFRAME) --- */
 body.is-embedded .premium-header,
@@ -349,7 +348,7 @@ body.is-admin-editor.is-embedded #dev-toolbar-pins.show {
     max-height: calc(100vh - 80px);
     overflow-y: auto;
 }
-/* El botÃ³n de volver al 360 lo maneja el padre, el hijo debe ser solo el lienzo puro */
+/* El botón de volver al 360 lo maneja el padre, el hijo debe ser solo el lienzo puro */
 
 @media (max-width: 1024px), (max-height: 700px) {
     .premium-header { top: 16px; padding: 10px 16px; z-index: 999999; pointer-events: auto; } body.has-banner .premium-header { top: 40px; } .premium-header h1 { font-size: 14px; } .premium-header p { font-size: 8px; }
@@ -388,7 +387,7 @@ body.is-admin-editor.is-embedded #dev-toolbar-pins.show {
     body.is-embedded .horizon-hud-wrapper .horizon-detail-card { display: none !important; }
     body.is-embedded .horizon-hud-wrapper .ruta-glass-pill { gap: 6px; padding: 4px 8px 4px 14px; max-width: none; }
 }
-/* --- FASE 1 PERF MÃ“VIL: HUD sÃ³lido + animaciones pausadas al pan --- */
+/* --- FASE 1 PERF MÓVIL: HUD sólido + animaciones pausadas al pan --- */
 body.is-touch-device .premium-header,
 body.is-touch-device .premium-compass-container,
 body.is-touch-device .poi-trigger-btn,
@@ -436,7 +435,7 @@ body.panorama-dragging .card-video-badge {
 }
 body.panorama-dragging .poi-icon { animation: none !important; }
 
-/* FIX DEFINITIVO CALLE FLOTANTE: Apagar lectura de fondo durante arrastre en mÃ³viles */
+/* FIX DEFINITIVO CALLE FLOTANTE: Apagar lectura de fondo durante arrastre en móviles */
 body.is-touch-device.panorama-dragging .premium-header,
 body.is-touch-device.panorama-dragging .premium-dock,
 body.is-touch-device.panorama-dragging .poi-trigger-btn,
@@ -493,11 +492,11 @@ g[data-status="disponible"] path.linea-organico-fill { fill: rgba(var(--c-disp),
 g[data-status="reservado"] path.linea-organico-fill { fill: rgba(var(--c-res), 0.16) !important; }
 g[data-status="vendido"] path.linea-organico-fill { fill: rgba(var(--c-vend), 0.16) !important; }
 g[data-status="no_disponible"] path.linea-organico-fill { fill: rgba(var(--c-nodisp), 0.16) !important; }
-/* Borde exterior de lotes Arq2 â€” mismo estilo premium y delgado que franja lote clÃ¡sica (1.2px aprox) */
+/* Borde exterior de lotes Arq2 — mismo estilo premium y delgado que franja lote clásica (1.2px aprox) */
 g.lote-organico path.linea-organico-perimetro, g.fila-variable-lote path.linea-organico-perimetro { fill: none !important; stroke: rgba(255,255,255,0.94) !important; stroke-width: calc(var(--stroke-dyn) * 0.48) !important; stroke-dasharray: none !important; stroke-linecap: round !important; stroke-linejoin: round !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); mix-blend-mode: normal; pointer-events: none; }
 /* Costura seleccionada */
 g.lote-organico.arq2-costura-selected path.linea-organico-perimetro { stroke: #06b6d4 !important; stroke-width: calc(var(--stroke-dyn) * 0.6) !important; }
-/* Divisorias internas compartidas â€” estilo punteado premium como franja (1.05px aprox) */
+/* Divisorias internas compartidas — estilo punteado premium como franja (1.05px aprox) */
 .linea-punteada-costura { fill: none !important; stroke: rgba(255,255,255,0.78) !important; stroke-width: calc(var(--stroke-dyn) * 0.42) !important; stroke-linecap: round !important; stroke-linejoin: round !important; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; }
 .linea-punteada-costura[data-costura-style="punteada"] { stroke-dasharray: 5,7 !important; }
 .linea-punteada-costura[data-costura-style="solida"] { stroke-dasharray: none !important; stroke: rgba(255,255,255,0.88) !important; }
@@ -523,9 +522,9 @@ body.calle-mode-active #layer-calles-arq2 { pointer-events: auto; }
 .linea-calle-arq2-fill { fill: var(--calle-color, rgb(90, 95, 105)) !important; stroke: none; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; transition: fill 0.2s, filter 0.2s; }
 body.calle-mode-active .linea-calle-arq2-fill { pointer-events: auto; cursor: pointer; }
 body.calle-mode-active .linea-calle-arq2-fill:hover { filter: brightness(1.2); }
-/* Borde de la calle curva Arq2 â€” mismo estilo premium y delgado (1.2px) */
+/* Borde de la calle curva Arq2 — mismo estilo premium y delgado (1.2px) */
 .linea-calle-arq2-borde { fill: none; stroke: rgba(255,255,255,0.94); stroke-width: calc(var(--stroke-dyn) * 0.48); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); }
-/* LÃ­nea central de la calle curva â€” punteada premium amarilla y delgada */
+/* Línea central de la calle curva — punteada premium amarilla y delgada */
 .linea-calle-arq2-centro { fill: none; stroke: rgba(253,224,71,0.85); stroke-width: calc(var(--stroke-dyn) * 0.32); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6,8; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; }
 .arq2-calle-curva-row { display: none; flex-direction: column; gap: 6px; margin: 0 0 10px; font-size: 11px; color: #cbd5e1; }
 .arq2-calle-curva-row label { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
@@ -553,7 +552,7 @@ body.pin-v2-active .lote-interactivo { pointer-events: none !important; }
 
 
 /* =========================================================
-   ARQUITECTO 2.0 — FILA DE PINES: Ghost Mode + estilos
+   ARQUITECTO 2.0 � FILA DE PINES: Ghost Mode + estilos
    ========================================================= */
 
 /* Separador visual entre fila de herramientas y fila de pines */
@@ -565,7 +564,7 @@ body.pin-v2-active .lote-interactivo { pointer-events: none !important; }
     flex-wrap: wrap !important;
 }
 
-/* Botón de pin activo en Arq2 */
+/* Bot�n de pin activo en Arq2 */
 .arq2-pin-btn.active {
     background: rgba(245,158,11,0.25) !important;
     border-color: #f59e0b !important;
@@ -573,52 +572,6 @@ body.pin-v2-active .lote-interactivo { pointer-events: none !important; }
     box-shadow: 0 0 8px rgba(245,158,11,0.35) !important;
 }
 
-/* Ghost Mode extendido: arq2-pin-active desactiva eventos en polígonos SVG */
+/* Ghost Mode extendido: arq2-pin-active desactiva eventos en pol�gonos SVG */
 body.arq2-pin-active .lote-interactivo { pointer-events: none !important; }
 
-
-/* =========================================================================
-   SVG VERTICES (Batch Rendering - 60FPS)
-   ========================================================================= */
-
-#vertices-base-path, #vertices-franja-path, #vertices-drawing-path, #vertices-origin-path {
-    pointer-events: none;
-    transform-origin: center center;
-}
-
-#vertices-base-path {
-    fill: #ffffff;
-    stroke: #1e293b;
-    stroke-width: 3px;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
-}
-
-#vertices-drawing-path {
-    fill: #F59E0B;
-    stroke: #ffffff;
-    stroke-width: 3px;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
-}
-
-#vertices-origin-path {
-    fill: #f59e0b !important;
-    stroke: #fff !important;
-    stroke-width: 3px;
-    filter: drop-shadow(0 0 14px rgba(245,158,11,1));
-    animation: svgClosePulse 0.75s ease-in-out infinite alternate;
-}
-
-#vertices-franja-path {
-    fill: rgba(16,185,129,0.82) !important;
-    stroke: rgba(255,255,255,0.92) !important;
-    stroke-width: 2px !important;
-    filter: drop-shadow(0 0 4px rgba(16,185,129,0.55));
-}
-
-body.vertex-is-dragging { cursor: grabbing !important; }
-
-body.panorama-dragging #layer-vertices, 
-body.calle-no-snap-active #layer-vertices { 
-    display: none !important; 
-    pointer-events: none !important; 
-}

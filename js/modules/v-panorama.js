@@ -112,56 +112,11 @@ function runPannellumIntroBootstrap() {
 
 function bindPanoramaPointerEvents() {
     const container = document.getElementById('panorama-container'); let startX, startY, startTime; let lastClickTime = 0;
-    
     function handleStart(e) { 
         let mock = getMockEvent(e); 
         startX = mock.clientX; 
         startY = mock.clientY; 
-        startTime = Date.now();
-        
-        // --- Hit-Testing Original Basado en DOM ---
-        if ((typeof isDevModeDrawActive !== 'undefined' && isDevModeDrawActive) || (typeof isArquitecto2Active !== 'undefined' && isArquitecto2Active)) {
-            const hn = e.target.closest('.drawing-node') || e.target.closest('.origin-vertex') || e.target.closest('.pnlm-hotspot-base');
-            if (hn && hn.id) {
-                const hId = hn.id;
-                if (currentLineType === 'eraser' || (typeof arq2Tool !== 'undefined' && arq2Tool === 'eraser')) {
-                    const parts = hId.split('_');
-                    let lineId = null;
-                    if (hId.startsWith('arq2_temp_')) lineId = arq2TempLineId;
-                    else if (hId.startsWith('temp_base_')) lineId = currentTempLineId;
-                    else if (hId.startsWith('vert_base_')) lineId = parts.slice(2, -1).join('_');
-                    else if (hId.startsWith('arq2_lote_')) lineId = parts.slice(2, -1).join('_');
-                    else if (hId.startsWith('arq2_ctrl_')) lineId = parts.slice(2, -2).join('_');
-
-                    if (lineId && typeof applyEraserDelete === 'function') {
-                        applyEraserDelete(lineId);
-                        if (typeof refreshAllHotspots === 'function') refreshAllHotspots(true);
-                        if (typeof saveToLocal === 'function') saveToLocal();
-                    }
-                } else {
-                    const parts = hId.split('_');
-                    if (hId.startsWith('arq2_temp_')) {
-                        draggingVertex = { lineId: arq2TempLineId, idx: parseInt(parts[2]), startX, startY, target: 'vertex', hsId: hId };
-                    } else if (hId.startsWith('temp_base_')) {
-                        draggingVertex = { lineId: currentTempLineId, idx: parseInt(parts[parts.length-1]), startX, startY, target: 'vertex', hsId: hId };
-                    } else if (hId.startsWith('vert_base_')) {
-                        const lineId = parts.slice(2, -1).join('_');
-                        draggingVertex = { lineId: lineId, idx: parseInt(parts[parts.length-1]), startX, startY, target: 'vertex', hsId: hId, el: hn };
-                    } else if (hId.startsWith('arq2_lote_')) {
-                        const idx = parseInt(parts[parts.length-1]);
-                        const lineId = parts.slice(2, -1).join('_');
-                        draggingVertex = { lineId: lineId, idx: idx, startX, startY, target: 'vertex', hsId: hId, el: hn };
-                    } else if (hId.startsWith('arq2_ctrl_')) {
-                        const target = parts[parts.length-1]; // 'p1' or 'p2'
-                        const idx = parseInt(parts[parts.length-2]);
-                        const lineId = parts.slice(2, -2).join('_');
-                        draggingVertex = { lineId: lineId, idx: idx, startX, startY, target: target, hsId: hId, el: hn };
-                    }
-                }
-                e.preventDefault(); e.stopPropagation();
-                return;
-            }
-        } 
+        startTime = Date.now(); 
         
         if (e.target && e.target.tagName && e.target.tagName.toLowerCase() === 'path') {
             const dragfix = document.querySelector('.pnlm-dragfix');
@@ -178,10 +133,8 @@ function bindPanoramaPointerEvents() {
                 } catch(err) {}
             }
         }
-        document.body.classList.add('is-panning');
     }
     function handleEnd(e) {
-        document.body.classList.remove('is-panning');
         if (draggingCalleMove) {
             if (draggingCalleMove.el) draggingCalleMove.el.classList.remove('is-dragging');
             draggingCalleMove = null;
@@ -205,7 +158,6 @@ function bindPanoramaPointerEvents() {
         }
         if (draggingVertex) { 
             if(draggingVertex.el) draggingVertex.el.classList.remove('is-dragging'); 
-            document.body.classList.remove('vertex-is-dragging'); // Batch rendering clear
             let mock = getMockEvent(e);
             const sx = draggingVertex.startX ?? mock.clientX;
             const sy = draggingVertex.startY ?? mock.clientY;
@@ -393,15 +345,7 @@ function bindPanoramaPointerEvents() {
         
         try { const coords = visor360.mouseEventToCoords(mock); updateDrawModeSnap(mock, coords); } catch (err) {}
     }
-    container.addEventListener('mousedown', handleStart, { capture: true });
-    container.addEventListener('touchstart', handleStart, { passive: false, capture: true });
-    container.addEventListener('pointerdown', handleStart, { passive: false, capture: true });
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchend', handleEnd);
-    window.addEventListener('pointerup', handleEnd);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('touchmove', handleMove, { passive: false });
-    window.addEventListener('pointermove', handleMove, { passive: false });
+    container.addEventListener('mousedown', handleStart); container.addEventListener('touchstart', handleStart, { passive: false }); window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd); window.addEventListener('mousemove', handleMove); window.addEventListener('touchmove', handleMove, { passive: false });
 
     // =====================================================================
     // FIX RAÍZ — Smart Pin sobre polígono SVG
