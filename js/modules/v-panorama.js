@@ -445,6 +445,16 @@ async function initPannellum() {
         setYaw: (y) => { threeTargetYaw = y; threeYaw = y; },
         getHfov: () => threeCamera.fov,
         setHfov: (f) => { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); },
+        resize: () => {
+            threeCamera.aspect = window.innerWidth / window.innerHeight;
+            threeCamera.updateProjectionMatrix();
+            threeRenderer.setSize(window.innerWidth, window.innerHeight);
+        },
+        lookAt: (pitch, yaw, hfov, time) => {
+            if (pitch !== undefined) threeTargetPitch = pitch;
+            if (yaw !== undefined) threeTargetYaw = yaw;
+            if (hfov !== undefined) { threeCamera.fov = hfov; threeCamera.updateProjectionMatrix(); }
+        },
         getConfig: () => ({ hotSpots: window.fresia2DVertices || [] }),
         addHotSpot: (hs) => { 
             const layer2D = document.getElementById('fresia-2d-layer');
