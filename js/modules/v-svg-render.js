@@ -204,6 +204,12 @@ function updateSVGPaths() {
         if ((lineData.tipo === 'calle-curva-arq2' || lineData.tipo === 'calle-curva-arq2-preview') && cacheObj.base?.length >= 5) {
             const geoLine = lineData.tipo === 'calle-curva-arq2-preview' ? arq2_getCalleCurvaPreviewLineData() : lineData;
             if (!geoLine.left?.length || !geoLine.right?.length) return;
+            
+            // Set the dynamic color variable for CSS
+            cacheObj.gNode.style.setProperty('--calle-color', geoLine.calleColor || draftCalleCurvaColor || '#5a5f69');
+            // Aplicar inline fill-opacity para sortear limitacion CSS rgb
+            arq2_applyCalleCurvaFillStyle(cacheObj.base[0], geoLine.calleCurvaAlpha);
+            
             // Backward compat: compute ejeIsClosed if not stored
             if (geoLine.ejeIsClosed === undefined && geoLine.ejeOriginal) {
                 geoLine.ejeIsClosed = arq2_isCalleEjeClosed(geoLine.ejeOriginal);

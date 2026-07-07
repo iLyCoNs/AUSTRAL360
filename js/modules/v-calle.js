@@ -661,6 +661,7 @@ function arq2_syncCalleCurvaPanelUI() {
     const alphaEl = document.getElementById('arq2-calle-alpha');
     const alphaVal = document.getElementById('arq2-calle-alpha-val');
     const cb = document.getElementById('arq2-calle-retorno');
+    const colorEl = document.getElementById('arq2-calle-color');
     if (slider) slider.value = arq2CalleCurvaAncho;
     if (valEl) valEl.textContent = arq2CalleCurvaAncho.toFixed(1);
     if (bar) {
@@ -669,6 +670,7 @@ function arq2_syncCalleCurvaPanelUI() {
     }
     if (alphaEl) alphaEl.value = draftCalleCurvaAlpha;
     if (alphaVal) alphaVal.textContent = Math.round(draftCalleCurvaAlpha * 100) + '%';
+    if (colorEl && typeof draftCalleCurvaColor !== 'undefined') colorEl.value = draftCalleCurvaColor;
     if (cb) cb.checked = arq2CalleRetorno;
 }
 function arq2_bindCalleCurvaAlphaSlider() {

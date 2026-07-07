@@ -3536,6 +3536,17 @@ function arq2_bindCalleCurvaAlphaSlider() {
         updateSVGPaths();
     });
 }
+function arq2_bindCalleCurvaColorPicker() {
+    const el = document.getElementById('arq2-calle-color');
+    if (!el || el.dataset.bound === '1') return;
+    el.dataset.bound = '1';
+    el.addEventListener('input', (e) => {
+        draftCalleCurvaColor = e.target.value;
+        arq2_syncCalleCurvaPanelUI();
+        syncSVGElements();
+        updateSVGPaths();
+    });
+}
 function arq2_ensurePanelExtras() {
     const row = document.querySelector('.arq2-tool-row');
     if (row && !document.getElementById('arq2-tool-calle-curva')) {
@@ -3555,45 +3566,40 @@ function arq2_ensurePanelExtras() {
         rowEl.innerHTML = '<label>Ancho calle <span id="arq2-calle-ancho-val">8.0</span></label><input type="range" id="arq2-calle-ancho" min="4" max="15" step="0.5" value="8"><div id="arq2-calle-width-preview"><div id="arq2-calle-width-preview-bar"></div></div>' +
             '<label>Curvatura <span id="arq2-calle-curvatura-val">5</span> <span style="font-size:10px;color:#94a3b8">(0=recta / 10=muy curva)</span></label><input type="range" id="arq2-calle-curvatura" min="0" max="10" step="1" value="5">' +
             '<label>Transparencia <span id="arq2-calle-alpha-val">55%</span></label><input type="range" id="arq2-calle-alpha" min="0.15" max="1" step="0.05" value="0.55">' +
+            '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><label style="margin:0;">Color Asfalto</label><input type="color" id="arq2-calle-color" value="#5a5f69" style="cursor:pointer; background:none; border:none; width: 30px; height: 30px;"></div>' +
             '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-retorno" style="cursor:pointer;"><label for="arq2-calle-retorno" style="cursor:pointer; margin: 0; font-size: 11px; color: #fff;">Retorno Circular (Cul-de-sac)</label></div>' +
-            '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imán)</label></div>';
+            '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imán)</label></div>' +
+            '<div style="margin-top: 10px; font-size: 11px; color: #10b981;"><i>Tip: Toca una calle ya dibujada para editarla (Color, Ancho, etc.) y presiona ENTER para guardar.</i></div>';
 
-        document.getElementById('arq2-smooth-row')?.insertAdjacentElement('afterend', rowEl);
-
-        const arq2_updateSelectedCalleCurva = () => {
-            if (arq2SelectedLineId) {
-                const line = allDrawnLines.find(l => l.id === arq2SelectedLineId);
-                if (line && line.tipo === 'calle-curva-arq2') {
-                    line.calleCurvaAncho = arq2CalleCurvaAncho;
-                    line.calleCurvaCurvatura = draftCalleCurvaCurvatura;
-                    line.calleCurvaAlpha = draftCalleCurvaAlpha;
-                    line.calleRetorno = arq2CalleRetorno;
-                    saveToLocal();
-                }
-            }
-        };
-
-        document.getElementById('arq2-calle-ancho')?.addEventListener('input', (e) => {
-            arq2CalleCurvaAncho = Math.max(4, Math.min(15, parseFloat(e.target.value) || 8));
+        document.getElementById('arq2-panel').appendChild(rowEl);
+        
+        const slider = document.getElementById('arq2-calle-ancho');
+        slider.addEventListener('input', (e) => {
+            arq2CalleCurvaAncho = parseFloat(e.target.value);
             arq2_syncCalleCurvaPanelUI();
-            arq2_updateSelectedCalleCurva();
             syncSVGElements();
             updateSVGPaths();
         });
-        document.getElementById('arq2-calle-curvatura')?.addEventListener('input', (e) => {
-            draftCalleCurvaCurvatura = Math.max(0, Math.min(10, parseInt(e.target.value, 10) || 0));
+        const sliderCurvatura = document.getElementById('arq2-calle-curvatura');
+        sliderCurvatura.addEventListener('input', (e) => {
+            draftCalleCurvaCurvatura = parseFloat(e.target.value);
             const valEl = document.getElementById('arq2-calle-curvatura-val');
             if (valEl) valEl.textContent = draftCalleCurvaCurvatura;
             arq2_updateSelectedCalleCurva();
             syncSVGElements();
             updateSVGPaths();
         });
-        document.getElementById('arq2-calle-retorno')?.addEventListener('change', (e) => {
-            arq2CalleRetorno = !!e.target.checked;
-            arq2_updateSelectedCalleCurva();
-            syncSVGElements();
-            updateSVGPaths();
-        });
+        
+        const cb = document.getElementById('arq2-calle-retorno');
+        if (cb) {
+            cb.addEventListener('change', (e) => {
+                arq2CalleRetorno = e.target.checked;
+                arq2_updateSelectedCalleCurva();
+                syncSVGElements();
+                updateSVGPaths();
+            });
+        }
+        
         document.getElementById('arq2-calle-no-snap')?.addEventListener('change', (e) => {
             document.body.classList.toggle('calle-no-snap-active', e.target.checked);
         });
@@ -5948,6 +5954,10 @@ function updateSVGPaths() {
             if (!geoLine.left?.length || !geoLine.right?.length) return;
             // Set the dynamic color variable for CSS
             cacheObj.gNode.style.setProperty('--calle-color', geoLine.calleColor || draftCalleCurvaColor || '#5a5f69');
+            
+            // Aplicar inline fill-opacity (necesario porque CSS fill no tiene canal alpha)
+            arq2_applyCalleCurvaFillStyle(cacheObj.base[0], geoLine.calleCurvaAlpha);
+            
             // Backward compat: compute ejeIsClosed if not stored
             if (geoLine.ejeIsClosed === undefined && geoLine.ejeOriginal) {
                 geoLine.ejeIsClosed = arq2_isCalleEjeClosed(geoLine.ejeOriginal);
@@ -6235,7 +6245,7 @@ function bindPanoramaPointerEvents() {
                 }
                 return;
             }
-            if (isDevModeDrawActive) {
+            if (isDevModeDrawActive && !isDevModePinsActive) {
                 if (currentLineType === 'calle') { handleCalleDrawClick(mock); return; }
                 const coords = visor360.mouseEventToCoords(mock); if (!coords) return; let p = coords[0], y = coords[1];
                 if (currentLineType === 'cortar') {

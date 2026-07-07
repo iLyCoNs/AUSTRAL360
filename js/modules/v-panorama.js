@@ -214,7 +214,7 @@ function bindPanoramaPointerEvents() {
                 }
                 return;
             }
-            if (isDevModeDrawActive) {
+            if (isDevModeDrawActive && !isDevModePinsActive) {
                 if (currentLineType === 'calle') { handleCalleDrawClick(mock); return; }
                 const coords = visor360.mouseEventToCoords(mock); if (!coords) return; let p = coords[0], y = coords[1];
                 if (currentLineType === 'cortar') {

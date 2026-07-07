@@ -433,14 +433,15 @@ function bindSvgEraser(el, lineId) {
             refreshAllHotspots(true);
             saveToLocal();
         } else if (isArquitecto2Active && arq2Tool === 'calle-curva-arq2') {
-            const line = allDrawnLines.find(l => l.id === lineId && l.tipo === 'calle-curva-arq2');
+            const line = allDrawnLines.find(l => l.id === lineId && (l.tipo === 'calle-curva-arq2' || l.tipo === 'calle'));
             if (line) {
                 e.stopPropagation(); e.preventDefault();
                 arq2SelectedLineId = lineId;
-                arq2CalleCurvaAncho = line.calleCurvaAncho || 8;
+                arq2CalleCurvaAncho = line.calleCurvaAncho || line.ancho || 8;
                 draftCalleCurvaCurvatura = line.calleCurvaCurvatura ?? 5;
-                draftCalleCurvaAlpha = line.calleCurvaAlpha ?? 0.55;
+                draftCalleCurvaAlpha = line.calleCurvaAlpha ?? line.alpha ?? 0.55;
                 arq2CalleRetorno = line.calleRetorno ?? false;
+                if (line.calleColor) draftCalleCurvaColor = line.calleColor;
                 
                 if (typeof arq2_syncCalleCurvaPanelUI === 'function') arq2_syncCalleCurvaPanelUI();
                 
