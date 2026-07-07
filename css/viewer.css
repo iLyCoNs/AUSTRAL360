@@ -581,3 +581,5 @@ body.arq2-pin-active .lote-interactivo { pointer-events: none !important; }
 #fresia-2d-layer .pnlm-hotspot-base { pointer-events: auto; }
 
 .pnlm-hotspot-base { position: absolute; top: 0; left: 0; }
+
+#loteo-svg { display: none !important; }
