@@ -389,15 +389,6 @@ function bindPanoramaPointerEvents() {
             if (!isArquitecto2Active) return;
             const mock = getMockEvent(e);
             const dx = mock.clientX - (svgPinStartX || mock.clientX);
-            const dy = mock.clientY - (svgPinStartY || mock.clientY);
-            const dt = Date.now() - (svgPinStartTime || Date.now());
-            if (dt < 500 && Math.hypot(dx, dy) < 18) {
-                arq2_onPanoramaClick(mock, false);
-            }
-        }, { passive: true });
-    }
-}
-
 let threeScene, threeCamera, threeRenderer, threeMesh;
 let threePitch = 60, threeYaw = -45, threeHFov = 100;
 let threeTargetPitch = 60, threeTargetYaw = -45;
@@ -446,9 +437,28 @@ async function initPannellum() {
         getHfov: () => threeCamera.fov,
         setHfov: (f) => { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); },
         getConfig: () => ({ hotSpots: window.fresia2DVertices || [] }),
-        addHotSpot: (hs) => { },
-        removeHotSpot: (id) => { },
+        addHotSpot: (hs) => { 
+            const layer2D = document.getElementById('fresia-2d-layer');
+            if (layer2D && hs.createTooltipFunc) {
+                const div = document.createElement('div');
+                div.className = 'pnlm-hotspot-base';
+                div.id = hs.id;
+                div.dataset.pitch = hs.pitch;
+                div.dataset.yaw = hs.yaw;
+                hs.createTooltipFunc(div, hs.createTooltipArgs);
+                layer2D.appendChild(div);
+            }
+        },
+        removeHotSpot: (id) => { 
+            const el = document.getElementById(id);
+            if(el && el.parentNode) el.parentNode.removeChild(el);
+        },
         destroy: () => { threeRenderer.dispose(); container.innerHTML = ''; },
+        on: (event, callback) => {
+            if (event === 'load') setTimeout(callback, 100);
+        },
+        getRenderer: () => null,
+        isLoaded: () => true,
         mouseEventToCoords: (e) => {
             const rect = threeRenderer.domElement.getBoundingClientRect();
             const mouse = new THREE.Vector2();
