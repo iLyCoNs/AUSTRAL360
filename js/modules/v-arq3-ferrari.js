@@ -1254,7 +1254,8 @@ window.arquitecto3D = {
                 points: v3Pts,
                 color: line.color || (line.tipo === 'lote' ? 0xffffff : 0x94a3b8),
                 ancho: line.calleCurvaAncho || line.ancho || 8,
-                alpha: line.calleCurvaAlpha || line.alpha || 0.7
+                alpha: line.calleCurvaAlpha || line.alpha || 0.7,
+                curvatura: line.calleCurvaCurvatura !== undefined ? line.calleCurvaCurvatura : 5
             };
             this.lotes.push(newLote);
             this.buildLoteMeshes(newLote);
@@ -1276,8 +1277,9 @@ window.arquitecto3D = {
             if (existing) {
                 existing.puntos = pyPoints;
                 if (l.tipo === 'calle-curva') existing.ejeOriginal = pyPoints;
-                if (l.ancho) existing.calleCurvaAncho = l.ancho;
-                if (l.alpha) existing.calleCurvaAlpha = l.alpha;
+                if (l.ancho !== undefined) existing.calleCurvaAncho = l.ancho;
+                if (l.alpha !== undefined) existing.calleCurvaAlpha = l.alpha;
+                if (l.curvatura !== undefined) existing.calleCurvaCurvatura = l.curvatura;
             } else {
                 window.allDrawnLines.push({
                     id: l.id,
@@ -1285,7 +1287,8 @@ window.arquitecto3D = {
                     puntos: pyPoints,
                     ejeOriginal: l.tipo === 'calle-curva' ? pyPoints : undefined,
                     calleCurvaAncho: l.ancho || 8,
-                    calleCurvaAlpha: l.alpha || 0.7
+                    calleCurvaAlpha: l.alpha || 0.7,
+                    calleCurvaCurvatura: l.curvatura !== undefined ? l.curvatura : 5
                 });
             }
         });
