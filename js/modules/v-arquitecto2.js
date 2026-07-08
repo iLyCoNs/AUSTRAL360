@@ -1155,20 +1155,21 @@ function arq2_ensurePanelExtras() {
         
         // Ensure alpha slider syncs selected street too if redefined inline
         const oldBind = window.arq2_bindCalleCurvaAlphaSlider;
-        window.arq2_bindCalleCurvaAlphaSlider = function() {
-            const alphaEl = document.getElementById('arq2-calle-alpha');
-            if (!alphaEl || alphaEl.dataset.boundUpdated === '1') return;
-            alphaEl.dataset.boundUpdated = '1';
-            alphaEl.addEventListener('input', (e) => {
-                draftCalleCurvaAlpha = Math.max(0.15, Math.min(1, parseFloat(e.target.value) || 0.55));
-                arq2_syncCalleCurvaPanelUI();
-                arq2_updateSelectedCalleCurva();
-                syncSVGElements();
-                updateSVGPaths();
-            });
-        };
-        window.arq2_bindCalleCurvaAlphaSlider();
-    } else if (!document.getElementById('arq2-calle-alpha') && document.getElementById('arq2-calle-curva-row')) {
+        if (!window.arq2_bindCalleCurvaAlphaSlider) {
+            window.arq2_bindCalleCurvaAlphaSlider = function() {
+                const alphaEl = document.getElementById('arq2-calle-alpha');
+                if (!alphaEl || alphaEl.dataset.boundUpdated === '1') return;
+                alphaEl.dataset.boundUpdated = '1';
+                alphaEl.addEventListener('input', (e) => {
+                    draftCalleCurvaAlpha = Math.max(0.15, Math.min(1, parseFloat(e.target.value) || 0.55));
+                    arq2_syncCalleCurvaPanelUI();
+                    arq2_updateSelectedCalleCurva();
+                    syncSVGElements();
+                    updateSVGPaths();
+                });
+            };
+            window.arq2_bindCalleCurvaAlphaSlider();
+        } else if (!document.getElementById('arq2-calle-alpha') && document.getElementById('arq2-calle-curva-row')) {
         const alphaWrap = document.createElement('div');
         alphaWrap.innerHTML = '<label>Transparencia <span id="arq2-calle-alpha-val">55%</span></label><input type="range" id="arq2-calle-alpha" min="0.15" max="1" step="0.05" value="0.55">';
         document.getElementById('arq2-calle-curva-row')?.appendChild(alphaWrap);
