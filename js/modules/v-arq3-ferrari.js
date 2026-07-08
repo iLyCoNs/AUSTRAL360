@@ -255,29 +255,39 @@ window.arquitecto3D = {
             }
         });
 
-        const slider = document.getElementById('arq2-calle-ancho');
-        if (slider) {
+        const bindSlider3D = (id, propName, globalVarName, formatFn) => {
+            const slider = document.getElementById(id);
+            if (!slider) return;
             slider.addEventListener('input', () => {
-                window.arq2CalleCurvaAncho = parseFloat(slider.value) || 8;
-                const valLabel = document.getElementById('arq2-calle-ancho-val');
-                if (valLabel) valLabel.textContent = window.arq2CalleCurvaAncho + 'm';
+                const val = parseFloat(slider.value);
+                window[globalVarName] = val;
+                const valLabel = document.getElementById(id + '-val');
+                if (valLabel) valLabel.textContent = formatFn(val);
                 
                 if (this.isActive && this.currentTool === 'calle-curva' && this.tempPoints.length >= 2) {
-                    // Update preview instantly
-                    const renderPts = [...this.tempPoints];
-                    this.renderTempStreet(renderPts);
+                    this.renderTempStreet([...this.tempPoints]);
                 }
                 
-                // Update the last drawn street if it was just drawn
-                if (this.lotes.length > 0) {
-                    const lastLote = this.lotes[this.lotes.length - 1];
-                    if (lastLote.tipo === 'calle-curva') {
-                        lastLote.ancho = window.arq2CalleCurvaAncho;
-                        this.updateVertexPosition({ loteId: lastLote.id, index: 0 }, lastLote.points[0], null, true);
+                let updatedAny = false;
+                this.lotes.forEach(lote => {
+                    if (lote.tipo === 'calle-curva') {
+                        if (propName === 'ancho') lote.ancho = val;
+                        else if (propName === 'curvatura') lote.curvatura = val;
+                        else if (propName === 'alpha') lote.alpha = val;
+                        
+                        if (lote.points && lote.points.length >= 2) {
+                            this.updateVertexPosition({ loteId: lote.id, index: 0 }, lote.points[0], null, true);
+                            updatedAny = true;
+                        }
                     }
-                }
+                });
+                if (updatedAny) this.syncToAllDrawnLines();
             });
-        }
+        };
+        
+        bindSlider3D('arq2-calle-ancho', 'ancho', 'arq2CalleCurvaAncho', v => v + 'm');
+        bindSlider3D('arq2-calle-curvatura', 'curvatura', 'draftCalleCurvaCurvatura', v => v);
+        bindSlider3D('arq2-calle-alpha', 'alpha', 'draftCalleCurvaAlpha', v => Math.round(v * 100) + '%');
 
         container.addEventListener('pointerdown', (e) => {
             if (!this.isActive) return;
@@ -466,11 +476,19 @@ window.arquitecto3D = {
         return [pitch, yaw];
     },
 
-    buildNative3DStreet: function(pts, widthFactor, isClosed) {
+    buildNative3DStreet: function(pts, widthFactor, isClosed, curvaturaFactor) {
         if (pts.length < 2) return null;
         
-        // 1. Create CatmullRomCurve3
-        const curve = new THREE.CatmullRomCurve3(pts, isClosed, 'chordal', 0.5);
+        // 1. Create CatmullRomCurve3 with curvatura parameter
+        let curvaturaVal = curvaturaFactor !== undefined ? curvaturaFactor : window.draftCalleCurvaCurvatura;
+        if (curvaturaVal === undefined) curvaturaVal = 5;
+        
+        let curve;
+        if (curvaturaVal === 0) {
+            curve = new THREE.CatmullRomCurve3(pts, isClosed, 'catmullrom', 0); // Recta
+        } else {
+            curve = new THREE.CatmullRomCurve3(pts, isClosed, 'catmullrom', curvaturaVal / 10);
+        }
         
         // Number of segments
         const divisions = Math.max(20, pts.length * 10);
@@ -676,7 +694,7 @@ window.arquitecto3D = {
     },
 
     renderTempStreet: function(renderPts) {
-        const geoData = this.buildNative3DStreet(renderPts, undefined, false);
+        const geoData = this.buildNative3DStreet(renderPts, undefined, false, window.draftCalleCurvaCurvatura);
         if (!geoData) return;
 
         if (this.tempLineMesh) {
@@ -868,7 +886,7 @@ window.arquitecto3D = {
         let geo, mat;
 
         if (lote.tipo === 'calle-curva') {
-            const geoData = this.buildNative3DStreet(pts, lote.ancho, false);
+            const geoData = this.buildNative3DStreet(pts, lote.ancho, false, lote.curvatura);
             if (geoData) {
                 geo = new THREE.BufferGeometry().setFromPoints(geoData.centerPts);
                 mat = new THREE.LineBasicMaterial({ visible: false }); // Ocultamos el borde gris feo
@@ -1040,7 +1058,7 @@ window.arquitecto3D = {
         
         let vertices = [];
         if (lote.tipo === 'calle-curva') {
-            const geoData = this.buildNative3DStreet(pts, lote.ancho, false);
+            const geoData = this.buildNative3DStreet(pts, lote.ancho, false, lote.curvatura);
             if (geoData) {
                 if (lote.lineMesh) {
                     lote.lineMesh.geometry.dispose();
@@ -1090,6 +1108,9 @@ window.arquitecto3D = {
             if (lote.fillMesh.geometry) lote.fillMesh.geometry.dispose();
             lote.fillMesh.geometry = new THREE.BufferGeometry();
             lote.fillMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            if (lote.tipo === 'calle-curva' && lote.alpha !== undefined && lote.fillMesh.material) {
+                lote.fillMesh.material.opacity = lote.alpha;
+            }
         }
         
         // Actualizar el mesh de la esfera (nodo) que estamos moviendo
