@@ -123,7 +123,20 @@ function runPannellumIntroBootstrap() {
 function bindPanoramaPointerEvents() {
     const container = document.getElementById('panorama-container'); let startX, startY, startTime; let lastClickTime = 0; let isMultiTouch = false;
     function handleStart(e) { 
-        if (e.touches && e.touches.length > 1) { isMultiTouch = true; return; }
+        if (e.touches && e.touches.length > 1) { 
+            isMultiTouch = true; 
+            if (e.touches.length === 2) {
+                const h = window.innerHeight;
+                if (e.touches[0].clientY > h * 0.75 && e.touches[1].clientY > h * 0.75) {
+                    if (typeof arq2_toggleArquitecto2 === 'function' && !window._arq2GestureLock) {
+                        window._arq2GestureLock = true;
+                        arq2_toggleArquitecto2();
+                        setTimeout(() => window._arq2GestureLock = false, 1000);
+                    }
+                }
+            }
+            return; 
+        }
         isMultiTouch = false;
         let mock = getMockEvent(e); 
         startX = mock.clientX; 
@@ -421,6 +434,7 @@ let threeScene, threeCamera, threeRenderer, threeMesh;
 let threePitch = 60, threeYaw = -45, threeHFov = 100;
 let threeTargetPitch = 60, threeTargetYaw = -45;
 let threeIsDragging = false, threeLastMouseX = 0, threeLastMouseY = 0;
+let threeLastPinchDist = -1;
 
 async function initPannellum() {
     const touchDev = isTouchDevice();
@@ -664,11 +678,34 @@ async function initPannellum() {
     
     container.addEventListener('touchstart', (e) => { 
         if (e.target.closest('.pnlm-hotspot-base') || e.target.closest('.qa-btn') || e.target.closest('.dev-toolbar') || e.target.closest('#js-dock')) return;
-        threeIsDragging = true; threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY; 
+        if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            threeLastPinchDist = Math.hypot(dx, dy);
+            threeIsDragging = false; 
+        } else if (e.touches.length === 1) {
+            threeIsDragging = true; threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY; 
+            threeLastPinchDist = -1;
+        }
     }, {passive: true});
-    window.addEventListener('touchend', () => { threeIsDragging = false; });
+    window.addEventListener('touchend', (e) => { 
+        if (!e.touches || e.touches.length === 0) { threeIsDragging = false; threeLastPinchDist = -1; }
+    });
     window.addEventListener('touchmove', (e) => {
-        if(!threeIsDragging || window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv || (window.arquitecto3D && window.arquitecto3D.draggingInfo)) return;
+        if (window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv || (window.arquitecto3D && window.arquitecto3D.draggingInfo)) return;
+        if (e.touches.length === 2 && threeLastPinchDist !== -1) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.hypot(dx, dy);
+            const deltaDist = dist - threeLastPinchDist;
+            threeLastPinchDist = dist;
+            let newFov = threeCamera.fov - (deltaDist * 0.15);
+            newFov = Math.max(20, Math.min(120, newFov));
+            threeCamera.fov = newFov;
+            threeCamera.updateProjectionMatrix();
+            return;
+        }
+        if(!threeIsDragging) return;
         const dx = e.touches[0].clientX - threeLastMouseX;
         const dy = e.touches[0].clientY - threeLastMouseY;
         threeLastMouseX = e.touches[0].clientX; threeLastMouseY = e.touches[0].clientY;
