@@ -106,12 +106,15 @@ function runPannellumIntroBootstrap() {
                             }, 3000);
                         }, 2500);
                     } else {
-                        // --- CINEMÁTICA VISTA AÉREA NORMAL ---
-                        visor360.lookAt(5, 15, 100, 3000); 
+                        // --- CINEMÁTICA VISTA AÉREA NORMAL (3 Puntos Drone) ---
+                        visor360.lookAt(15, -35, 100, 2500); 
                         setTimeout(() => {
-                            visor360.lookAt(-89, 65, 115, 3000);
-                            setTimeout(() => { revealLoteoOverlay(); }, 3000);
-                        }, 3000);
+                            visor360.lookAt(-15, 45, 95, 3000);
+                            setTimeout(() => {
+                                visor360.lookAt(-89, 65, 115, 3500);
+                                setTimeout(() => { revealLoteoOverlay(); }, 3500);
+                            }, 3000);
+                        }, 2500);
                     }
                 }
             }, 1500);
