@@ -385,11 +385,8 @@ function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a bo
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
-    if (window.visor360 && typeof window.visor360.getFerrari === 'function') {
-        const ferrari = window.visor360.getFerrari();
-        if (ferrari && typeof ferrari.syncToAllDrawnLines === 'function') {
-            ferrari.syncToAllDrawnLines();
-        }
+    if (window.MotorFerrari && typeof window.MotorFerrari.syncToAllDrawnLines === 'function') {
+        window.MotorFerrari.syncToAllDrawnLines();
     }
     const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
@@ -607,13 +604,12 @@ function refreshAllHotspots(skipIntegrity) {
     if(!visor360) return; 
     if (!skipIntegrity) ensureFranjaIntegrity(); 
     
-    if (window.visor360 && typeof window.visor360.getFerrari === 'function') {
-        const ferrari = window.visor360.getFerrari();
-        if (ferrari && typeof ferrari.importAllDrawnLines === 'function') {
-            ferrari.importAllDrawnLines();
+    if (window.MotorFerrari) {
+        if (typeof window.MotorFerrari.importAllDrawnLines === 'function') {
+            window.MotorFerrari.importAllDrawnLines();
         }
-        if (ferrari && typeof ferrari.importPuntosHorizonte === 'function') {
-            ferrari.importPuntosHorizonte();
+        if (typeof window.MotorFerrari.importPuntosHorizonte === 'function') {
+            window.MotorFerrari.importPuntosHorizonte();
         }
     }
 
