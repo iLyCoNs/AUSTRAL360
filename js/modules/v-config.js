@@ -728,3 +728,149 @@ function intersectSegments2D(a1, a2, b1, b2) {
     if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return [x1 + t * (x2 - x1), y1 + t * (y2 - y1)];
     return null;
 }
+function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+function buildCloudPayload() {
+    const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
+    if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
+    return payload;
+}
+function mergeAerialWithRemoteSuelo(remote, aerial) {
+    const merged = { ...aerial };
+    if (!remote) return merged;
+    ['lotesSuelo', 'horizontesSuelo', 'trazosSuelo', 'norteSuelo'].forEach((k) => { if (remote[k] !== undefined) merged[k] = remote[k]; });
+    return merged;
+}
+async function fetchGithubFileSha(user, repo, token, filename) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const response = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+    if (response.status === 404) return '';
+    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || `HTTP ${response.status}`); }
+    const jsonRes = await response.json();
+    return jsonRes.sha || '';
+}
+async function fetchGithubJsonContents(user, repo, token, filename) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const response = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+    if (response.status === 404) return { sha: '', data: null };
+    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || `HTTP ${response.status}`); }
+    const jsonRes = await response.json();
+    const raw = (jsonRes.content || '').replace(/\n/g, '');
+    const decStr = decodeURIComponent(escape(atob(raw)));
+    const decoded = decStr.trim() === '' ? {} : JSON.parse(decStr);
+    return { sha: jsonRes.sha || '', data: decoded };
+}
+async function putGithubContents(user, repo, token, filename, message, contentEncoded, shaRef, onShaUpdate) {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
+    const attemptPut = async (shaValue, isRetry) => {
+        const payload = { message, content: contentEncoded };
+        if (shaValue) payload.sha = shaValue;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            const result = await response.json();
+            if (result.content && result.content.sha && onShaUpdate) onShaUpdate(result.content.sha);
+            return { ok: true, result };
+        }
+        const err = await response.json().catch(() => ({}));
+        const msg = err.message || `HTTP ${response.status}`;
+        if (!isRetry && (msg.includes('does not match') || response.status === 409)) {
+            const freshSha = await fetchGithubFileSha(user, repo, token, filename);
+            if (onShaUpdate) onShaUpdate(freshSha);
+            return attemptPut(freshSha, true);
+        }
+        return { ok: false, message: msg };
+    };
+    return attemptPut(shaRef, false);
+}
+function setExportBtnState(btn, html, bg, disabled) {
+    if (!btn) return;
+    btn.innerHTML = html;
+    if (bg !== undefined) btn.style.background = bg;
+    btn.style.pointerEvents = disabled ? 'none' : 'auto';
+    btn.style.opacity = disabled ? '0.7' : '1';
+}
+let guardarNubeEnCurso = false;
+window.GlobalCloudSave = async function() {
+    alert("Iniciando proceso de guardado. Asegúrate de tener conexión.");
+    const btn = document.getElementById('btn-global-save');
+    if (guardarNubeEnCurso) return;
+    
+    const user = safeGetStorage('masterplan_user');
+    const repo = safeGetStorage('masterplan_repo');
+    const token = safeGetStorage('masterplan_token');
+    
+    const originalHtml = btn ? btn.innerHTML : '💾 GUARDAR PROYECTO';
+    
+    if (!user || !repo || !token) {
+        setExportBtnState(btn, '⚠️ REQUIERE LOGIN (admin.html)', '#ef4444', false);
+        setTimeout(() => setExportBtnState(btn, originalHtml, '', false), 3500);
+        alert('⚠️ Para guardar en la nube, inicia sesión una vez en admin.html con tu repositorio GitHub.\n\nLas credenciales quedan guardadas en este navegador.');
+        return;
+    }
+    
+    guardarNubeEnCurso = true;
+    setExportBtnState(btn, '⏳ GUARDANDO...', '', true);
+    
+    try {
+        if (window.arquitecto3D && window.arquitecto3D.isActive) {
+            window.arquitecto3D.syncToAllDrawnLines();
+        }
+        
+        saveToLocal();
+        
+        const localPayload = buildCloudPayload();
+        let shaRef = safeGetStorage(FRESIA_CFG.githubShaStorageKey) || '';
+        let remoteData = null;
+        
+        try {
+            const remote = await fetchGithubJsonContents(user, repo, token, FRESIA_CFG.githubDatosFile);
+            shaRef = remote.sha || shaRef;
+            remoteData = remote.data;
+        } catch (e) {
+            shaRef = await fetchGithubFileSha(user, repo, token, FRESIA_CFG.githubDatosFile);
+        }
+        
+        let merged;
+        if (FRESIA_CFG.mergeRemoteSueloFields) {
+            merged = mergeAerialWithRemoteSuelo(remoteData, localPayload);
+            delete merged.vista;
+        } else {
+            merged = remoteData ? Object.assign({}, remoteData, localPayload) : localPayload;
+        }
+        
+        const jsonString = JSON.stringify(merged, null, 2);
+        const contentEncoded = btoa(unescape(encodeURIComponent(jsonString)));
+        
+        const upload = await putGithubContents(
+            user, repo, token, FRESIA_CFG.githubDatosFile,
+            FRESIA_CFG.githubCommitMessage,
+            contentEncoded,
+            shaRef,
+            (sha) => safeSetStorage(FRESIA_CFG.githubShaStorageKey, sha)
+        );
+        
+        if (upload.ok) {
+            setExportBtnState(btn, '✅ GUARDADO EXCELENTE', '#10b981', true);
+            flashScreenSuccess();
+            setTimeout(() => setExportBtnState(btn, originalHtml, '', false), 2500);
+        } else {
+            alert('❌ Error al guardar en GitHub: ' + (upload.message || 'desconocido'));
+            setExportBtnState(btn, originalHtml, '', false);
+        }
+    } catch (error) {
+        alert('❌ Error de conexión al guardar en la nube. Revisa tu internet e intenta de nuevo.');
+        setExportBtnState(btn, originalHtml, '', false);
+    } finally {
+        guardarNubeEnCurso = false;
+    }
+}
+window.saveToLocal = function() {
+    safeSetStorage(FRESIA_CFG.autosaveKey, JSON.stringify({
+        configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset,
+        lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines
+    }));
+}
