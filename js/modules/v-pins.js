@@ -612,6 +612,9 @@ function refreshAllHotspots(skipIntegrity) {
         if (ferrari && typeof ferrari.importAllDrawnLines === 'function') {
             ferrari.importAllDrawnLines();
         }
+        if (ferrari && typeof ferrari.importPuntosHorizonte === 'function') {
+            ferrari.importPuntosHorizonte();
+        }
     }
 
     DOMCache.markers = {}; const currentSpots = visor360.getConfig().hotSpots || [];

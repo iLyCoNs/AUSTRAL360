@@ -119,6 +119,8 @@ window.arquitecto3D = {
                     // Eventos asíncronos ahora son manejados por delegación de eventos.
 
                     this.startHologramLoop();
+                    this.importAllDrawnLines();
+                    this.importPuntosHorizonte();
                     this.bindEvents();
                     console.log("Motor Ferrari Inicializado correctamente.");
                     clearInterval(checkFerrari);
@@ -1139,8 +1141,34 @@ window.arquitecto3D = {
         }
     },
 
+    importPuntosHorizonte: function() {
+        const hologui = document.getElementById('holographic-ui-engine');
+        if (!hologui || !window.PuntosHorizonte) return;
+        
+        // Remove previously imported pins
+        hologui.querySelectorAll('.ferrari-imported-pin').forEach(el => el.remove());
+        
+        window.PuntosHorizonte.forEach(punto => {
+            const div = document.createElement('div');
+            div.className = 'ferrari-imported-pin pnlm-hotspot-base'; // Use pnlm-hotspot-base to ensure styling compatibility if needed
+            div.style.position = 'absolute';
+            div.style.pointerEvents = 'auto'; // CRITICAL: make it clickable
+            div.setAttribute('data-pitch', punto.pitch);
+            div.setAttribute('data-yaw', punto.yaw);
+            
+            if (punto.tipo === 'ruta') {
+                if (typeof window.generarMarcadorRuta === 'function') window.generarMarcadorRuta(div, punto);
+            } else {
+                if (typeof window.generarMarcadorHorizonte === 'function') window.generarMarcadorHorizonte(div, punto);
+            }
+            
+            hologui.appendChild(div);
+        });
+    },
+
     importAllDrawnLines: function() {
         if (!window.allDrawnLines) return;
+
         window.allDrawnLines.forEach(line => {
             if (line.tipo !== 'calle-curva-arq2' && line.tipo !== 'calle' && line.tipo !== 'lote') return;
             if (this.lotes.find(l => l.id === line.id)) return;
