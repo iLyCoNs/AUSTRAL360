@@ -315,8 +315,8 @@ function arq2_migrateCallesGeometry() {
             // cualquier geometría calculada con el método de píxeles/cámara.
             const geo = arq2_buildCalleCurvaGeometry(
                 line.ejeOriginal,
-                line.ancho || 8,
-                line.calleCurvaAlpha || 0,
+                line.calleCurvaAncho || line.ancho || 8,
+                line.calleCurvaAlpha || line.calleAlpha || 0,
                 line.calleRetorno || false
             );
             if (geo) {
