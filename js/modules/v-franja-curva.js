@@ -205,7 +205,10 @@ function getHotspotsConfig() {
         });
         currentLinePoints.forEach((coord, idx) => { hotspots.push({ "id": "temp_base_" + currentTempLineId + "_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: currentTempLineId, type: currentLineType, isGuide: (isDevModeDrawActive || isArquitecto2Active), idx: idx, hsId: "temp_base_" + currentTempLineId + "_" + idx } }); });
         if (isArquitecto2Active) {
-            arq2LinePoints.forEach((coord, idx) => hotspots.push({ "id": "arq2_temp_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: arq2TempLineId, type: arq2Tool === 'fila-variable' ? 'lote-organico-preview' : 'lote-libre', isGuide: true, idx, hsId: "arq2_temp_" + idx } }));
+            let tempType = 'lote-libre';
+            if (arq2Tool === 'fila-variable') tempType = 'lote-organico-preview';
+            else if (arq2Tool === 'calle-curva-arq2') tempType = 'calle-curva-arq2-preview';
+            arq2LinePoints.forEach((coord, idx) => hotspots.push({ "id": "arq2_temp_" + idx, "pitch": coord[0], "yaw": coord[1], "createTooltipFunc": renderHiddenVertex, "createTooltipArgs": { lineId: arq2TempLineId, type: tempType, isGuide: true, idx, hsId: "arq2_temp_" + idx } }));
         }
         if (currentLineType === 'franja_curva' && franjaCurvaFrente.length > 0) {
             franjaCurvaFrente.forEach((coord, idx) => {

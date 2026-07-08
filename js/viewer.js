@@ -5902,10 +5902,14 @@ function syncSVGElements() {
                         let paths = Array.from(gNode.querySelectorAll('path'));
                         while (paths.length < 5) {
                             const pExtra = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                            pExtra.setAttribute('class', paths.length === 0 ? 'linea-calle-arq2-fill' : 'linea-calle-arq2-borde');
                             gNode.appendChild(pExtra);
                             paths = Array.from(gNode.querySelectorAll('path'));
                         }
+                        paths[0].setAttribute('class', 'linea-calle-arq2-fill');
+                        paths[1].setAttribute('class', 'linea-calle-arq2-borde'); paths[1].dataset.edgeRole = 'left';
+                        paths[2].setAttribute('class', 'linea-calle-arq2-borde'); paths[2].dataset.edgeRole = 'right';
+                        paths[3].setAttribute('class', 'linea-calle-arq2-borde'); paths[3].dataset.edgeRole = 'cap-start';
+                        paths[4].setAttribute('class', 'linea-calle-arq2-borde'); paths[4].dataset.edgeRole = 'cap-end';
                     }
                     bindSvgEraser(gNode, line.id);
                     if (pBase) bindSvgEraser(pBase, line.id);
