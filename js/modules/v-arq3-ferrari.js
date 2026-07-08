@@ -247,6 +247,7 @@ window.arquitecto3D = {
         const slider = document.getElementById('arq2-calle-ancho');
         if (slider) {
             slider.addEventListener('input', () => {
+                window.arq2CalleCurvaAncho = parseFloat(slider.value) || 8;
                 if (this.isActive && this.currentTool === 'calle-curva' && this.tempPoints.length >= 2) {
                     // Update preview instantly
                     const renderPts = [...this.tempPoints];
@@ -257,7 +258,7 @@ window.arquitecto3D = {
                 if (this.lotes.length > 0) {
                     const lastLote = this.lotes[this.lotes.length - 1];
                     if (lastLote.tipo === 'calle-curva') {
-                        lastLote.ancho = window.arq2CalleCurvaAncho || parseFloat(slider.value) || 8;
+                        lastLote.ancho = window.arq2CalleCurvaAncho;
                         this.updateVertexPosition({ loteId: lastLote.id, index: 0 }, lastLote.points[0], null, true);
                     }
                 }
@@ -1115,6 +1116,60 @@ window.arquitecto3D = {
                 }
             });
         }
+    },
+
+    importAllDrawnLines: function() {
+        if (!window.allDrawnLines) return;
+        window.allDrawnLines.forEach(line => {
+            if (line.tipo !== 'calle-curva-arq2' && line.tipo !== 'calle' && line.tipo !== 'lote') return;
+            if (this.lotes.find(l => l.id === line.id)) return;
+            
+            const ptsArray = line.ejeOriginal || line.puntos || [];
+            if (ptsArray.length < 2) return;
+            
+            const v3Pts = ptsArray.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+            
+            const newLote = {
+                id: line.id,
+                tipo: (line.tipo === 'lote') ? 'lote' : 'calle-curva',
+                points: v3Pts,
+                color: line.color || (line.tipo === 'lote' ? 0x10b981 : 0x94a3b8),
+                ancho: line.calleCurvaAncho || line.ancho || 8,
+                alpha: line.calleCurvaAlpha || line.alpha || 0.7
+            };
+            this.lotes.push(newLote);
+            this.buildLoteMeshes(newLote);
+            
+            if (newLote.lineMesh) this.group.add(newLote.lineMesh);
+            if (newLote.fillMesh) this.group.add(newLote.fillMesh);
+            if (newLote.streetLeftMesh) this.group.add(newLote.streetLeftMesh);
+            if (newLote.streetRightMesh) this.group.add(newLote.streetRightMesh);
+            if (newLote.streetCenterMesh) this.group.add(newLote.streetCenterMesh);
+            if (newLote.markerMeshes) newLote.markerMeshes.forEach(m => this.vertexMarkerGroup.add(m));
+        });
+    },
+
+    syncToAllDrawnLines: function() {
+        if (!window.allDrawnLines) window.allDrawnLines = [];
+        this.lotes.forEach(l => {
+            let existing = window.allDrawnLines.find(old => old.id === l.id);
+            const pyPoints = l.points.map(pt => this.getPitchYawFromVector(pt));
+            if (existing) {
+                existing.puntos = pyPoints;
+                if (l.tipo === 'calle-curva') existing.ejeOriginal = pyPoints;
+                if (l.ancho) existing.calleCurvaAncho = l.ancho;
+                if (l.alpha) existing.calleCurvaAlpha = l.alpha;
+            } else {
+                window.allDrawnLines.push({
+                    id: l.id,
+                    tipo: l.tipo === 'calle-curva' ? 'calle-curva-arq2' : l.tipo,
+                    puntos: pyPoints,
+                    ejeOriginal: l.tipo === 'calle-curva' ? pyPoints : undefined,
+                    calleCurvaAncho: l.ancho || 8,
+                    calleCurvaAlpha: l.alpha || 0.7
+                });
+            }
+        });
     }
 };
 

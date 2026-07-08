@@ -385,12 +385,6 @@ function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a bo
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
-    if (window.visor360 && typeof window.visor360.getFerrari === 'function') {
-        const ferrari = window.visor360.getFerrari();
-        if (ferrari && typeof ferrari.syncToAllDrawnLines === 'function') {
-            ferrari.syncToAllDrawnLines();
-        }
-    }
     const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
     return payload;
@@ -604,17 +598,7 @@ function renderHiddenVertex(hotSpotDiv, args) {
 }
 
 function refreshAllHotspots(skipIntegrity) {
-    if(!visor360) return; 
-    if (!skipIntegrity) ensureFranjaIntegrity(); 
-    
-    if (window.visor360 && typeof window.visor360.getFerrari === 'function') {
-        const ferrari = window.visor360.getFerrari();
-        if (ferrari && typeof ferrari.importAllDrawnLines === 'function') {
-            ferrari.importAllDrawnLines();
-        }
-    }
-
-    DOMCache.markers = {}; const currentSpots = visor360.getConfig().hotSpots || [];
+    if(!visor360) return; if (!skipIntegrity) ensureFranjaIntegrity(); DOMCache.markers = {}; const currentSpots = visor360.getConfig().hotSpots || [];
     for (let i = currentSpots.length - 1; i >= 0; i--) { if(currentSpots[i].id) { try { visor360.removeHotSpot(currentSpots[i].id); } catch(err) {} } }
     document.querySelectorAll('.pnlm-hotspot-base').forEach(el => { try { if(el.parentNode) el.parentNode.removeChild(el); } catch(err) {} });
     setTimeout(() => { 
