@@ -531,18 +531,24 @@ window.arquitecto3D = {
         
         if (!geoData || !geoData.fillPoly) return;
 
-        const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+        this.tempLineMesh = new THREE.Group();
         
-        const geo = new THREE.BufferGeometry().setFromPoints(streetPts);
-        const mat = new THREE.LineBasicMaterial({ 
-            color: 0x94a3b8, // Gris calle
-            linewidth: 3, 
-            depthTest: false, 
-            transparent: true, 
-            opacity: 0.9 
-        });
+        if (geoData.left && geoData.right) {
+            const lPts = geoData.left.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+            const rPts = geoData.right.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+            this.tempLineMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(lPts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3, depthTest: false, transparent: true, opacity: 0.8 })));
+            this.tempLineMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rPts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3, depthTest: false, transparent: true, opacity: 0.8 })));
+        }
         
-        this.tempLineMesh = new THREE.Line(geo, mat);
+        if (!geoData.ejeIsClosed && geoData.puntosSuavizados) {
+            const cPts = geoData.puntosSuavizados.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+            const cMat = new THREE.LineDashedMaterial({ color: 0xffdd00, linewidth: 4, dashSize: 8, gapSize: 8, depthTest: false, transparent: true, opacity: 0.8 });
+            const cGeo = new THREE.BufferGeometry().setFromPoints(cPts);
+            const cLine = new THREE.Line(cGeo, cMat);
+            cLine.computeLineDistances();
+            this.tempLineMesh.add(cLine);
+        }
+
         this.group.add(this.tempLineMesh);
 
         // Relleno temporal
@@ -620,8 +626,12 @@ window.arquitecto3D = {
         this.clearTemp();
         this.buildLoteMeshes(newLote);
         
-        this.group.add(newLote.lineMesh);
+        if (newLote.lineMesh) this.group.add(newLote.lineMesh);
         if (newLote.fillMesh) this.group.add(newLote.fillMesh);
+        if (newLote.streetLeftMesh) this.group.add(newLote.streetLeftMesh);
+        if (newLote.streetRightMesh) this.group.add(newLote.streetRightMesh);
+        if (newLote.streetCenterMesh) this.group.add(newLote.streetCenterMesh);
+        
         if (newLote.markerMeshes) {
             newLote.markerMeshes.forEach(m => this.vertexMarkerGroup.add(m));
         }
@@ -639,8 +649,15 @@ window.arquitecto3D = {
         
         if (this.tempLineMesh) {
             this.group.remove(this.tempLineMesh);
-            this.tempLineMesh.geometry.dispose();
-            this.tempLineMesh.material.dispose();
+            if (this.tempLineMesh.isGroup) {
+                this.tempLineMesh.children.forEach(c => {
+                    if(c.geometry) c.geometry.dispose();
+                    if(c.material) c.material.dispose();
+                });
+            } else {
+                if(this.tempLineMesh.geometry) this.tempLineMesh.geometry.dispose();
+                if(this.tempLineMesh.material) this.tempLineMesh.material.dispose();
+            }
         }
         this.tempLineMesh = null;
         
@@ -671,13 +688,23 @@ window.arquitecto3D = {
             if (geoData && geoData.fillPoly) {
                 const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
                 geo = new THREE.BufferGeometry().setFromPoints(streetPts);
-                mat = new THREE.LineBasicMaterial({ 
-                    color: lote.color, 
-                    linewidth: 3, 
-                    depthTest: false,
-                    transparent: true,
-                    opacity: 0.8
-                });
+                mat = new THREE.LineBasicMaterial({ visible: false }); // Ocultamos el borde gris feo
+                
+                if (geoData.left && geoData.right) {
+                    const lPts = geoData.left.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    const rPts = geoData.right.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    lote.streetLeftMesh = new THREE.Line(new THREE.BufferGeometry().setFromPoints(lPts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3, depthTest: false }));
+                    lote.streetRightMesh = new THREE.Line(new THREE.BufferGeometry().setFromPoints(rPts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3, depthTest: false }));
+                }
+                
+                if (!geoData.ejeIsClosed && geoData.puntosSuavizados) {
+                    const cPts = geoData.puntosSuavizados.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    const cMat = new THREE.LineDashedMaterial({ color: 0xffdd00, linewidth: 4, dashSize: 8, gapSize: 8, depthTest: false });
+                    const cGeo = new THREE.BufferGeometry().setFromPoints(cPts);
+                    lote.streetCenterMesh = new THREE.Line(cGeo, cMat);
+                    lote.streetCenterMesh.computeLineDistances();
+                }
+
                 const vec2D = streetPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
                 const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
                 faces.forEach(face => {
@@ -841,7 +868,22 @@ window.arquitecto3D = {
             );
             if (geoData && geoData.fillPoly) {
                 const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
-                lote.lineMesh.geometry.setFromPoints(streetPts);
+                if (lote.lineMesh) lote.lineMesh.geometry.setFromPoints(streetPts);
+                
+                if (lote.streetLeftMesh && geoData.left) {
+                    const lPts = geoData.left.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    lote.streetLeftMesh.geometry.setFromPoints(lPts);
+                }
+                if (lote.streetRightMesh && geoData.right) {
+                    const rPts = geoData.right.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    lote.streetRightMesh.geometry.setFromPoints(rPts);
+                }
+                if (lote.streetCenterMesh && !geoData.ejeIsClosed && geoData.puntosSuavizados) {
+                    const cPts = geoData.puntosSuavizados.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
+                    lote.streetCenterMesh.geometry.setFromPoints(cPts);
+                    lote.streetCenterMesh.computeLineDistances();
+                }
+
                 const vec2D = streetPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
                 const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
                 faces.forEach(face => {
