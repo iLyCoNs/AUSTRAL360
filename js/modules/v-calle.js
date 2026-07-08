@@ -86,6 +86,7 @@ function arq2_resamplePolylineGroundStraight(pts, totalSamples = 64) {
 function arq2_smoothCalleAxis(points) {
     if (!points || points.length < 2) return points ? points.map(p => [...p]) : [];
     const curvatura = draftCalleCurvaCurvatura;
+    if (curvatura <= 0) return points.map(p => [...p]); 
     
     // Generate linear points with EXACTLY the same parameterization as catmull:
     const linearPts = [[...points[0]]];
@@ -298,7 +299,7 @@ function arq2_offsetSplinePath(smoothedPoints, halfWidthDeg, calleRetorno = fals
 
     const D2R = Math.PI / 180;
     const R2D = 180 / Math.PI;
-    const MITER_LIMIT = 1.45;
+    const MITER_LIMIT = 10.0;
 
     // Convierte [pitch, yaw] en vector 3D unitario sobre la esfera
     function toVec(pt) {
@@ -435,14 +436,14 @@ function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, cal
             Math.hypot(eje[0][0]-eje[eje.length-1][0], eje[0][1]-eje[eje.length-1][1]) < 0.05
             ? eje.slice(0, -1) : eje;
         const offset = arq2_offsetSplinePath(ejeLoop, halfWidthPx, false, true);
-        left = offset.left;
-        right = offset.right;
+        left = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.left) : offset.left;
+        right = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.right) : offset.right;
         if (left.length > 1) left.push([...left[0]]);
         if (right.length > 1) right.push([...right[0]]);
     } else {
         const offset = arq2_offsetSplinePath(eje, halfWidthPx, calleRetorno, false);
-        left = offset.left;
-        right = offset.right;
+        left = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.left) : offset.left;
+        right = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.right) : offset.right;
     }
     if (left.length < 2 || right.length < 2) return null;
     const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? draftCalleCurvaAlpha ?? 0.55));
@@ -565,14 +566,14 @@ function arq2_projectCalleCurvaPaths(lineData, getCamFn, cx, cySc, f) {
                 Math.hypot(eje[0][0]-eje[eje.length-1][0], eje[0][1]-eje[eje.length-1][1]) < 0.05
                 ? eje.slice(0, -1) : eje;
             const offset = arq2_offsetSplinePath(ejeLoop, halfWidthPx, false, true);
-            left = offset.left;
-            right = offset.right;
+            left = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.left) : offset.left;
+            right = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.right) : offset.right;
             if (left.length > 1) left = [...left, left[0]];
             if (right.length > 1) right = [...right, right[0]];
         } else {
             const offset = arq2_offsetSplinePath(lineData.puntosSuavizados, halfWidthPx, lineData.calleRetorno || false, false);
-            left = offset.left;
-            right = offset.right;
+            left = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.left) : offset.left;
+            right = window.arq2_removeSelfIntersections ? window.arq2_removeSelfIntersections(offset.right) : offset.right;
         }
     } else {
         // Fallback: use stored left/right if available

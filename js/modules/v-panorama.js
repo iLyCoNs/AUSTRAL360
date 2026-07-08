@@ -122,21 +122,37 @@ function runPannellumIntroBootstrap() {
 
 function bindPanoramaPointerEvents() {
     const container = document.getElementById('panorama-container'); let startX, startY, startTime; let lastClickTime = 0; let isMultiTouch = false;
+    let _arq2GestureTimer = null; let _arq2GestureActive = false;
     function handleStart(e) { 
         if (e.touches && e.touches.length > 1) { 
             isMultiTouch = true; 
             if (e.touches.length === 2) {
                 const h = window.innerHeight;
                 if (e.touches[0].clientY > h * 0.75 && e.touches[1].clientY > h * 0.75) {
-                    if (typeof arq2_toggleArquitecto2 === 'function' && !window._arq2GestureLock) {
-                        window._arq2GestureLock = true;
-                        arq2_toggleArquitecto2();
-                        setTimeout(() => window._arq2GestureLock = false, 1000);
+                    if (!_arq2GestureActive) {
+                        _arq2GestureActive = true;
+                        if (_arq2GestureTimer) clearTimeout(_arq2GestureTimer);
+                        _arq2GestureTimer = setTimeout(() => {
+                            _arq2GestureActive = false;
+                            if (typeof arq2_toggleArquitecto2 === 'function' && !window._arq2GestureLock) {
+                                window._arq2GestureLock = true;
+                                arq2_toggleArquitecto2();
+                                setTimeout(() => window._arq2GestureLock = false, 1000);
+                            }
+                        }, 3000);
                     }
+                } else {
+                    if (_arq2GestureTimer) { clearTimeout(_arq2GestureTimer); _arq2GestureTimer = null; }
+                    _arq2GestureActive = false;
                 }
+            } else {
+                if (_arq2GestureTimer) { clearTimeout(_arq2GestureTimer); _arq2GestureTimer = null; }
+                _arq2GestureActive = false;
             }
             return; 
         }
+        if (_arq2GestureTimer) { clearTimeout(_arq2GestureTimer); _arq2GestureTimer = null; }
+        _arq2GestureActive = false;
         isMultiTouch = false;
         let mock = getMockEvent(e); 
         startX = mock.clientX; 
@@ -160,6 +176,8 @@ function bindPanoramaPointerEvents() {
         }
     }
     function handleEnd(e) {
+        if (_arq2GestureTimer) { clearTimeout(_arq2GestureTimer); _arq2GestureTimer = null; }
+        if (e.touches && e.touches.length < 2) _arq2GestureActive = false;
         if (isMultiTouch) {
             if (!e.touches || e.touches.length === 0) isMultiTouch = false;
             return;
@@ -310,7 +328,17 @@ function bindPanoramaPointerEvents() {
         }
     }
     function handleMove(e) {
-        if (e.touches && e.touches.length > 1) { isMultiTouch = true; return; }
+        if (e.touches && e.touches.length > 1) { 
+            isMultiTouch = true; 
+            if (_arq2GestureActive && e.touches.length === 2) {
+                const h = window.innerHeight;
+                if (e.touches[0].clientY <= h * 0.75 || e.touches[1].clientY <= h * 0.75) {
+                    if (_arq2GestureTimer) { clearTimeout(_arq2GestureTimer); _arq2GestureTimer = null; }
+                    _arq2GestureActive = false;
+                }
+            }
+            return; 
+        }
         if (isMultiTouch) return;
         let mock = getMockEvent(e); if (mock.clientX === undefined) return;
         if (draggingCalleMove) {
@@ -732,3 +760,53 @@ async function initPannellum() {
     attachSmartViewerHandlers(PANORAMA_FILE);
     if (!panoramaEventsBound) { panoramaEventsBound = true; bindPanoramaPointerEvents(); }
 }
+
+// --- MAC-STYLE CUSTOM ZOOM CONTROLS ---
+document.addEventListener('DOMContentLoaded', () => {
+    const zoomIn = document.getElementById('mac-zoom-in');
+    const zoomOut = document.getElementById('mac-zoom-out');
+    const fsBtn = document.getElementById('mac-fullscreen');
+
+    if (zoomIn) zoomIn.addEventListener('click', () => {
+        if (typeof threeCamera !== 'undefined' && threeCamera && !viewerGpuReady && document.getElementById('panorama-container').innerHTML !== '') {
+            // Three.js Zoom
+            threeCamera.fov = Math.max(20, threeCamera.fov - 10);
+            threeCamera.updateProjectionMatrix();
+        } else if (typeof visor360 !== 'undefined' && visor360 && typeof visor360.setHfov === 'function') {
+            visor360.setHfov(Math.max(20, visor360.getHfov() - 10));
+        }
+    });
+
+    if (zoomOut) zoomOut.addEventListener('click', () => {
+        if (typeof threeCamera !== 'undefined' && threeCamera && !viewerGpuReady && document.getElementById('panorama-container').innerHTML !== '') {
+            // Three.js Zoom
+            threeCamera.fov = Math.min(120, threeCamera.fov + 10);
+            threeCamera.updateProjectionMatrix();
+        } else if (typeof visor360 !== 'undefined' && visor360 && typeof visor360.setHfov === 'function') {
+            visor360.setHfov(Math.min(120, visor360.getHfov() + 10));
+        }
+    });
+
+    if (fsBtn) fsBtn.addEventListener('click', () => {
+        let docEl = document.documentElement;
+        if (!document.fullscreenElement) {
+            if (docEl.requestFullscreen) docEl.requestFullscreen();
+            else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+            fsBtn.classList.add('is-fullscreen');
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            fsBtn.classList.remove('is-fullscreen');
+        }
+        setTimeout(() => { 
+            if (typeof visor360 !== 'undefined' && visor360 && typeof visor360.getRenderer === 'function') {
+                const r = visor360.getRenderer(); if (r && r.resize) r.resize(); 
+            }
+        }, 300);
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        if (fsBtn) fsBtn.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+    });
+});
+

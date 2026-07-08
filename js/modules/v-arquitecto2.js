@@ -711,6 +711,7 @@ function arq2_catmullRomOpen(points, segmentsPerCurve = 8) {
 function arq2_smoothCalleAxis(points) {
     if (!points || points.length < 2) return points ? points.map(p => [...p]) : [];
     const curvatura = draftCalleCurvaCurvatura;
+    if (curvatura <= 0) return points.map(p => [...p]); 
     
     // Generate linear points with EXACTLY the same parameterization as catmull:
     const linearPts = [[...points[0]]];
@@ -837,7 +838,7 @@ function arq2_isCalleEjeClosed(eje) {
 function arq2_offsetSplinePath(smoothedPoints, halfWidthDeg, calleRetorno = false, isClosed = false) {
     if (!smoothedPoints || smoothedPoints.length < 2) return { left: [], right: [] };
     const left = [], right = [];
-    const MITER_LIMIT = 3.0;
+    const MITER_LIMIT = 10.0;
     const n = smoothedPoints.length;
     const limit = isClosed ? n : (calleRetorno ? n - 1 : n);
 
@@ -941,7 +942,9 @@ function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, cal
     let eje = arq2_smoothCalleAxis(ejeOriginal);
     // Use angular (degree-space) half-width for perspective-independent rendering
     const halfDeg = arq2_getCalleCurvaHalfWidthDeg(anchoFactor);
-    eje = arq2_enforceMinCurveRadius(eje, halfDeg * 1.3);
+    if (draftCalleCurvaCurvatura > 0) {
+        eje = arq2_enforceMinCurveRadius(eje, halfDeg * 1.3);
+    }
     // Detect if the user drew a closed loop (manzana)
     const ejeIsClosed = arq2_isCalleEjeClosed(ejeOriginal);
     let left, right;
@@ -950,14 +953,14 @@ function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, cal
             Math.hypot(eje[0][0]-eje[eje.length-1][0], eje[0][1]-eje[eje.length-1][1]) < 0.05
             ? eje.slice(0, -1) : eje;
         const offset = arq2_offsetSplinePath(ejeLoop, halfDeg, false, true);
-        left = offset.left;
-        right = offset.right;
+        left = arq2_removeSelfIntersections(offset.left);
+        right = arq2_removeSelfIntersections(offset.right);
         if (left.length > 1) left.push([...left[0]]);
         if (right.length > 1) right.push([...right[0]]);
     } else {
         const offset = arq2_offsetSplinePath(eje, halfDeg, calleRetorno, false);
-        left = offset.left;
-        right = offset.right;
+        left = arq2_removeSelfIntersections(offset.left);
+        right = arq2_removeSelfIntersections(offset.right);
     }
     if (left.length < 2 || right.length < 2) return null;
     const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? draftCalleCurvaAlpha ?? 0.55));
