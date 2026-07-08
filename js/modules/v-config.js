@@ -347,7 +347,7 @@ function revealLoteoOverlay() {
     if (renderer) hookRendererOverlay(renderer);
 }
 const DEFAULT_HFOV = 125, MAX_SCALE = 1.0, MIN_SCALE = 0.20, SNAP_DISTANCE = 8.0;
-let lastDevDrawClickMs = 0, lastArq2DrawClickMs = 0, closeOriginHighlighted = false,
+var lastDevDrawClickMs = 0, lastArq2DrawClickMs = 0, closeOriginHighlighted = false,
     arq2CalleCurvaAncho = 8, draftCalleCurvaAlpha = 0.55, arq2SmoothIntensity = 5, arq2CalleRetorno = false, arq2Guideline = null,
     draftCalleCurvaCurvatura = 5;
 
