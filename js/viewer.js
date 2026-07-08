@@ -3660,10 +3660,23 @@ function setupDevModes() {
         if (isArquitecto2Active && e.code === 'Escape') {
             e.preventDefault();
             arq2_clearDraft();
-            if (arq2Tool === 'fila-variable') arq2_startDemoAnimation(false);
+            if (window.arq2Tool === 'fila-variable') arq2_startDemoAnimation(false);
+            if (window.arq2Tool === 'vuelo-cinematico') arq2_setStatusText('Cinemática cancelada.');
             refreshAllHotspots(true);
             syncSVGElements();
             updateSVGPaths();
+            return;
+        }
+        if (isArquitecto2Active && window.arq2Tool === 'vuelo-cinematico' && (e.code === 'Backspace' || e.code === 'Delete')) {
+            e.preventDefault();
+            if (window.arq2VueloPoints && window.arq2VueloPoints.length > 0) {
+                window.arq2VueloPoints.pop();
+                arq2_setStatusText(`Punto eliminado. Quedan ${window.arq2VueloPoints.length}.`);
+                arq2_refreshFeedbackVisuals({
+                    clientX: window.lastMouseX || 0,
+                    clientY: window.lastMouseY || 0
+                });
+            }
             return;
         }
         if (isArquitecto2Active && (e.code === 'Enter' || e.code === 'NumpadEnter')) { e.preventDefault(); arq2_onEnterKey(); return; }

@@ -352,8 +352,39 @@ function arq2_projectPolylineD(pts, isClosed, getCamFn, cx, cySc, f) {
     return hasVisible ? d : '';
 }
 
+window.arq2VueloGhost = null;
+
+function arq2_getVueloPointsPY() {
+    return (window.arq2VueloPoints || []).map(p => [p.pitch, p.yaw]);
+}
+
 function arq2_getActiveDrawPoints() {
+    if (arq2Tool === 'vuelo-cinematico') return arq2_getVueloPointsPY();
     return arq2LinePoints;
+}
+
+function arq2_saveVueloCinematico() {
+    const pts = (window.arq2VueloPoints || []).slice(0, 3);
+    if (pts.length < 2) {
+        alert('Coloca al menos 2 puntos de visión.');
+        return false;
+    }
+
+    if (window.FRESIA_CFG?.vista === 'suelo') {
+        ConfigProyecto.vueloCinematicoSuelo = pts;
+    } else {
+        ConfigProyecto.vueloCinematico = pts;
+    }
+
+    if (typeof saveToLocal === 'function') saveToLocal();
+    arq2_setStatusText(`Cinemática guardada con ${pts.length} puntos.`);
+    arq2_setTool('lote-libre');
+    return true;
+}
+
+function arq2_clearVueloDraft() {
+    window.arq2VueloPoints = [];
+    window.arq2VueloGhost = null;
 }
 
 function arq2_checkInvasion(p1, p2) {
@@ -2418,6 +2449,7 @@ function arq2_clearDraft() {
     arq2FilaCalle = null;
     arq2Guideline = null;
     window.arq2VueloPoints = [];
+    window.arq2VueloGhost = null;
     arq2_clearVisualFeedback();
     arq2_stopDemoAnimation();
     arq2_updateFilaCallePreview(); // clear preview SVG
@@ -3070,6 +3102,18 @@ function arq2_onPanoramaMove(mock) {
     window.lastMouseX = mock.clientX;
     window.lastMouseY = mock.clientY;
     
+    if (arq2Tool === 'vuelo-cinematico') {
+        const coords = visor360.mouseEventToCoords(mock);
+        if (coords && !isNaN(coords[0])) {
+            window.arq2VueloGhost = [
+                parseFloat(coords[0].toFixed(3)),
+                parseFloat(coords[1].toFixed(3))
+            ];
+        }
+        arq2_refreshFeedbackVisuals(mock);
+        return;
+    }
+    
     if (arq2Tool === 'eraser') {
         if (snapCursor) snapCursor.classList.remove('active');
         arq2_refreshFeedbackVisuals(mock);
@@ -3178,25 +3222,24 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     }
 
     if (arq2Tool === 'vuelo-cinematico') {
+        window.arq2VueloPoints = window.arq2VueloPoints || [];
+        
         const vp = {
-            pitch: parseFloat(visor360.getPitch().toFixed(3)),
-            yaw: parseFloat(visor360.getYaw().toFixed(3)),
+            pitch: parseFloat(p.toFixed(3)),
+            yaw: parseFloat(y.toFixed(3)),
             hfov: parseFloat(visor360.getHfov().toFixed(3))
         };
-        window.arq2VueloPoints = window.arq2VueloPoints || [];
-        window.arq2VueloPoints.push(vp);
-        arq2_setStatusText(`Cinemática: Punto ${window.arq2VueloPoints.length}/3 registrado`);
         
-        if (window.arq2VueloPoints.length === 3) {
-            if (window.FRESIA_CFG?.vista === 'suelo') {
-                ConfigProyecto.vueloCinematicoSuelo = [...window.arq2VueloPoints];
-            } else {
-                ConfigProyecto.vueloCinematico = [...window.arq2VueloPoints];
-            }
-            if (typeof saveToLocal === 'function') saveToLocal();
-            alert(`¡Vuelo cinemático (${window.FRESIA_CFG?.vista || 'aéreo'}) guardado exitosamente!`);
-            arq2_setTool('lote-libre');
+        if (window.arq2VueloPoints.length >= 3) {
+            window.arq2VueloPoints[2] = vp; // Replace the 3rd if they keep clicking
+        } else {
+            window.arq2VueloPoints.push(vp);
         }
+        
+        arq2_setStatusText(`Cinemática: punto ${window.arq2VueloPoints.length}/3 listo. Enter para guardar.`);
+        arq2_refreshFeedbackVisuals(mock);
+        if (typeof syncSVGElements === 'function') syncSVGElements();
+        if (typeof updateSVGPaths === 'function') updateSVGPaths();
         return true;
     }
 
@@ -3276,6 +3319,9 @@ function arq2_onEnterKey() {
     if (arq2Tool === 'calle-curva-arq2' && arq2LinePoints.length >= 2) {
         arq2_finishCalleCurva();
         return true;
+    }
+    if (arq2Tool === 'vuelo-cinematico' && (window.arq2VueloPoints?.length || 0) >= 2) {
+        return arq2_saveVueloCinematico();
     }
     if (arq2Tool === 'fila-variable' && arq2LinePoints.length >= 4) {
         arq2_finishFilaContour();
