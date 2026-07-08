@@ -313,18 +313,23 @@ function arq2_migrateCallesGeometry() {
         else if (line.tipo === 'calle-curva-arq2' && line.ejeOriginal) {
             // Siempre regenerar con el nuevo algoritmo esférico para eliminar
             // cualquier geometría calculada con el método de píxeles/cámara.
-            const geo = arq2_buildCalleCurvaGeometry(
-                line.ejeOriginal,
-                line.calleCurvaAncho || line.ancho || 8,
-                line.calleCurvaAlpha || line.calleAlpha || 0,
-                line.calleRetorno || false
-            );
-            if (geo) {
-                line.left = geo.left;
-                line.right = geo.right;
-                line.ejeIsClosed = geo.ejeIsClosed;
-                line.fillPoly = geo.fillPoly;
-                line.puntosSuavizados = geo.puntosSuavizados;
+            const hasValidGeo = (line.left && line.left.length > 0 && line.right && line.right.length > 0 && (line.fillPoly || line.puntos));
+            if (!hasValidGeo) {
+                const geo = arq2_buildCalleCurvaGeometry(
+                    line.ejeOriginal,
+                    line.calleCurvaAncho || line.ancho || 8,
+                    line.calleCurvaAlpha || line.calleAlpha || 0,
+                    line.calleRetorno || false
+                );
+                if (geo) {
+                    line.left = geo.left;
+                    line.right = geo.right;
+                    line.ejeIsClosed = geo.ejeIsClosed;
+                    line.fillPoly = geo.fillPoly;
+                    line.puntosSuavizados = geo.puntosSuavizados;
+                }
+            } else {
+                if (!line.fillPoly && line.puntos) line.fillPoly = line.puntos;
             }
         }
     }

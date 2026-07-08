@@ -827,19 +827,10 @@ function arq2_removeSelfIntersections(pointsArray) {
     return pts.length >= 2 ? pts : pointsArray.map(p => [...p]);
 }
 
-function arq2_getCalleCurvaHalfWidthDeg(anchoFactor) {
-    // Return street half-width in PY degrees (pitch/yaw angular space).
-    // This value is perspective-independent: the street appears the same width
-    // from any camera yaw/pitch angle.
-    // Calibration: factor=8 (default) -> ~1.1 degrees half-width.
-    // Range: factor 4->0.55 deg, factor 15->2.05 deg (linear).
-    const factor = Math.max(4, Math.min(15, anchoFactor || arq2CalleCurvaAncho || 8));
-    return 0.55 + (factor - 4) * (1.5 / 11); // 0.55 at 4, 2.05 at 15
-}
-
-function arq2_getCalleCurvaHalfWidthPx(anchoFactor) {
-    const factor = Math.max(4, Math.min(15, anchoFactor || arq2CalleCurvaAncho || 8));
-    return getCalleHalfWidthPx(factor * 0.72);
+function arq2_getCalleCurvaHalfWidthDeg(anchoMetros) {
+    // 1m = ~0.275 degrees full width -> half width = 0.1375 degrees per meter
+    const w = anchoMetros || arq2CalleCurvaAncho || 8;
+    return w * 0.1375;
 }
 
 function arq2_isCalleEjeClosed(eje) {
@@ -2816,34 +2807,34 @@ function arq2_findNearestStreetBorderPY(pitch, yaw) {
 }
 
 function arq2_projectBorderInward(borderPts, depthFactor) {
-    const proj = getPanoramaScreenProjector();
-    if (!proj || !borderPts || borderPts.length < 2) return null;
-    // Convert depthFactor (meters) to screen pixels using current camera
-    // We use 2.5px per meter as a reasonable default for typical field of view
-    const PX_PER_METER = 2.5;
-    const depthPx = depthFactor * PX_PER_METER;
+    if (!borderPts || borderPts.length < 2) return null;
+    // 1m = ~0.275 degrees
+    const depthDeg = depthFactor * 0.275;
     const fondoPts = [];
     for (let i = 0; i < borderPts.length; i++) {
         const cur = borderPts[i];
-        // Compute tangent direction along the border
+        // Compute tangent direction along the border in PY space
         const prev = borderPts[Math.max(0, i-1)];
         const next = borderPts[Math.min(borderPts.length-1, i+1)];
-        const sCur = proj.toScreen(cur[0], cur[1]);
-        const sPrev = proj.toScreen(prev[0], prev[1]);
-        const sNext = proj.toScreen(next[0], next[1]);
-        if (!sCur || !sPrev || !sNext) continue;
-        // Tangent in screen space
-        let tx = sNext[0] - sPrev[0], ty = sNext[1] - sPrev[1];
+        let tx = next[0] - prev[0], ty = next[1] - prev[1];
         const tlen = Math.hypot(tx, ty);
-        if (tlen < 0.01) continue;
-        tx /= tlen; ty /= tlen;
-        // Normal (perpendicular, pointing inward Ã¢â‚¬â€ we'll pick the right direction later)
+        if (tlen < 1e-6) { tx = 1; ty = 0; }
+        else { tx /= tlen; ty /= tlen; }
+        
         let nx = -ty, ny = tx;
-        // Inward offset in screen space
-        const sx = sCur[0] + nx * depthPx;
-        const sy = sCur[1] + ny * depthPx;
-        const fondoPY = proj.toPY(sx, sy);
-        if (fondoPY) fondoPts.push([parseFloat(fondoPY[0].toFixed(4)), parseFloat(fondoPY[1].toFixed(4))]);
+        const pyProj1 = [parseFloat((cur[0] + nx * depthDeg).toFixed(4)), parseFloat((cur[1] + ny * depthDeg).toFixed(4))];
+        const pyProj2 = [parseFloat((cur[0] - nx * depthDeg).toFixed(4)), parseFloat((cur[1] - ny * depthDeg).toFixed(4))];
+        
+        // Inward is the one INSIDE the user's drawn contour
+        if (arq2PendingFila && arq2PendingFila.contorno) {
+            const in1 = arq2_pointInPolygon(pyProj1, arq2PendingFila.contorno);
+            const in2 = arq2_pointInPolygon(pyProj2, arq2PendingFila.contorno);
+            if (in1) { fondoPts.push(pyProj1); continue; }
+            if (in2) { fondoPts.push(pyProj2); continue; }
+        }
+        
+        // Fallback: just use pyProj1 (this happens if contour is not set or both are outside)
+        fondoPts.push(pyProj1);
     }
     if (fondoPts.length < 2) return null;
     // Ensure fondo goes in a consistent direction relative to the border
