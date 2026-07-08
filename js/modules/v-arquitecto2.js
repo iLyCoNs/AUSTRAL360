@@ -710,16 +710,31 @@ function arq2_catmullRomOpen(points, segmentsPerCurve = 8) {
 
 function arq2_smoothCalleAxis(points) {
     if (!points || points.length < 2) return points ? points.map(p => [...p]) : [];
-    const curvatura = draftCalleCurvaCurvatura; // 0=recta, 10=muy curva
-    if (curvatura <= 0) return points.map(p => [...p]); // completamente recta (sin suavizado)
+    const curvatura = draftCalleCurvaCurvatura;
+    
+    // Generate linear points with EXACTLY the same parameterization as catmull:
+    const linearPts = [[...points[0]]];
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i+1];
+        for (let s = 1; s <= 12; s++) {
+            const u = s / 12;
+            linearPts.push([
+                p1[0] + (p2[0] - p1[0]) * u,
+                p1[1] + (p2[1] - p1[1]) * u
+            ]);
+        }
+    }
+    
+    if (curvatura <= 0) return linearPts; 
+    
     const catmull = arq2_catmullRomOpen(points, 12);
-    if (curvatura >= 10) return catmull; // completamente curva
-    // Interpolate between raw points and catmullRom based on curvatura
+    if (curvatura >= 10) return catmull;
+    
     const t = curvatura / 10;
-    const rawResample = arq2_resamplePolylineEqualArc(points.map(p => [...p]), catmull.length - 1);
-    if (!rawResample || rawResample.length !== catmull.length) return catmull;
+    
     return catmull.map((c, i) => {
-        const r = rawResample[i] || c;
+        const r = linearPts[i] || c;
         return [r[0] + (c[0] - r[0]) * t, r[1] + (c[1] - r[1]) * t];
     });
 }
