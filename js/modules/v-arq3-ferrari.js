@@ -232,6 +232,38 @@ window.arquitecto3D = {
         const container = document.getElementById('panorama-container');
         let startX, startY, startTime;
 
+        document.addEventListener('keydown', (e) => {
+            if (!this.isActive) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (this.currentTool === 'calle-curva') {
+                    this.finishStreet();
+                } else {
+                    this.finishPolygon();
+                }
+            }
+        });
+
+        const slider = document.getElementById('arq2-calle-ancho');
+        if (slider) {
+            slider.addEventListener('input', () => {
+                if (this.isActive && this.currentTool === 'calle-curva' && this.tempPoints.length >= 2) {
+                    // Update preview instantly
+                    const renderPts = [...this.tempPoints];
+                    this.renderTempStreet(renderPts);
+                }
+                
+                // Update the last drawn street if it was just drawn
+                if (this.lotes.length > 0) {
+                    const lastLote = this.lotes[this.lotes.length - 1];
+                    if (lastLote.tipo === 'calle-curva') {
+                        lastLote.ancho = window.arq2CalleCurvaAncho || parseFloat(slider.value) || 8;
+                        this.updateVertexPosition({ loteId: lastLote.id, index: 0 }, lastLote.points[0], null, true);
+                    }
+                }
+            });
+        }
+
         container.addEventListener('pointerdown', (e) => {
             if (!this.isActive) return;
             
