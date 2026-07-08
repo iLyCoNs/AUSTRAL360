@@ -530,9 +530,9 @@ window.arquitecto3D = {
 
         const geoData = window.arq2_buildCalleCurvaGeometry(
             pyEje, 
-            window.arq2CalleCurvaAncho || 8, 
-            window.draftCalleCurvaAlpha ?? 0.7, 
-            window.arq2CalleRetorno || false
+            undefined, // ancho (fallback to slider)
+            undefined, // alpha (fallback to slider)
+            undefined  // retorno (fallback to slider)
         );
         
         if (!geoData || !geoData.fillPoly) return;
@@ -724,9 +724,9 @@ window.arquitecto3D = {
             const pyEje = pts.map(p => [Math.asin(p.y / p.length()) * 180 / Math.PI, Math.atan2(p.x, p.z) * 180 / Math.PI]);
             const geoData = window.arq2_buildCalleCurvaGeometry(
                 pyEje, 
-                lote.ancho || window.arq2CalleCurvaAncho || 8, 
-                lote.alpha ?? window.draftCalleCurvaAlpha ?? 0.7, 
-                lote.retorno || window.arq2CalleRetorno || false
+                lote.ancho, 
+                lote.alpha, 
+                lote.retorno
             );
             if (geoData && geoData.fillPoly) {
                 const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
@@ -905,9 +905,9 @@ window.arquitecto3D = {
             const pyEje = pts.map(p => [Math.asin(p.y / p.length()) * 180 / Math.PI, Math.atan2(p.x, p.z) * 180 / Math.PI]);
             const geoData = window.arq2_buildCalleCurvaGeometry(
                 pyEje, 
-                lote.ancho || window.arq2CalleCurvaAncho || 8, 
-                lote.alpha ?? window.draftCalleCurvaAlpha ?? 0.7, 
-                lote.retorno || window.arq2CalleRetorno || false
+                lote.ancho, 
+                lote.alpha, 
+                lote.retorno
             );
             if (geoData && geoData.fillPoly) {
                 const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));

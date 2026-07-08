@@ -835,6 +835,14 @@ function arq2_setPinSubTool(tipo) {
     document.getElementById('arq2-btn-linea-pines')?.classList.toggle('active', false);
 }
 
+// Expose to window for Arq 3.0 (Motor Ferrari)
+window.arq2_buildCalleCurvaGeometry = arq2_buildCalleCurvaGeometry;
+window.arq2CalleCurvaAncho = 8;
+window.draftCalleCurvaAlpha = 0.55;
+window.arq2CalleRetorno = false;
+window.draftCalleCurvaCurvatura = 5;
+window.draftCalleCurvaColor = '#5a5f69';
+
 /**
  * Bindea los botones de la fila de pines Arq2 (idempotente — no duplica listeners).
  */
