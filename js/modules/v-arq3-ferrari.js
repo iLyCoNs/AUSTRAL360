@@ -336,9 +336,10 @@ window.arquitecto3D = {
                                                 if (window.BaseDatosLotes) window.BaseDatosLotes.push(nuevoPin);
                                             }
                                             try {
-                                                nuevoPin.createTooltipArgs = nuevoPin;
-                                                if (typeof window.generarSmartPin === 'function') nuevoPin.createTooltipFunc = window.generarSmartPin;
-                                                window.visor360.addHotSpot(nuevoPin);
+                                                const renderPin = { ...nuevoPin };
+                                                renderPin.createTooltipArgs = renderPin;
+                                                if (typeof window.generarSmartPin === 'function') renderPin.createTooltipFunc = window.generarSmartPin;
+                                                window.visor360.addHotSpot(renderPin);
                                                 if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
                                                 if (typeof window.saveToLocal === 'function') window.saveToLocal();
                                                 if (typeof window.refreshAllHotspots === 'function') window.refreshAllHotspots();

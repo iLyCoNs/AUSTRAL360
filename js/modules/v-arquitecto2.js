@@ -2587,14 +2587,15 @@ function arq2_persistSmartPin(pin) {
   if (idx >= 0) store[idx] = { ...store[idx], ...pin };
   else store.push(pin);
 
-  pin.createTooltipArgs = pin;
+  const renderPin = { ...pin };
+  renderPin.createTooltipArgs = renderPin;
   if (typeof window.generarSmartPin === 'function') {
-    pin.createTooltipFunc = window.generarSmartPin;
+    renderPin.createTooltipFunc = window.generarSmartPin;
   }
 
   try {
     if (window.visor360?.addHotSpot) {
-      window.visor360.addHotSpot(pin);
+      window.visor360.addHotSpot(renderPin);
     }
   } catch (err) {
     console.warn('Pin V2 addHotSpot error', err);
