@@ -970,8 +970,12 @@
                     const jsonRes = await response.json();
                     shaActual = jsonRes.sha; 
                     
-                    const contenidoDecodificado = decodeURIComponent(escape(atob(jsonRes.content)));
-                    masterData = JSON.parse(contenidoDecodificado);
+                    const contenidoDecodificado = decodeURIComponent(escape(atob(jsonRes.content || "")));
+                    if (contenidoDecodificado.trim() === "") {
+                        masterData = {};
+                    } else {
+                        masterData = JSON.parse(contenidoDecodificado);
+                    }
 
                     if(!masterData.configProyecto) {
                         masterData.configProyecto = { 
@@ -1042,7 +1046,9 @@
                 if (response.ok) {
                     const jsonRes = await response.json();
                     shaSueloActual = jsonRes.sha;
-                    const sueloData = JSON.parse(decodeURIComponent(escape(atob(jsonRes.content))));
+                    const rawSuelo = jsonRes.content || '';
+                    const decStrSuelo = decodeURIComponent(escape(atob(rawSuelo)));
+                    const sueloData = decStrSuelo.trim() === '' ? {} : JSON.parse(decStrSuelo);
                     masterData.lotesSuelo = sueloData.lotes || sueloData.lotesSuelo || [];
                     masterData.horizontesSuelo = sueloData.horizontes || sueloData.horizontesSuelo || [];
                     masterData.trazosSuelo = sueloData.trazos || sueloData.trazosSuelo || [];

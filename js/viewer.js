@@ -1,4 +1,4 @@
-﻿/** FRESIA360 visor compartido â€” js/viewer.js. Requiere pannellum.js antes. Opcional: window.FRESIA_VIEWER_CONFIG en el HTML. */
+/** FRESIA360 visor compartido â€” js/viewer.js. Requiere pannellum.js antes. Opcional: window.FRESIA_VIEWER_CONFIG en el HTML. */
 
 const FRESIA_CFG = Object.assign({
     vista: 'aereo',
@@ -3807,7 +3807,8 @@ async function fetchGithubJsonContents(user, repo, token, filename) {
     if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || `HTTP ${response.status}`); }
     const jsonRes = await response.json();
     const raw = (jsonRes.content || '').replace(/\n/g, '');
-    const decoded = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    const decStr = decodeURIComponent(escape(atob(raw)));
+    const decoded = decStr.trim() === '' ? {} : JSON.parse(decStr);
     return { sha: jsonRes.sha || '', data: decoded };
 }
 async function putGithubContents(user, repo, token, filename, message, contentEncoded, shaRef, onShaUpdate) {
