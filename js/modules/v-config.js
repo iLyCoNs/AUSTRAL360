@@ -793,6 +793,7 @@ function setExportBtnState(btn, html, bg, disabled) {
     btn.style.pointerEvents = disabled ? 'none' : 'auto';
     btn.style.opacity = disabled ? '0.7' : '1';
 
+}
 window.GlobalCloudSave = async function() {
     alert("Iniciando proceso de guardado. Asegúrate de tener conexión.");
     const btn = document.getElementById('btn-global-save');
