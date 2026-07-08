@@ -248,8 +248,9 @@ window.arquitecto3D = {
                 const groundIntersection = this.raycaster.intersectObject(window.visor360.getThreeMesh())[0];
                 if (groundIntersection) {
                     const pt = groundIntersection.point;
-                    const pitch = Math.asin(pt.y / pt.length()) * 180 / Math.PI;
-                    const yaw = Math.atan2(pt.x, pt.z) * 180 / Math.PI;
+                    const r = pt.length();
+                    const pitch = -Math.asin(pt.y / r) * 180 / Math.PI;
+                    const yaw = -Math.atan2(pt.x, -pt.z) * 180 / Math.PI;
                     
                     let tipoFinal = window.arq2PinSubTool || 'lote';
                     let tituloFinal = 'Lote 00';
@@ -380,6 +381,13 @@ window.arquitecto3D = {
                 this.finishPolygon();
             }
         });
+    },
+
+    getPitchYawFromVector: function(v) {
+        const r = v.length();
+        const pitch = -Math.asin(v.y / r) * (180 / Math.PI);
+        const yaw = -Math.atan2(v.x, -v.z) * (180 / Math.PI);
+        return [pitch, yaw];
     },
 
     getSnapToAnyVertex: function(screenX, screenY, skipVertices = null, skipIndex = -1, threshold = 25) {
@@ -522,11 +530,7 @@ window.arquitecto3D = {
     renderTempStreet: function(renderPts) {
         if (!window.arq2_buildCalleCurvaGeometry) return;
         
-        const pyEje = renderPts.map(p => {
-            const yaw = Math.atan2(p.x, p.z) * 180 / Math.PI;
-            const pitch = Math.asin(p.y / p.length()) * 180 / Math.PI;
-            return [pitch, yaw];
-        });
+        const pyEje = renderPts.map(p => this.getPitchYawFromVector(p));
 
         const geoData = window.arq2_buildCalleCurvaGeometry(
             pyEje, 
@@ -572,7 +576,10 @@ window.arquitecto3D = {
         }
         
         const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
-        const vec2D = streetPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+        const vec2D = streetPts.map(p => {
+            const py = this.getPitchYawFromVector(p);
+            return new THREE.Vector2(py[1], py[0]); // yaw = x, pitch = y for 2D polygon
+        });
         const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
         
         const vertices = [];
@@ -723,7 +730,7 @@ window.arquitecto3D = {
         let geo, mat;
 
         if (lote.tipo === 'calle-curva') {
-            const pyEje = pts.map(p => [Math.asin(p.y / p.length()) * 180 / Math.PI, Math.atan2(p.x, p.z) * 180 / Math.PI]);
+            const pyEje = pts.map(p => this.getPitchYawFromVector(p));
             const geoData = window.arq2_buildCalleCurvaGeometry(
                 pyEje, 
                 lote.ancho, 
@@ -750,7 +757,10 @@ window.arquitecto3D = {
                     lote.streetCenterMesh.computeLineDistances();
                 }
 
-                const vec2D = streetPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+                const vec2D = streetPts.map(p => {
+                    const py = this.getPitchYawFromVector(p);
+                    return new THREE.Vector2(py[1], py[0]);
+                });
                 const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
                 faces.forEach(face => {
                     const pA = streetPts[face[0]], pB = streetPts[face[1]], pC = streetPts[face[2]];
@@ -768,7 +778,10 @@ window.arquitecto3D = {
                 opacity: 0.8
             });
             const cleanPts = pts.slice(0, -1);
-            const vec2D = cleanPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+            const vec2D = cleanPts.map(p => {
+                const py = this.getPitchYawFromVector(p);
+                return new THREE.Vector2(py[1], py[0]);
+            });
             const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
             faces.forEach(face => {
                 const pA = cleanPts[face[0]], pB = cleanPts[face[1]], pC = cleanPts[face[2]];
@@ -904,7 +917,7 @@ window.arquitecto3D = {
         
         let vertices = [];
         if (lote.tipo === 'calle-curva') {
-            const pyEje = pts.map(p => [Math.asin(p.y / p.length()) * 180 / Math.PI, Math.atan2(p.x, p.z) * 180 / Math.PI]);
+            const pyEje = pts.map(p => this.getPitchYawFromVector(p));
             const geoData = window.arq2_buildCalleCurvaGeometry(
                 pyEje, 
                 lote.ancho, 
@@ -942,7 +955,10 @@ window.arquitecto3D = {
             
             // Actualizar relleno con triangulación correcta para cóncavos
             const cleanPts = lote.points; // lote.points ya no tiene el loop cerrado, pts sí
-            const vec2D = cleanPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
+            const vec2D = cleanPts.map(p => {
+                const py = this.getPitchYawFromVector(p);
+                return new THREE.Vector2(py[1], py[0]);
+            });
             const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
             faces.forEach(face => {
                 const pA = cleanPts[face[0]];
@@ -985,7 +1001,10 @@ window.arquitecto3D = {
                         const baseColor = new THREE.Color(lote.color);
                         const whiteColor = new THREE.Color(0xffffff);
                         
-                        if (lote.lineMesh) lote.lineMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
+                        if (lote.lineMesh) {
+                            if (lote.tipo === 'lote-libre') lote.lineMesh.material.color.setHex(0xffffff);
+                            else lote.lineMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
+                        }
                         if (lote.fillMesh) {
                             lote.fillMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
                             lote.fillMesh.material.opacity = 0.6 - (0.3 * ease); // Pasa de 0.6 a 0.3
@@ -994,7 +1013,10 @@ window.arquitecto3D = {
                 } else {
                     // Finaliza la animación de forma segura
                     lote.animStartTime = null;
-                    if (lote.lineMesh) lote.lineMesh.material.color.setHex(lote.color);
+                    if (lote.lineMesh) {
+                        if (lote.tipo === 'lote-libre') lote.lineMesh.material.color.setHex(0xffffff);
+                        else lote.lineMesh.material.color.setHex(lote.color);
+                    }
                     if (lote.fillMesh) {
                         lote.fillMesh.material.color.setHex(lote.color);
                         lote.fillMesh.material.opacity = 0.3;
