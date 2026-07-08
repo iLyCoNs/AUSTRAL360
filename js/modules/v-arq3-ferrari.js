@@ -290,15 +290,6 @@ window.arquitecto3D = {
         bindSlider3D('arq2-calle-alpha', 'alpha', 'draftCalleCurvaAlpha', v => Math.round(v * 100) + '%');
 
         container.addEventListener('pointerdown', (e) => {
-            if (this.currentTool === 'lote' || this.currentTool === 'calle-curva') {
-                const pt = this.getVectorFromEvent(e);
-                if (pt) {
-                    if (this.tempPoints.length === 0 || this.tempPoints[this.tempPoints.length - 1].distanceTo(pt) > 0.1) {
-                        this.tempPoints.push(pt.clone());
-                        this.renderTempStreet(this.tempPoints);
-                    }
-                }
-            }
             if (!this.isActive) return;
             
             // Si estamos en modo Pin V2, insertar pin
@@ -503,7 +494,16 @@ window.arquitecto3D = {
     },
 
     buildNative3DStreet: function(pts, widthFactor, isClosed, curvaturaFactor) {
-        if (pts.length < 2) return null;
+        if (!pts || pts.length < 2) return null;
+        
+        // Saneamiento de puntos: eliminar puntos duplicados o demasiado cercanos
+        const cleanPts = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+            if (cleanPts[cleanPts.length - 1].distanceTo(pts[i]) > 0.5) {
+                cleanPts.push(pts[i]);
+            }
+        }
+        if (cleanPts.length < 2) return null;
         
         // 1. Create CatmullRomCurve3 with curvatura parameter
         let curvaturaVal = curvaturaFactor !== undefined ? curvaturaFactor : window.draftCalleCurvaCurvatura;
@@ -511,13 +511,13 @@ window.arquitecto3D = {
         
         let curve;
         if (curvaturaVal === 0) {
-            curve = new THREE.CatmullRomCurve3(pts, isClosed, 'catmullrom', 0); // Recta
+            curve = new THREE.CatmullRomCurve3(cleanPts, isClosed, 'catmullrom', 0); // Recta
         } else {
-            curve = new THREE.CatmullRomCurve3(pts, isClosed, 'catmullrom', curvaturaVal / 10);
+            curve = new THREE.CatmullRomCurve3(cleanPts, isClosed, 'catmullrom', curvaturaVal / 10);
         }
         
         // Number of segments
-        const divisions = Math.max(20, pts.length * 10);
+        const divisions = Math.max(20, cleanPts.length * 10);
         const smoothPts = curve.getPoints(divisions);
         
         const width = Math.max(1.0, (widthFactor || window.arq2CalleCurvaAncho || 5.5)) * 1.5; // Escala empírica
