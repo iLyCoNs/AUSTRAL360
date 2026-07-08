@@ -508,7 +508,7 @@ window.arquitecto3D = {
 
         const geo = new THREE.BufferGeometry().setFromPoints(renderPts);
         const mat = new THREE.LineBasicMaterial({ 
-            color: 0x10b981, // Verde
+            color: 0xffffff, // Blanca neon premium
             linewidth: 4, 
             depthTest: false, 
             transparent: true, 
@@ -571,9 +571,11 @@ window.arquitecto3D = {
             this.group.add(this.tempFillMesh);
         }
         
-        const vertices = [];
+        const streetPts = geoData.fillPoly.map(py => window.visor360.getVectorFromPitchYaw(py[0], py[1]));
         const vec2D = streetPts.map(p => new THREE.Vector2(Math.atan2(p.x, p.z), Math.asin(p.y / p.length())));
         const faces = THREE.ShapeUtils.triangulateShape(vec2D, []);
+        
+        const vertices = [];
         faces.forEach(face => {
             const pA = streetPts[face[0]], pB = streetPts[face[1]], pC = streetPts[face[2]];
             vertices.push(pA.x, pA.y, pA.z, pB.x, pB.y, pB.z, pC.x, pC.y, pC.z);
@@ -759,7 +761,7 @@ window.arquitecto3D = {
             pts.push(pts[0].clone()); // cerrar loop
             geo = new THREE.BufferGeometry().setFromPoints(pts);
             mat = new THREE.LineBasicMaterial({ 
-                color: lote.color, 
+                color: 0xffffff, // Blanca neon premium para bordes
                 linewidth: 3, 
                 depthTest: false,
                 transparent: true,
@@ -867,12 +869,12 @@ window.arquitecto3D = {
             const geo = new THREE.BufferGeometry().setFromPoints([s.p1, s.p2]);
             const mat = new THREE.LineDashedMaterial({
                 color: 0xffffff,
-                linewidth: 2,
-                dashSize: 8,
-                gapSize: 8,
+                linewidth: 3,
+                dashSize: 10,
+                gapSize: 6,
                 depthTest: false,
                 transparent: true,
-                opacity: 0.9
+                opacity: 1.0 // Neon brillante
             });
             const line = new THREE.Line(geo, mat);
             line.computeLineDistances();
