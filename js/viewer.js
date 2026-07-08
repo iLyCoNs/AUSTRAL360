@@ -1848,16 +1848,17 @@ function handleCalleDrawClick(mock) {
         p = snappedCoords[0]; y = snappedCoords[1];
     }
     if (isSnapToClose && currentLinePoints.length >= 2) {
-        finishCalleDrawing();
-        lastCalleTap = null;
-        return;
+        // PER USER REQUEST: DO NOT AUTO-FINISH.
+        // Let it snap and continue the single line.
+        // Only cut when Enter is pressed.
     }
     const now = Date.now();
     if (lastCalleTap && now - lastCalleTap.time < 450 && Math.hypot(mock.clientX - lastCalleTap.x, mock.clientY - lastCalleTap.y) < 28) {
         if (currentLinePoints.length >= 2) {
-            finishCalleDrawing();
-            lastCalleTap = null;
-            return;
+            // DO NOT AUTO-FINISH ON DOUBLE TAP EITHER, they want it only on Enter!
+            // finishCalleDrawing();
+            // lastCalleTap = null;
+            // return;
         }
     }
     lastCalleTap = { x: mock.clientX, y: mock.clientY, time: now, p, y };

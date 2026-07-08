@@ -461,7 +461,8 @@ window.arquitecto3D = {
             if (!this.isActive) return;
             e.stopPropagation();
             if (this.currentTool === 'calle-curva') {
-                this.finishStreet();
+                // DO NOT FINISH on double click!
+                // Only cut when Enter is pressed.
             } else {
                 this.finishPolygon();
             }
@@ -471,7 +472,8 @@ window.arquitecto3D = {
             if (!this.isActive) return;
             e.preventDefault();
             if (this.currentTool === 'calle-curva') {
-                this.finishStreet();
+                // DO NOT FINISH on right click!
+                // Only cut when Enter is pressed.
             } else {
                 this.finishPolygon();
             }

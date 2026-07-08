@@ -1,5 +1,5 @@
-﻿// ==========================================
-// MOTOR ARQUITECTO 2.0 (ExtraÃ­do de viewer.js)
+// ==========================================
+// MOTOR ARQUITECTO 2.0 (ExtraÃƒÂ­do de viewer.js)
 // ==========================================
 
 function arq2_migrateCallesGeometry() {
@@ -205,7 +205,7 @@ function arq2_syncOrganicLotePaths(lineData, cacheObj, getCamFn, cx, cySc, f) {
 
     if (isCosturaLot) {
         // --- COSTURA LOT: render ALL edges in the costura style (dashed or solid) ---
-        // paths[1]: solid perimeter â†’ hidden for costura lots
+        // paths[1]: solid perimeter Ã¢â€ â€™ hidden for costura lots
         paths[1].setAttribute('d', 'M -999 -999');
         paths[1].style.cssText = 'display:none !important;';
 
@@ -234,7 +234,7 @@ function arq2_syncOrganicLotePaths(lineData, cacheObj, getCamFn, cx, cySc, f) {
         const edgesD = dAllEdges.trim() || 'M -999 -999';
 
         if (costuraEstilo === 'solida') {
-            // paths[2]: dashed â†’ empty; paths[3]: solid costura â†’ all edges
+            // paths[2]: dashed Ã¢â€ â€™ empty; paths[3]: solid costura Ã¢â€ â€™ all edges
             paths[2].setAttribute('d', 'M -999 -999');
             paths[2].style.cssText = 'stroke:none !important; fill:none !important;';
             paths[3].setAttribute('d', edgesD);
@@ -242,9 +242,9 @@ function arq2_syncOrganicLotePaths(lineData, cacheObj, getCamFn, cx, cySc, f) {
             paths[3].style.cssText = 'fill:none !important; stroke:rgba(255,255,255,0.92) !important; stroke-width:2px !important; stroke-dasharray:none !important; vector-effect:non-scaling-stroke; pointer-events:none;';
             paths[3].setAttribute('data-costura-style', 'solida');
         } else {
-            // paths[2]: dashed â†’ all edges; paths[3]: solid costura â†’ empty
+            // paths[2]: dashed Ã¢â€ â€™ all edges; paths[3]: solid costura Ã¢â€ â€™ empty
             paths[2].setAttribute('d', edgesD);
-            // Force dashed costura style directly â€” maximum specificity via cssText
+            // Force dashed costura style directly Ã¢â‚¬â€ maximum specificity via cssText
             paths[2].style.cssText = 'fill:none !important; stroke:rgba(255,255,255,0.92) !important; stroke-width:2px !important; stroke-dasharray:6,6 !important; vector-effect:non-scaling-stroke; pointer-events:none;';
             paths[2].setAttribute('data-costura-style', 'punteada');
             paths[3].setAttribute('d', 'M -999 -999');
@@ -342,7 +342,7 @@ function arq2_projectPolylineD(pts, isClosed, getCamFn, cx, cySc, f) {
         if (c2.z > 0.0001) { s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f }; hasVisible = true; }
         else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
         if (isNaN(s1.x) || isNaN(s1.y) || isNaN(s2.x) || isNaN(s2.y)) {
-            console.warn('[Fila Variable] Punto de proyecciÃ³n invÃ¡lido', { p1, p2, s1, s2 });
+            console.warn('[Fila Variable] Punto de proyecciÃƒÂ³n invÃƒÂ¡lido', { p1, p2, s1, s2 });
             continue;
         }
         if (d === '') d += `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
@@ -476,7 +476,7 @@ function arq2_updatePanelStep() {
         costuraToggle.style.display = showSel ? 'block' : 'none';
         if (showSel) {
             const cur = sel.costuraEstilo || sel.costuraStyle || sel.sharedSegStyles?.[sel.sharedSegs?.[0]] || 'punteada';
-            costuraToggle.textContent = cur === 'punteada' ? 'Cambiar a sÃ³lida' : 'Cambiar a punteada';
+            costuraToggle.textContent = cur === 'punteada' ? 'Cambiar a sÃƒÂ³lida' : 'Cambiar a punteada';
         }
     }
     if (demoReplay) demoReplay.style.display = toolKey === 'fila-variable' ? 'block' : 'none';
@@ -502,13 +502,13 @@ function arq2_updatePanelStep() {
     if (sem) {
         sem.classList.remove('arq2-sem-green', 'arq2-sem-yellow', 'arq2-sem-red');
         if (arq2InvasionActive) {
-            sem.textContent = 'ðŸ”´ Cruzando calle o lÃ­mite, corrige el punto';
+            sem.textContent = 'Ã°Å¸â€Â´ Cruzando calle o lÃƒÂ­mite, corrige el punto';
             sem.classList.add('arq2-sem-red');
         } else if (arq2CosturaSnap && isArquitecto2Active) {
-            sem.textContent = 'ðŸŸ¡ ImÃ¡n activo â€” puedes encadenar a forma existente';
+            sem.textContent = 'Ã°Å¸Å¸Â¡ ImÃƒÂ¡n activo Ã¢â‚¬â€ puedes encadenar a forma existente';
             sem.classList.add('arq2-sem-yellow');
         } else {
-            sem.textContent = 'ðŸŸ¢ Trazo limpio';
+            sem.textContent = 'Ã°Å¸Å¸Â¢ Trazo limpio';
             sem.classList.add('arq2-sem-green');
         }
     }
@@ -528,9 +528,9 @@ function arq2_updateLiveCounter(mock) {
         const total = weights.reduce((a, b) => a + b, 0);
         const activeIdx = Math.min(weights.length - 1, Math.max(0, document.querySelector('.franja-weight-input:focus') ? Array.from(document.querySelectorAll('.franja-weight-input')).indexOf(document.activeElement) : 0));
         const current = weights[activeIdx] || 0;
-        el.textContent = 'Lote actual: ' + current + ' mÂ² | Total hilera: ' + total + ' mÂ²';
+        el.textContent = 'Lote actual: ' + current + ' mÃ‚Â² | Total hilera: ' + total + ' mÃ‚Â²';
     } else {
-        el.textContent = 'VÃ©rtices: ' + pts.length + (arq2Tool === 'fila-variable' ? ' (mÃ­n. 4)' : '');
+        el.textContent = 'VÃƒÂ©rtices: ' + pts.length + (arq2Tool === 'fila-variable' ? ' (mÃƒÂ­n. 4)' : '');
     }
     if (tip) {
         if (arq2InvasionActive) {
@@ -567,7 +567,7 @@ function arq2_refreshVertexMarkers(ctx) {
         vertsG.appendChild(circle);
     });
 
-    // === VÃ‰RTICES IMAGINARIOS: Miter corner guides for calle-curva ===
+    // === VÃƒâ€°RTICES IMAGINARIOS: Miter corner guides for calle-curva ===
     // Show left/right road-edge diamonds at each placed axis vertex
     if (arq2Tool === 'calle-curva-arq2' && points.length >= 1) {
         const proj = getPanoramaScreenProjector();
@@ -827,7 +827,7 @@ function arq2_offsetSplinePath(smoothedPoints, halfWidthDeg, calleRetorno = fals
     const limit = isClosed ? n : (calleRetorno ? n - 1 : n);
 
     // Work entirely in PY (pitch/yaw degree) space.
-    // Compute tangent as the pitch/yaw direction vector, then rotate 90Â° for the normal.
+    // Compute tangent as the pitch/yaw direction vector, then rotate 90Ã‚Â° for the normal.
     // halfWidthDeg is the half-width in degrees of pitch/yaw arc.
     for (let i = 0; i < limit; i++) {
         const cur = smoothedPoints[i];
@@ -841,7 +841,7 @@ function arq2_offsetSplinePath(smoothedPoints, halfWidthDeg, calleRetorno = fals
             const dy = (i === 0) ? ref[1] - cur[1] : cur[1] - ref[1];
             const len = Math.hypot(dx, dy);
             if (len < 1e-8) continue;
-            // Normal = rotate tangent 90Â°: (-dy, dx)
+            // Normal = rotate tangent 90Ã‚Â°: (-dy, dx)
             nx = -dy / len; ny = dx / len;
         } else {
             // Interior point: miter bisector in PY space
@@ -998,7 +998,7 @@ function arq2_projectCalleCurvaPaths(lineData, getCamFn, cx, cySc, f) {
 
     let dFill;
     if (lineData.ejeIsClosed) {
-        // Closed-loop (manzana): two separate ring paths â†’ evenodd creates the road band
+        // Closed-loop (manzana): two separate ring paths Ã¢â€ â€™ evenodd creates the road band
         // Outer ring: right border (larger perimeter goes first for evenodd winding)
         let dOuter = `M ${sRight[0].x},${sRight[0].y}`;
         for (let i = 1; i < sRight.length; i++) dOuter += ` L ${sRight[i].x},${sRight[i].y}`;
@@ -1009,7 +1009,7 @@ function arq2_projectCalleCurvaPaths(lineData, getCamFn, cx, cySc, f) {
         dInner += ' Z';
         dFill = dOuter + ' ' + dInner;
     } else {
-        // Open street: single polygon (left â†’ right reversed)
+        // Open street: single polygon (left Ã¢â€ â€™ right reversed)
         dFill = `M ${sLeft[0].x},${sLeft[0].y}`;
         for (let i = 1; i < sLeft.length; i++) dFill += ` L ${sLeft[i].x},${sLeft[i].y}`;
         for (let i = sRight.length - 1; i >= 0; i--) dFill += ` L ${sRight[i].x},${sRight[i].y}`;
@@ -1044,7 +1044,7 @@ function arq2_finishCalleCurva() {
     refreshAllHotspots(true);
     saveToLocal();
     flashScreenSuccess();
-    arq2_setStatusText('Calle curva guardada âœ“');
+    arq2_setStatusText('Calle curva guardada Ã¢Å“â€œ');
 }
 
 function arq2_getCalleCurvaPreviewLineData() {
@@ -1109,17 +1109,6 @@ function arq2_bindCalleCurvaColorPicker() {
 
 function arq2_ensurePanelExtras() {
     const row = document.querySelector('.arq2-tool-row');
-    if (row && !document.getElementById('arq2-tool-calle-curva')) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'dev-btn arq2-tool-btn';
-        btn.id = 'arq2-tool-calle-curva';
-        btn.dataset.arq2Tool = 'calle-curva-arq2';
-        btn.textContent = 'ðŸ›£ï¸ Calle Curva';
-        row.appendChild(btn);
-        btn.addEventListener('click', () => arq2_setTool('calle-curva-arq2'));
-    }
-    if (!document.getElementById('arq2-calle-curva-row') && document.getElementById('arq2-panel')) {
         const rowEl = document.createElement('div');
         rowEl.id = 'arq2-calle-curva-row';
         rowEl.className = 'arq2-calle-curva-row';
@@ -1128,7 +1117,7 @@ function arq2_ensurePanelExtras() {
             '<label>Transparencia <span id="arq2-calle-alpha-val">55%</span></label><input type="range" id="arq2-calle-alpha" min="0.15" max="1" step="0.05" value="0.55">' +
             '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><label style="margin:0;">Color Asfalto</label><input type="color" id="arq2-calle-color" value="#5a5f69" style="cursor:pointer; background:none; border:none; width: 30px; height: 30px;"></div>' +
             '<div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-retorno" style="cursor:pointer;"><label for="arq2-calle-retorno" style="cursor:pointer; margin: 0; font-size: 11px; color: #fff;">Retorno Circular (Cul-de-sac)</label></div>' +
-            '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imÃ¡n)</label></div>' +
+            '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imÃƒÂ¡n)</label></div>' +
             '<div style="margin-top: 10px; font-size: 11px; color: #10b981;"><i>Tip: Toca una calle ya dibujada para editarla (Color, Ancho, etc.) y presiona ENTER para guardar.</i></div>';
 
         document.getElementById('arq2-panel').appendChild(rowEl);
@@ -1195,7 +1184,7 @@ function arq2_getSmoothParams(intensity) {
     if (n <= 0) return { enabled: false, segmentsPerCurve: 8, angleThreshold: 180, label: 'Apagado' };
     if (n <= 3) return { enabled: true, segmentsPerCurve: 6, angleThreshold: 150, label: 'Sutil' };
     if (n <= 7) return { enabled: true, segmentsPerCurve: 10, angleThreshold: 165, label: 'Natural' };
-    return { enabled: true, segmentsPerCurve: 18, angleThreshold: 175, label: 'MÃ¡ximo' };
+    return { enabled: true, segmentsPerCurve: 18, angleThreshold: 175, label: 'MÃƒÂ¡ximo' };
 }
 
 function arq2_estimatePolygonScreenAreaPx(pts) {
@@ -1221,7 +1210,7 @@ function arq2_reprocessLineSmoothing(lineId, intensity) {
     syncSVGElements();
     refreshAllHotspots(true);
     saveToLocal();
-    arq2_setStatusText('Suavizado reprocesado (' + arq2_getSmoothParams(intensity).label + ') âœ“');
+    arq2_setStatusText('Suavizado reprocesado (' + arq2_getSmoothParams(intensity).label + ') Ã¢Å“â€œ');
 }
 
 function arq2_showSmallShapeSmoothHint(lineId) {
@@ -1232,7 +1221,7 @@ function arq2_showSmallShapeSmoothHint(lineId) {
         hint.className = 'arq2-small-shape-hint';
         document.getElementById('arq2-panel')?.appendChild(hint);
     }
-    hint.innerHTML = 'Forma pequeÃ±a detectada â€” considera subir la intensidad de suavizado para un trazo mÃ¡s fino. <button type="button" id="arq2-apply-max-smooth">Aplicar MÃ¡ximo</button>';
+    hint.innerHTML = 'Forma pequeÃƒÂ±a detectada Ã¢â‚¬â€ considera subir la intensidad de suavizado para un trazo mÃƒÂ¡s fino. <button type="button" id="arq2-apply-max-smooth">Aplicar MÃƒÂ¡ximo</button>';
     hint.style.display = 'block';
     const btn = document.getElementById('arq2-apply-max-smooth');
     if (btn) {
@@ -1426,7 +1415,7 @@ function arq2_buildFilaInternalDivisions(ejeFrente, ejeFondo, weights) {
         const pts = arq2_getFilaRadialDivision(ejeFrente, ejeFondo, cum[i]);
         const tp = pts[0], bp = pts[1];
         if (!arq2_isValidPYPoint(tp) || !arq2_isValidPYPoint(bp)) {
-            console.warn('[Fila Variable] DivisiÃ³n invÃ¡lida en t=' + cum[i], { tp, bp, ejeFrente, ejeFondo });
+            console.warn('[Fila Variable] DivisiÃƒÂ³n invÃƒÂ¡lida en t=' + cum[i], { tp, bp, ejeFrente, ejeFondo });
             continue;
         }
         divs.push([[...tp], [...bp]]);
@@ -1451,12 +1440,12 @@ function arq2_computeFilaLotCentroids(ejeFrente, ejeFondo, weights) {
 }
 
 function arq2_finishFilaContour() {
-    if (arq2LinePoints.length < 4) { alert('âš  Dibuja al menos 4 puntos para el contorno completo de la hilera.'); return; }
+    if (arq2LinePoints.length < 4) { alert('Ã¢Å¡Â  Dibuja al menos 4 puntos para el contorno completo de la hilera.'); return; }
     const raw = arq2_sanitizePolylinePoints([...arq2LinePoints]);
-    if (raw.length < 4) { alert('âš  Contorno invÃ¡lido. Usa 4â€“6 vÃ©rtices bien definidos.'); return; }
+    if (raw.length < 4) { alert('Ã¢Å¡Â  Contorno invÃƒÂ¡lido. Usa 4Ã¢â‚¬â€œ6 vÃƒÂ©rtices bien definidos.'); return; }
     arq2FilaVariableContorno = arq2SmoothCurves ? arq2_adaptiveSmooth(raw, 8) : raw;
     arq2FilaVariableContorno = arq2_sanitizePolylinePoints(arq2FilaVariableContorno);
-    if (arq2FilaVariableContorno.length < 4) { alert('âš  No se pudo generar la fila. Intenta con un contorno mÃ¡s simple (4-6 puntos) y vuelve a intentar.'); return; }
+    if (arq2FilaVariableContorno.length < 4) { alert('Ã¢Å¡Â  No se pudo generar la fila. Intenta con un contorno mÃƒÂ¡s simple (4-6 puntos) y vuelve a intentar.'); return; }
     arq2PendingFila = { contorno: [...arq2FilaVariableContorno] };
     arq2LinePoints = [];
     arq2TempLineId = 'arq2_temp_' + Date.now();
@@ -2148,7 +2137,7 @@ function arq2_toggleSelectedCosturaStyle() {
     updateSVGPaths();
     saveToLocal();
     arq2_updatePanelStep();
-    arq2_setStatusText('Costura lote ' + (line.arq2Numero || line.franjaNumero || '') + ': ' + (next === 'punteada' ? 'punteada âœ“' : 'sÃ³lida âœ“'));
+    arq2_setStatusText('Costura lote ' + (line.arq2Numero || line.franjaNumero || '') + ': ' + (next === 'punteada' ? 'punteada Ã¢Å“â€œ' : 'sÃƒÂ³lida Ã¢Å“â€œ'));
 }
 
 function arq2_clearDemoTimeouts() {
@@ -2337,8 +2326,8 @@ function arq2_runDemoCycle() {
     }
     divs.forEach(d => divLines.push(arq2_demoMakeLine(root, ns, d[0], d[1], 'arq2-demo-draw-line arq2-demo-div-line')));
     const pt0 = arq2_demoMakeCircle(root, ns, contour[0], 7, 'arq2-demo-point');
-    const lblContour = arq2_demoMakeMidLabel(root, ns, contour[0], contour[1], 'CONTORNO âœ“ (Enter)', 'arq2-demo-tag');
-    const lblScale = arq2_demoMakeText(root, ns, lotCenters[1] || contour[0], 'ðŸ“ Divisiones proporcionales al mÂ²', 'arq2-demo-tag arq2-demo-center-tag');
+    const lblContour = arq2_demoMakeMidLabel(root, ns, contour[0], contour[1], 'CONTORNO Ã¢Å“â€œ (Enter)', 'arq2-demo-tag');
+    const lblScale = arq2_demoMakeText(root, ns, lotCenters[1] || contour[0], 'Ã°Å¸â€œÂ Divisiones proporcionales al mÃ‚Â²', 'arq2-demo-tag arq2-demo-center-tag');
     lotCenters.forEach((c, i) => {
         lotNums.push(arq2_demoMakeCircle(root, ns, c, 10, 'arq2-demo-lot-circle'));
         lotNums.push(arq2_demoMakeText(root, ns, c, String(i + 1).padStart(2, '0'), 'arq2-demo-lot-num'));
@@ -2385,7 +2374,7 @@ function arq2_applyAutoFill(entry) {
     const autoNum = arq2Tool === 'relleno-auto';
     let numero = arq2_getNextLoteNumero();
     if (!autoNum) {
-        const inp = prompt('NÃºmero de lote (Enter = correlativo):', numero);
+        const inp = prompt('NÃƒÂºmero de lote (Enter = correlativo):', numero);
         if (inp === null) return false;
         if (inp.trim()) numero = inp.trim().padStart(2, '0');
     }
@@ -2484,7 +2473,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     const smoothIntensity = arq2SmoothIntensity;
     let smoothed;
 
-    // Special case: 2-point costura = dividing line â€” try to split parent lot first
+    // Special case: 2-point costura = dividing line Ã¢â‚¬â€ try to split parent lot first
     if (useCostura && snappedRaw.length === 2) {
         const splitOK = arq2_trySplitParentLote(snappedRaw[0], snappedRaw[1]);
         // Always save the dashed dividing line (visible separator on top of the two new lots)
@@ -2503,7 +2492,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
         refreshAllHotspots(true);
         saveToLocal();
         flashScreenSuccess();
-        arq2_setStatusText(splitOK ? 'Lote subdividido en 2 âœ“' : 'LÃ­nea divisoria guardada âœ“');
+        arq2_setStatusText(splitOK ? 'Lote subdividido en 2 Ã¢Å“â€œ' : 'LÃƒÂ­nea divisoria guardada Ã¢Å“â€œ');
         return;
     }
 
@@ -2540,7 +2529,7 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     refreshAllHotspots(true);
     saveToLocal();
     flashScreenSuccess();
-    arq2_setStatusText('Lote ' + entry.arq2Numero + ' guardado âœ“');
+    arq2_setStatusText('Lote ' + entry.arq2Numero + ' guardado Ã¢Å“â€œ');
 }
 
 function arq2_shouldAutoCloseAt(p, y, isDblClick) {
@@ -2583,7 +2572,7 @@ function arq2_findNearestStreetBorderPY(pitch, yaw) {
                 const s1 = proj.toScreen(border[i][0], border[i][1]);
                 const s2 = proj.toScreen(border[i+1][0], border[i+1][1]);
                 if (!s1 || !s2) continue;
-                // Distance from click to segment s1â†’s2
+                // Distance from click to segment s1Ã¢â€ â€™s2
                 const dx = s2[0]-s1[0], dy = s2[1]-s1[1];
                 const lenSq = dx*dx + dy*dy;
                 let t = lenSq > 0 ? ((csx-s1[0])*dx + (csy-s1[1])*dy) / lenSq : 0;
@@ -2622,7 +2611,7 @@ function arq2_projectBorderInward(borderPts, depthFactor) {
         const tlen = Math.hypot(tx, ty);
         if (tlen < 0.01) continue;
         tx /= tlen; ty /= tlen;
-        // Normal (perpendicular, pointing inward â€” we'll pick the right direction later)
+        // Normal (perpendicular, pointing inward Ã¢â‚¬â€ we'll pick the right direction later)
         let nx = -ty, ny = tx;
         // Inward offset in screen space
         const sx = sCur[0] + nx * depthPx;
@@ -2638,7 +2627,7 @@ function arq2_projectBorderInward(borderPts, depthFactor) {
 
 function arq2_buildFilaCalleContorno(borderPts, fondoPts) {
     if (!borderPts || !fondoPts || borderPts.length < 2 || fondoPts.length < 2) return null;
-    // Combine: go along border leftâ†’right, then fondo rightâ†’left to close
+    // Combine: go along border leftÃ¢â€ â€™right, then fondo rightÃ¢â€ â€™left to close
     const contorno = [...borderPts, ...[...fondoPts].reverse()];
     return arq2_sanitizePolylinePoints(contorno);
 }
@@ -2699,12 +2688,12 @@ function arq2_updateFilaCallePreview() {
 
 function arq2_commitFilaCalle(weights) {
     if (!arq2FilaCalle?.borderPts) {
-        alert('âš  Selecciona primero el borde de una calle.');
+        alert('Ã¢Å¡Â  Selecciona primero el borde de una calle.');
         return;
     }
     const contorno = arq2_computeFilaCalleContorno();
     if (!contorno || contorno.length < 4) {
-        alert('âš  No se pudo proyectar la profundidad. Ajusta la vista o elige otro borde.');
+        alert('Ã¢Å¡Â  No se pudo proyectar la profundidad. Ajusta la vista o elige otro borde.');
         return;
     }
     // Temporarily set arq2PendingFila so arq2_commitFilaVariable can work
@@ -2737,7 +2726,7 @@ function arq2_setupFilaCalleListeners() {
             if (!arq2FilaCalle?.borderPts) return;
             const contorno = arq2_computeFilaCalleContorno();
             if (!contorno || contorno.length < 4) {
-                arq2_setStatusText('âš  No se pudo proyectar el polÃ­gono. Ajusta la profundidad.');
+                arq2_setStatusText('Ã¢Å¡Â  No se pudo proyectar el polÃƒÂ­gono. Ajusta la profundidad.');
                 return;
             }
             arq2PendingFila = { contorno };
@@ -2753,7 +2742,7 @@ function arq2_setupFilaCalleListeners() {
             arq2FilaCalle = null;
             arq2_updateFilaCallePreview();
             arq2_updatePanelStep();
-            arq2_setStatusText('SelecciÃ³n cancelada â€” haz clic en el borde de una calle.');
+            arq2_setStatusText('SelecciÃƒÂ³n cancelada Ã¢â‚¬â€ haz clic en el borde de una calle.');
         });
     }
 }
@@ -2763,22 +2752,22 @@ function arq2_commitFilaVariable(weights) {
     if (!arq2PendingFila?.contorno || !weights?.length) return;
     const contorno = arq2_sanitizePolylinePoints(arq2PendingFila.contorno);
     if (contorno.length < 4) {
-        alert('No se pudo generar la fila. Intenta con un contorno mÃ¡s simple (4-6 puntos) y vuelve a intentar.');
+        alert('No se pudo generar la fila. Intenta con un contorno mÃƒÂ¡s simple (4-6 puntos) y vuelve a intentar.');
         return;
     }
     const axes = arq2_detectEjeYFondo(contorno);
-    if (!axes) { alert('âš  No se pudo detectar frente y fondo del contorno. Usa al menos 4 vÃ©rtices bien definidos.'); return; }
+    if (!axes) { alert('Ã¢Å¡Â  No se pudo detectar frente y fondo del contorno. Usa al menos 4 vÃƒÂ©rtices bien definidos.'); return; }
     const { ejeFrente, ejeFondo } = axes;
     const frontLen = getPolylineLength(ejeFrente), backLen = getPolylineLength(ejeFondo);
     if (frontLen < 1e-6 || backLen < 1e-6) {
         console.warn('[Fila Variable] Ejes con longitud cero', { ejeFrente, ejeFondo, contorno });
-        alert('No se pudo generar la fila. Intenta con un contorno mÃ¡s simple (4-6 puntos) y vuelve a intentar.');
+        alert('No se pudo generar la fila. Intenta con un contorno mÃƒÂ¡s simple (4-6 puntos) y vuelve a intentar.');
         return;
     }
     const divs = arq2_buildFilaInternalDivisions(ejeFrente, ejeFondo, weights);
     const lotCentroids = arq2_computeFilaLotCentroids(ejeFrente, ejeFondo, weights);
     if (contorno.length < 3 || !lotCentroids.length) {
-        alert('No se pudo generar la fila. Intenta con un contorno mÃ¡s simple (4-6 puntos) y vuelve a intentar.');
+        alert('No se pudo generar la fila. Intenta con un contorno mÃƒÂ¡s simple (4-6 puntos) y vuelve a intentar.');
         return;
     }
     const gid = 'arq2_fila_' + Date.now();
@@ -2807,7 +2796,7 @@ function arq2_commitFilaVariable(weights) {
     refreshAllHotspots(true);
     saveToLocal();
     flashScreenSuccess();
-    arq2_setStatusText('Hilera variable: ' + weights.length + ' lotes â€” un contorno + ' + divs.length + ' divisiones âœ“');
+    arq2_setStatusText('Hilera variable: ' + weights.length + ' lotes Ã¢â‚¬â€ un contorno + ' + divs.length + ' divisiones Ã¢Å“â€œ');
 }
 
 function arq2_updateGuideline() {
@@ -2991,9 +2980,9 @@ function arq2_onPanoramaClick(mock, isDblClick) {
             };
             arq2_updateFilaCallePreview();
             arq2_updatePanelStep();
-            arq2_setStatusText('Borde de calle seleccionado âœ“  â€” Ajusta la profundidad y haz clic en Â«Definir LotesÂ».');
+            arq2_setStatusText('Borde de calle seleccionado Ã¢Å“â€œ  Ã¢â‚¬â€ Ajusta la profundidad y haz clic en Ã‚Â«Definir LotesÃ‚Â».');
         } else {
-            arq2_setStatusText('âš  Haz clic directamente sobre el borde interior de una calle dibujada.');
+            arq2_setStatusText('Ã¢Å¡Â  Haz clic directamente sobre el borde interior de una calle dibujada.');
         }
         return;
     }
@@ -3014,10 +3003,10 @@ function arq2_onPanoramaClick(mock, isDblClick) {
         const origin = arq2LinePoints[0];
         const isNearOrigin = isNearPolygonOriginPY(p, y, origin);
         if (isNearOrigin) {
-            // Close the loop by adding the exact first point and finishing
+            // Close the loop by adding the exact first point but DO NOT auto-finish
             arq2LinePoints.push([...origin]);
             lastArq2DrawClickMs = Date.now();
-            arq2_finishCalleCurva();
+            arq2_refreshFeedbackVisuals(mock);
             return;
         }
     }

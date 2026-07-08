@@ -663,7 +663,7 @@
             const url = `https://api.github.com/repos/${user}/${repo}/contents/${filename}`;
             const response = await fetch(url, {
                 method: 'GET',
-                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
             });
             if (response.status === 404) return '';
             if (!response.ok) {
@@ -691,7 +691,7 @@
                 if (shaValue) payload.sha = shaValue;
                 const response = await fetch(url, {
                     method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (response.ok) {
@@ -963,7 +963,7 @@
             try {
                 const response = await fetch(url, {
                     method: 'GET',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
 
                 if (response.ok) {
@@ -1041,7 +1041,7 @@
             try {
                 const response = await fetch(url, {
                     method: 'GET',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
                 });
                 if (response.ok) {
                     const jsonRes = await response.json();
@@ -1137,7 +1137,7 @@
 
                 const response = await fetch(url, {
                     method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -1184,7 +1184,7 @@
 
                 const response = await fetch(url, {
                     method: 'PUT',
-                    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -1785,7 +1785,7 @@
 
                     const response = await fetch(url, {
                         method: 'PUT',
-                        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
