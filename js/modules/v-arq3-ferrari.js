@@ -536,10 +536,11 @@ window.arquitecto3D = {
         let closestPt = null;
         let minDist = threshold;
         
-        const checkPoints = (pts, isTemp) => {
-            const loteId = isTemp ? null : this.lotes.find(l=>l.points === pts)?.id;
+        const checkPoints = (pts, isTemp, isEdge = false) => {
+            if (!pts) return;
+            const loteId = isTemp ? null : this.lotes.find(l=> l.points === pts || l.edgePoints === pts)?.id;
             pts.forEach((pt3d, idx) => {
-                if (!isTemp && skipVertices) {
+                if (!isTemp && skipVertices && !isEdge) {
                     if (Array.isArray(skipVertices)) {
                         if (skipVertices.some(v => v.loteId === loteId && v.index === idx)) return;
                     } else if (skipVertices === loteId && skipIndex === idx) {
@@ -560,7 +561,10 @@ window.arquitecto3D = {
             });
         };
         
-        this.lotes.forEach(lote => checkPoints(lote.points, false));
+        this.lotes.forEach(lote => {
+            checkPoints(lote.points, false);
+            if (lote.edgePoints) checkPoints(lote.edgePoints, false, true);
+        });
         if (this.tempPoints.length > 0) checkPoints(this.tempPoints, true);
         
         return closestPt;
@@ -593,13 +597,13 @@ window.arquitecto3D = {
         
         this.tempPoints.push(v3);
         
-        // Agregar esfera visual temporal
-        const markerGeo = new THREE.SphereGeometry(1.2, 16, 16); 
+        // Agregar esfera visual temporal (60% mas pequeno)
+        const markerGeo = new THREE.SphereGeometry(0.48, 16, 16); 
         const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const marker = new THREE.Mesh(markerGeo, markerMat);
         
         // Efecto Neon temporal
-        const glowGeoTemp = new THREE.SphereGeometry(2.0, 16, 16);
+        const glowGeoTemp = new THREE.SphereGeometry(0.8, 16, 16);
         const glowMatTemp = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, depthTest: false });
         const glowTemp = new THREE.Mesh(glowGeoTemp, glowMatTemp);
         marker.add(glowTemp);
@@ -674,6 +678,19 @@ window.arquitecto3D = {
     renderTempStreet: function(renderPts) {
         const geoData = this.buildNative3DStreet(renderPts, undefined, false);
         if (!geoData) return;
+
+        if (this.tempLineMesh) {
+            this.group.remove(this.tempLineMesh);
+            if (this.tempLineMesh.isGroup) {
+                this.tempLineMesh.children.forEach(c => {
+                    if (c.geometry) c.geometry.dispose();
+                    if (c.material) c.material.dispose();
+                });
+            } else {
+                if (this.tempLineMesh.geometry) this.tempLineMesh.geometry.dispose();
+                if (this.tempLineMesh.material) this.tempLineMesh.material.dispose();
+            }
+        }
 
         this.tempLineMesh = new THREE.Group();
         
@@ -864,6 +881,8 @@ window.arquitecto3D = {
                 lote.streetCenterMesh = new THREE.Line(new THREE.BufferGeometry().setFromPoints(geoData.centerPts), cMat);
                 lote.streetCenterMesh.computeLineDistances();
 
+                lote.edgePoints = [...geoData.leftPts, ...geoData.rightPts];
+
                 for (let i = 0; i < geoData.fillVertices.length; i++) vertices.push(geoData.fillVertices[i]);
             }
         } else {
@@ -906,14 +925,13 @@ window.arquitecto3D = {
         lote.fillMesh = new THREE.Mesh(fillGeo, fillMat);
         lote.fillMesh.userData = { loteId: lote.id };
         
-        // Nodos (Vértices) arrastrables con Neón Blanco Premium
+        // Marcadores de v?rtices (Nodos) (60% mas pequenos)
         lote.markerMeshes = [];
-        const markerGeo = new THREE.SphereGeometry(1.4, 16, 16);
-        const markerMat = new THREE.MeshBasicMaterial({ 
-            color: 0xffffff, 
-            depthTest: false 
-        });
-        const glowGeo = new THREE.SphereGeometry(2.6, 16, 16);
+        const markerGeo = new THREE.SphereGeometry(0.56, 16, 16);
+        const markerMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false });
+        
+        // Efecto glow premium
+        const glowGeo = new THREE.SphereGeometry(1.04, 16, 16);
         const glowMat = new THREE.MeshBasicMaterial({ 
             color: 0xffffff, 
             transparent: true, 
@@ -1024,21 +1042,34 @@ window.arquitecto3D = {
         if (lote.tipo === 'calle-curva') {
             const geoData = this.buildNative3DStreet(pts, lote.ancho, false);
             if (geoData) {
-                if (lote.lineMesh) lote.lineMesh.geometry.setFromPoints(geoData.centerPts);
+                if (lote.lineMesh) {
+                    lote.lineMesh.geometry.dispose();
+                    lote.lineMesh.geometry = new THREE.BufferGeometry().setFromPoints(geoData.centerPts);
+                }
                 
-                if (lote.streetLeftMesh) lote.streetLeftMesh.geometry.setFromPoints(geoData.leftPts);
-                if (lote.streetRightMesh) lote.streetRightMesh.geometry.setFromPoints(geoData.rightPts);
+                if (lote.streetLeftMesh) {
+                    lote.streetLeftMesh.geometry.dispose();
+                    lote.streetLeftMesh.geometry = new THREE.BufferGeometry().setFromPoints(geoData.leftPts);
+                }
+                if (lote.streetRightMesh) {
+                    lote.streetRightMesh.geometry.dispose();
+                    lote.streetRightMesh.geometry = new THREE.BufferGeometry().setFromPoints(geoData.rightPts);
+                }
                 
                 if (lote.streetCenterMesh) {
-                    lote.streetCenterMesh.geometry.setFromPoints(geoData.centerPts);
+                    lote.streetCenterMesh.geometry.dispose();
+                    lote.streetCenterMesh.geometry = new THREE.BufferGeometry().setFromPoints(geoData.centerPts);
                     lote.streetCenterMesh.computeLineDistances();
                 }
+
+                lote.edgePoints = [...geoData.leftPts, ...geoData.rightPts];
 
                 for (let i = 0; i < geoData.fillVertices.length; i++) vertices.push(geoData.fillVertices[i]);
             }
         } else {
             pts.push(pts[0].clone()); // cerrar loop
-            lote.lineMesh.geometry.setFromPoints(pts);
+            lote.lineMesh.geometry.dispose();
+            lote.lineMesh.geometry = new THREE.BufferGeometry().setFromPoints(pts);
             
             // Actualizar relleno con triangulación correcta para cóncavos
             const cleanPts = lote.points; // lote.points ya no tiene el loop cerrado, pts sí
@@ -1055,8 +1086,11 @@ window.arquitecto3D = {
             });
         }
         
-        lote.fillMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        lote.fillMesh.geometry.attributes.position.needsUpdate = true;
+        if (lote.fillMesh) {
+            if (lote.fillMesh.geometry) lote.fillMesh.geometry.dispose();
+            lote.fillMesh.geometry = new THREE.BufferGeometry();
+            lote.fillMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        }
         
         // Actualizar el mesh de la esfera (nodo) que estamos moviendo
         lote.markerMeshes[info.index].position.copy(v3);
