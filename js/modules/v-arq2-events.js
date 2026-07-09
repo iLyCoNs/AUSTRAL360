@@ -3,6 +3,18 @@ function arq2_onPanoramaMove(mock) {
     window.lastMouseX = mock.clientX;
     window.lastMouseY = mock.clientY;
     
+    if (arq2Tool === 'vuelo-cinematico') {
+        const coords = visor360.mouseEventToCoords(mock);
+        if (coords && !isNaN(coords[0])) {
+            window.arq2VueloGhost = [
+                parseFloat(coords[0].toFixed(3)),
+                parseFloat(coords[1].toFixed(3))
+            ];
+        }
+        arq2_refreshFeedbackVisuals(mock);
+        return;
+    }
+    
     if (arq2Tool === 'eraser') {
         if (snapCursor) snapCursor.classList.remove('active');
         arq2_refreshFeedbackVisuals(mock);

@@ -1492,6 +1492,22 @@ window.arquitecto3D = {
             hologui.querySelectorAll('.ferrari-imported-pin').forEach(el => el.remove());
             hologui.querySelectorAll('.ferrari-lote-pin').forEach(el => el.remove());
         }
+    },
+
+    deleteLoteById: function(id) {
+        const index = this.lotes.findIndex(l => l.id === id);
+        if (index > -1) {
+            const lote = this.lotes[index];
+            if(lote.lineMesh) { lote.lineMesh.geometry.dispose(); lote.lineMesh.material.dispose(); this.group.remove(lote.lineMesh); }
+            if(lote.fillMesh) { lote.fillMesh.geometry.dispose(); lote.fillMesh.material.dispose(); this.group.remove(lote.fillMesh); }
+            if(lote.streetLeftMesh) { lote.streetLeftMesh.geometry.dispose(); lote.streetLeftMesh.material.dispose(); this.group.remove(lote.streetLeftMesh); }
+            if(lote.streetRightMesh) { lote.streetRightMesh.geometry.dispose(); lote.streetRightMesh.material.dispose(); this.group.remove(lote.streetRightMesh); }
+            if(lote.streetCenterMesh) { lote.streetCenterMesh.geometry.dispose(); lote.streetCenterMesh.material.dispose(); this.group.remove(lote.streetCenterMesh); }
+            if(lote.markerMeshes) {
+                lote.markerMeshes.forEach(m => { m.geometry.dispose(); m.material.dispose(); this.vertexMarkerGroup.remove(m); });
+            }
+            this.lotes.splice(index, 1);
+        }
     }
 };
 
