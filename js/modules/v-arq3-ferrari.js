@@ -715,6 +715,7 @@ window.arquitecto3D = {
         
         const newLote = {
             id: loteId,
+            tipo: 'lote-organico',
             points: finalPts,
             color: 0xffffff, // Blanca neón premium
             animStartTime: Date.now()
@@ -1103,7 +1104,7 @@ window.arquitecto3D = {
                         const whiteColor = new THREE.Color(0xffffff);
                         
                         if (lote.lineMesh) {
-                            if (lote.tipo === 'lote-libre') lote.lineMesh.material.color.setHex(0xffffff);
+                            if (lote.tipo !== 'calle-curva') lote.lineMesh.material.color.setHex(0xffffff);
                             else lote.lineMesh.material.color.copy(whiteColor).lerp(baseColor, ease);
                         }
                         if (lote.fillMesh) {
@@ -1115,7 +1116,7 @@ window.arquitecto3D = {
                     // Finaliza la animación de forma segura
                     lote.animStartTime = null;
                     if (lote.lineMesh) {
-                        if (lote.tipo === 'lote-libre') lote.lineMesh.material.color.setHex(0xffffff);
+                        if (lote.tipo !== 'calle-curva') lote.lineMesh.material.color.setHex(0xffffff);
                         else lote.lineMesh.material.color.setHex(lote.color);
                     }
                     if (lote.fillMesh) {
@@ -1190,7 +1191,7 @@ window.arquitecto3D = {
         if (!window.allDrawnLines) return;
 
         window.allDrawnLines.forEach(line => {
-            if (line.tipo !== 'calle-curva-arq2' && line.tipo !== 'calle' && line.tipo !== 'lote' && line.tipo !== 'calle-curva') return;
+            if (line.tipo !== 'calle-curva-arq2' && line.tipo !== 'calle' && line.tipo !== 'lote' && line.tipo !== 'calle-curva' && line.tipo !== 'lote-organico') return;
             if (this.lotes.find(l => l.id === line.id)) return;
             
             const ptsArray = line.ejeOriginal || line.puntos || [];
@@ -1200,9 +1201,9 @@ window.arquitecto3D = {
             
             const newLote = {
                 id: line.id,
-                tipo: (line.tipo === 'lote') ? 'lote' : 'calle-curva',
+                tipo: (line.tipo === 'lote' || line.tipo === 'lote-organico') ? 'lote-organico' : 'calle-curva',
                 points: v3Pts,
-                color: line.color || (line.tipo === 'lote' ? 0xffffff : 0x94a3b8),
+                color: line.color || ((line.tipo === 'lote' || line.tipo === 'lote-organico') ? 0xffffff : 0x94a3b8),
                 ancho: line.calleCurvaAncho || line.ancho || 8,
                 alpha: line.calleCurvaAlpha || line.alpha || 0.7,
                 curvatura: line.calleCurvaCurvatura !== undefined ? line.calleCurvaCurvatura : 5
@@ -1240,7 +1241,7 @@ window.arquitecto3D = {
             } else {
                 window.allDrawnLines.push({
                     id: l.id,
-                    tipo: l.tipo === 'calle-curva' ? 'calle-curva-arq2' : l.tipo,
+                    tipo: l.tipo === 'calle-curva' ? 'calle-curva-arq2' : (l.tipo || 'lote-organico'),
                     puntos: pyPoints,
                     ejeOriginal: l.tipo === 'calle-curva' ? pyPoints : undefined,
                     calleCurvaAncho: l.ancho || 8,
