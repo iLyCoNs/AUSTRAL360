@@ -751,3 +751,9 @@ html.admin-mode-active .layer-manager-panel .btn-export, html.admin-mode-active 
 .arq2-btn-pulse-drone{animation:arq2BtnPulseDrone 0.6s ease-out 3;}
 /* Semaforo rojo para errores */
 .arq2-semaphore.arq2-sem-red{color:#f87171!important;border-color:rgba(248,113,113,0.3)!important;background:rgba(248,113,113,0.08)!important;}
+
+/* === MARCADORES CINEMATICA WAYPOINTS === */
+@keyframes cinematicaMarkerPop{0%{transform:scale(0) translateY(-8px);opacity:0;}100%{transform:scale(1) translateY(0);opacity:1;}}
+.cinematica-waypoint-marker{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:99990;transform-origin:center bottom;}
+.cwm-number{width:36px;height:36px;border-radius:50%;background:rgba(168,85,247,0.95);border:2px solid #d8b4fe;color:#fff;font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(168,85,247,0.6),0 0 32px rgba(168,85,247,0.3);}
+.cwm-label{background:rgba(15,15,25,0.88);border:1px solid rgba(168,85,247,0.4);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:#d8b4fe;white-space:nowrap;backdrop-filter:blur(6px);}

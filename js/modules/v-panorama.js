@@ -324,7 +324,9 @@ function bindPanoramaPointerEvents() {
                 if (e.target && e.target.closest('.qa-btn')) return;
                 handleLineaPinesClick(mock);
             } else if (isDevModePinsActive && !pickedPin) {
-                if (e.target && e.target.closest('.qa-btn')) return; const coords = visor360.mouseEventToCoords(mock); if (!coords) return; const p = coords[0].toFixed(2), y = coords[1].toFixed(2); let baseArgs = { pitch: parseFloat(p), yaw: parseFloat(y) };
+                if (e.target && e.target.closest('.qa-btn')) return;
+                if (!visor360 || typeof visor360.mouseEventToCoords !== 'function') return;
+                const coords = visor360.mouseEventToCoords(mock); if (!coords) return; const p = coords[0].toFixed(2), y = coords[1].toFixed(2); let baseArgs = { pitch: parseFloat(p), yaw: parseFloat(y) };
                 if (currentPinTypeMap === 'horizonte' || currentPinTypeMap === 'ruta') {
                     const label = currentPinTypeMap === 'ruta' ? '🛣️ PIN RUTA' : '⛰️ PIN HORIZONTE';
                     const titulo = prompt(`${label}\nTítulo (ej: ${currentPinTypeMap === 'ruta' ? 'Ruta V-30' : 'Volcán Osorno'}):`);

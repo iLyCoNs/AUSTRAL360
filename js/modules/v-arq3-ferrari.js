@@ -576,25 +576,67 @@ window.arquitecto3D = {
     },
 
     addPoint: function(e) {
-        // === CINEMATICA: no dibuja vértices 3D, captura pitch/yaw/hfov de cámara ===
+        // === CINEMATICA: captura pitch/yaw/hfov con raycaster Ferrari, sin vértices 3D ===
         if (this.currentTool === 'cinematica') {
-            if (typeof window.arq2_onPanoramaClick !== 'undefined') {
-                // Delegar a la lógica de cinematica de v-arquitecto2
-                // Construir mock event con coords de visor
-                const mc = { clientX: e.clientX, clientY: e.clientY };
-                window.arq2_onPanoramaClick(mc, false);
+            // Capturar vector 3D desde el click
+            const v3 = this.getVectorFromEvent(e);
+            if (!v3) return;
+
+            // Convertir a pitch/yaw esféricos
+            const len = v3.length();
+            const pitchRad = Math.asin(v3.y / len);
+            const yawRad = Math.atan2(v3.x, -v3.z);
+            const pitch = parseFloat((pitchRad * 180 / Math.PI).toFixed(3));
+            const yaw = parseFloat((yawRad * 180 / Math.PI).toFixed(3));
+            const hfov = parseFloat(((window.visor360?.getHfov?.()) || 100).toFixed(3));
+
+            // Registrar en arq2VueloPoints
+            window.arq2VueloPoints = window.arq2VueloPoints || [];
+            const vp = { pitch, yaw, hfov };
+            if (window.arq2VueloPoints.length >= 3) {
+                window.arq2VueloPoints[2] = vp; // El 3ro reemplaza si ya hay 3
             } else {
-                // Fallback directo: capturar con movieEventToCoords
-                if (window.visor360 && typeof window.visor360.mouseEventToCoords === 'function') {
-                    const coords = window.visor360.mouseEventToCoords(e);
-                    if (coords && !isNaN(coords[0])) {
-                        window.arq2VueloPoints = window.arq2VueloPoints || [];
-                        const vp = { pitch: parseFloat(coords[0].toFixed(3)), yaw: parseFloat(coords[1].toFixed(3)), hfov: parseFloat((window.visor360.getHfov?.() || 100).toFixed(3)) };
-                        if (window.arq2VueloPoints.length >= 3) { window.arq2VueloPoints[2] = vp; } else { window.arq2VueloPoints.push(vp); }
-                        const sem = document.getElementById('arq2-semaphore');
-                        if (sem) { sem.className = 'arq2-semaphore arq2-sem-yellow'; sem.textContent = `🎬 Cinemática: punto ${window.arq2VueloPoints.length}/3 listo. Enter para guardar.`; }
-                    }
-                }
+                window.arq2VueloPoints.push(vp);
+            }
+
+            const n = window.arq2VueloPoints.length;
+
+            // === MARCADOR VISUAL CSS en holographic-ui-engine ===
+            this._cinematicaMarkers = this._cinematicaMarkers || [];
+            // Reposicionar o crear el marcador #n
+            const markerId = 'cinematica-marker-' + n;
+            let marker = document.getElementById(markerId);
+            if (!marker) {
+                marker = document.createElement('div');
+                marker.id = markerId;
+                marker.className = 'cinematica-waypoint-marker';
+                marker.innerHTML = `<div class="cwm-number">${n}</div><div class="cwm-label">${n === 1 ? '🎬 Inicio' : n === 2 ? '📍 Punto 2' : '🏁 Final'}</div>`;
+                const hologui = document.getElementById('holographic-ui-engine') || document.getElementById('panorama-container');
+                if (hologui) hologui.appendChild(marker);
+                this._cinematicaMarkers.push(marker);
+            }
+            // Posicionar el marcador en la pantalla donde se hizo click
+            const renderer = window.visor360?.getThreeRenderer?.();
+            const rect = renderer ? renderer.domElement.getBoundingClientRect() : document.getElementById('panorama-container')?.getBoundingClientRect();
+            if (rect && marker) {
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                marker.style.left = (sx - 20) + 'px';
+                marker.style.top = (sy - 40) + 'px';
+                marker.style.display = 'flex';
+                // Animación de aparición
+                marker.style.animation = 'none';
+                void marker.offsetWidth; // reflow
+                marker.style.animation = 'cinematicaMarkerPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards';
+            }
+
+            // Semáforo
+            const sem = document.getElementById('arq2-semaphore');
+            if (sem) {
+                sem.className = 'arq2-semaphore arq2-sem-yellow';
+                sem.textContent = n < 3
+                    ? `🎬 Cinemática: punto ${n}/3 marcado. Continúa haciendo clic...`
+                    : `🎬 Cinemática: ¡3/3 puntos listos! Presiona Enter para guardar.`;
             }
             return; // No dibujar vértice 3D
         }
@@ -858,6 +900,17 @@ window.arquitecto3D = {
             });
             this.tempLabels = [];
         }
+
+        // Limpiar marcadores visuales de cinemática si existen
+        if (this._cinematicaMarkers && this._cinematicaMarkers.length > 0) {
+            this._cinematicaMarkers.forEach(m => { if (m && m.parentNode) m.parentNode.removeChild(m); });
+            this._cinematicaMarkers = [];
+        }
+        // También limpiar por id directo (por si acaso)
+        [1, 2, 3].forEach(n => {
+            const m = document.getElementById('cinematica-marker-' + n);
+            if (m && m.parentNode) m.parentNode.removeChild(m);
+        });
     },
 
     importFranjaLotes: function(gid) {
