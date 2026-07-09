@@ -122,8 +122,10 @@ function syncSVGElements() {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.dataset.lineId = line.id; g.dataset.tipo = line.tipo; g.classList.add('lote-interactivo'); 
                 const pBase = document.createElementNS("http://www.w3.org/2000/svg", "path"); 
                 if (line.tipo === 'masterplan_fill') pBase.setAttribute("class", "linea-relleno-mp"); else if (line.tipo === 'neon') pBase.setAttribute("class", "linea-neon"); else if (line.tipo === 'punteada') pBase.setAttribute("class", "linea-punteada"); else if (line.tipo === 'cortar') pBase.setAttribute("class", "linea-corte"); else if (line.tipo === 'area-invisible') pBase.setAttribute("class", "linea-area-fill"); else pBase.setAttribute("class", "linea-solida");
-                if (line.tipo === 'area-invisible') g.setAttribute('data-status', 'disponible');
-                g.appendChild(pBase); bindSvgEraser(g, line.id); bindSvgEraser(pBase, line.id); g.addEventListener('touchstart', () => { g.classList.add('hovered'); }, {passive: true}); g.addEventListener('touchend', () => { setTimeout(() => g.classList.remove('hovered'), 1500); }, {passive: true}); lLotes.appendChild(g); DOMCache.paths[line.id] = { gNode: g, base: [pBase] };
+                if (line.tipo === 'area-invisible' || line.tipo === 'lote-libre' || line.tipo === 'lote-organico' || line.tipo === 'franja-grupo') g.setAttribute('data-status', line.status || 'disponible');
+                g.appendChild(pBase); bindSvgEraser(g, line.id); bindSvgEraser(pBase, line.id); g.addEventListener('touchstart', () => { g.classList.add('hovered'); }, {passive: true}); g.addEventListener('touchend', () => { setTimeout(() => g.classList.remove('hovered'), 1500); }, {passive: true}); 
+                g.addEventListener('click', (e) => { if (window.showPremiumHUD && !window.isArquitecto2Active) window.showPremiumHUD(line.id, e); });
+                lLotes.appendChild(g); DOMCache.paths[line.id] = { gNode: g, base: [pBase] };
             }
         } else {
             if (line.tipo === 'calle') {

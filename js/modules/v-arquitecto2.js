@@ -1038,13 +1038,34 @@ function arq2_applyCalleCurvaFillStyle(pathEl, alpha) {
 
 function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, calleRetorno = false) {
     let eje = arq2_smoothCalleAxis(ejeOriginal);
-    // Use angular (degree-space) half-width for perspective-independent rendering
+    const anchoMetros = anchoFactor || window.arq2CalleCurvaAncho || 8;
+    const ejeIsClosed = arq2_isCalleEjeClosed(ejeOriginal);
+    
+    if (window.GeometryEngine) {
+        // Enviar al motor matemático 2D en metros reales
+        const geo = window.GeometryEngine.buildCalleCurvaEsferica(eje, anchoMetros, ejeIsClosed, calleRetorno);
+        if (geo) {
+            const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? window.draftCalleCurvaAlpha ?? 0.55));
+            return {
+                ejeOriginal: ejeOriginal.map(p => [...p]),
+                puntosSuavizados: eje,
+                ancho: anchoFactor,
+                calleCurvaAlpha,
+                calleRetorno,
+                ejeIsClosed,
+                left: geo.left,
+                right: geo.right,
+                fillPoly: geo.fillPoly,
+                halfDeg: (anchoMetros * 0.1375) // legacy fallback param
+            };
+        }
+    }
+
+    // Fallback Legacy (Grados angulares)
     const halfDeg = arq2_getCalleCurvaHalfWidthDeg(anchoFactor);
-    if (draftCalleCurvaCurvatura > 0) {
+    if (window.draftCalleCurvaCurvatura > 0) {
         eje = arq2_enforceMinCurveRadius(eje, halfDeg * 1.3);
     }
-    // Detect if the user drew a closed loop (manzana)
-    const ejeIsClosed = arq2_isCalleEjeClosed(ejeOriginal);
     let left, right;
     if (ejeIsClosed) {
         const ejeLoop = eje[eje.length - 1] &&
@@ -1061,7 +1082,7 @@ function arq2_buildCalleCurvaGeometry(ejeOriginal, anchoFactor, alphaFactor, cal
         right = arq2_removeSelfIntersections(offset.right);
     }
     if (left.length < 2 || right.length < 2) return null;
-    const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? draftCalleCurvaAlpha ?? 0.55));
+    const calleCurvaAlpha = Math.max(0.15, Math.min(1, alphaFactor ?? window.draftCalleCurvaAlpha ?? 0.55));
     return {
         ejeOriginal: ejeOriginal.map(p => [...p]),
         puntosSuavizados: eje,
@@ -1346,17 +1367,10 @@ function arq2_getSmoothParams(intensity) {
     return { enabled: true, segmentsPerCurve: 18, angleThreshold: 175, label: 'MÃƒÂ¡ximo' };
 }
 
-function arq2_estimatePolygonScreenAreaPx(pts) {
-    const proj = getPanoramaScreenProjector();
-    if (!proj || !pts || pts.length < 3) return Infinity;
-    const sc = pts.map(p => proj.toScreen(p[0], p[1])).filter(Boolean);
-    if (sc.length < 3) return Infinity;
-    let area = 0;
-    for (let i = 0; i < sc.length; i++) {
-        const j = (i + 1) % sc.length;
-        area += sc[i][0] * sc[j][1] - sc[j][0] * sc[i][1];
-    }
-    return Math.abs(area) / 2;
+function arq2_calculateRealAreaM2(pts) {
+    if (!window.GeometryEngine || !pts || pts.length < 3) return 0;
+    const groundPts = pts.map(p => window.GeometryEngine.angularToGround(p[0], p[1]));
+    return window.GeometryEngine.calculatePolygonAreaM2(groundPts);
 }
 
 function arq2_reprocessLineSmoothing(lineId, intensity) {
@@ -2881,8 +2895,8 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     // Register shared edges so adjacent lots (costura and standard lote-libre)
     // automatically find their shared boundaries and style them as single dashed lines.
     arq2_registerSharedEdges(id);
-    const areaPx = arq2_estimatePolygonScreenAreaPx(smoothed);
-    if (areaPx < 40) arq2_showSmallShapeSmoothHint(id);
+    const areaM2 = arq2_calculateRealAreaM2(smoothed);
+    if (areaM2 > 0 && areaM2 < 15) arq2_showSmallShapeSmoothHint(id);
     arq2_clearDraft();
     refreshAllHotspots(true);
     saveToLocal();

@@ -189,6 +189,10 @@ function arq2_updatePanelStep() {
     if (smoothRow) {
         smoothRow.style.display = (toolKey === 'lote-libre' || toolKey === 'costura' || toolKey === 'relleno-auto') ? 'flex' : 'none';
     }
+    const selActions = document.getElementById('arq2-selection-actions');
+    if (selActions) {
+        selActions.style.display = window.arq2SelectedLineId ? 'flex' : 'none';
+    }
     const costuraRow = document.getElementById('arq2-costura-style-row');
     const costuraToggle = document.getElementById('arq2-costura-toggle-selected');
     const demoReplay = document.getElementById('arq2-fila-demo-replay');

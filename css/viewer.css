@@ -663,3 +663,26 @@ body.arq2-pin-active .lote-interactivo { pointer-events: none !important; }
     border-radius: 0;
 }
 
+
+/* ESTILOS DE STATUS COMERCIAL FASE 4 */
+g[data-status="disponible"] > path.linea-solida,
+g[data-status="disponible"] > path.linea-area-fill {
+    fill: rgba(16, 185, 129, 0.25) !important;
+    stroke: rgba(16, 185, 129, 0.8) !important;
+}
+
+g[data-status="reservado"] > path.linea-solida,
+g[data-status="reservado"] > path.linea-area-fill {
+    fill: rgba(245, 158, 11, 0.3) !important;
+    stroke: rgba(245, 158, 11, 0.8) !important;
+}
+
+g[data-status="vendido"] > path.linea-solida,
+g[data-status="vendido"] > path.linea-area-fill {
+    fill: rgba(239, 68, 68, 0.35) !important;
+    stroke: rgba(239, 68, 68, 0.8) !important;
+}
+
+body.hide-status-disponible g[data-status='disponible'],
+body.hide-status-reservado g[data-status='reservado'],
+body.hide-status-vendido g[data-status='vendido'] { display: none !important; }

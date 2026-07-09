@@ -58,8 +58,8 @@ function arq2_finishLoteOrganico(rawPoints, useCostura) {
     // Register shared edges so adjacent lots (costura and standard lote-libre)
     // automatically find their shared boundaries and style them as single dashed lines.
     arq2_registerSharedEdges(id);
-    const areaPx = arq2_estimatePolygonScreenAreaPx(smoothed);
-    if (areaPx < 40) arq2_showSmallShapeSmoothHint(id);
+    const areaM2 = arq2_calculateRealAreaM2(smoothed);
+    if (areaM2 > 0 && areaM2 < 15) arq2_showSmallShapeSmoothHint(id);
     arq2_clearDraft();
     refreshAllHotspots(true);
     saveToLocal();
