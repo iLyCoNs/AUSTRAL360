@@ -734,3 +734,12 @@ body.hide-status-vendido g[data-status='vendido'] { display: none !important; }
 html.admin-mode-active .layer-manager-panel .btn-export, html.admin-mode-active .layer-manager-panel .btn-export-hr {
     display: block;
 }
+
+/* === PIN ORIGEN DRONE === */
+.drone-hud-wrapper{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.drone-pin-card{pointer-events:auto;background:rgba(12,16,26,0.92);border:1px solid rgba(245,158,11,0.6);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 24px rgba(0,0,0,0.5),0 0 16px rgba(245,158,11,0.2);backdrop-filter:blur(12px);min-width:120px;text-align:center;cursor:default;}
+.drone-pin-icon{font-size:22px;line-height:1;filter:drop-shadow(0 0 8px #f59e0b);}
+.drone-pin-label{font-size:10px;font-weight:800;color:#f59e0b;letter-spacing:1px;text-transform:uppercase;}
+.drone-pin-coords{font-size:9px;color:rgba(255,255,255,0.55);font-family:monospace;letter-spacing:0.5px;}
+.drone-pin-maps-btn{display:inline-block;margin-top:4px;padding:4px 10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:6px;color:#f59e0b;font-size:10px;font-weight:700;text-decoration:none;transition:background 0.2s;}
+.drone-pin-maps-btn:hover{background:rgba(245,158,11,0.3);}

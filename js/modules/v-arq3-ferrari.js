@@ -232,6 +232,14 @@ window.arquitecto3D = {
                             }
                         }
                     });
+
+                    // === BRÚJULA Ferrari: actualizar con yaw de la cámara Three.js ===
+                    const compassDial = document.getElementById('js-compass');
+                    if (compassDial && typeof window.visor360.getYaw === 'function') {
+                        const yawActual = window.visor360.getYaw();
+                        const norte = (typeof window.NorteOffset !== 'undefined') ? window.NorteOffset : 0;
+                        compassDial.style.transform = `rotate(${-(yawActual - norte)}deg)`;
+                    }
                 }
             }
             requestAnimationFrame(loop);
@@ -1189,6 +1197,8 @@ window.arquitecto3D = {
             
             if (punto.tipo === 'ruta') {
                 if (typeof window.generarMarcadorRuta === 'function') window.generarMarcadorRuta(div, punto);
+            } else if (punto.tipo === 'drone') {
+                if (typeof window.generarMarcadorDrone === 'function') window.generarMarcadorDrone(div, punto);
             } else {
                 if (typeof window.generarMarcadorHorizonte === 'function') window.generarMarcadorHorizonte(div, punto);
             }

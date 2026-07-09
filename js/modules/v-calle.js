@@ -852,45 +852,153 @@ function arq2_bindPinRowButtons() {
         });
     }
 
-    // — Origen Drone —
+    // — Origen Drone (Pin Visual 3D) —
     const btnDrone = document.getElementById('arq2-btn-drone');
     if (btnDrone && !btnDrone.dataset.arq2Bound) {
         btnDrone.dataset.arq2Bound = '1';
         btnDrone.addEventListener('click', () => {
-            // Reusar el mismo handler que el botón clásico (o reproducirlo inline)
-            const existingBtn = document.getElementById('btn-set-drone');
-            if (existingBtn) { existingBtn.click(); return; }
-            // Fallback inline (idéntico al handler de v-pins.js)
-            let val = prompt('Fijar Coordenada del Drone (Lat, Lng)\nEj: -41.3245, -72.9832',
-                window.OrigenDrone ? `${window.OrigenDrone.lat}, ${window.OrigenDrone.lng}` : '');
-            if (val && val.includes(',')) {
-                let parts = val.split(',');
-                window.OrigenDrone = { lat: parseFloat(parts[0].trim()), lng: parseFloat(parts[1].trim()) };
-                if (typeof saveToLocal === 'function') saveToLocal();
-                document.getElementById('js-gmap-iframe') &&
-                    (document.getElementById('js-gmap-iframe').src = `https://maps.google.com/maps?q=${window.OrigenDrone.lat},${window.OrigenDrone.lng}&t=k&z=16&ie=UTF8&iwloc=&output=embed`);
-                if (typeof syncRutasDesdeOrigen === 'function')
-                    syncRutasDesdeOrigen({ refreshAll: true }).then(() => alert('📍 Origen Drone fijado.\nDistancias recalculadas con tráfico.'));
-            }
+            // Verificar si ya existe un drone guardado para mostrar sus datos
+            const droneExistente = window.PuntosHorizonte ? window.PuntosHorizonte.find(p => p.tipo === 'drone') : null;
+            const infoActual = droneExistente
+                ? `\nDrone actual: ${droneExistente.titulo || 'Origen Drone'} (pitch:${droneExistente.pitch?.toFixed(1)}, yaw:${droneExistente.yaw?.toFixed(1)})\nCoords: ${droneExistente.lat || '?'}, ${droneExistente.lng || '?'}`
+                : '';
+
+            const accion = confirm(
+                `📌 PIN ORIGEN DRONE${infoActual}\n\n` +
+                `[OK] → Hacer click en la escena para fijar nuevo pin visual\n` +
+                `[Cancelar] → Salir`
+            );
+            if (!accion) return;
+
+            // Activar modo de escucha de un solo click en el panorama
+            btnDrone.style.background = '#f59e0b';
+            btnDrone.style.color = '#000';
+            btnDrone.textContent = '🚁 Clic en la escena...';
+            document.body.style.cursor = 'crosshair';
+
+            const onClickScene = (evt) => {
+                // Calcular pitch/yaw desde el click en la escena
+                let pitch = 0, yaw = 0;
+                if (window.visor360) {
+                    if (typeof window.visor360.getVectorFromEvent === 'function') {
+                        // Motor Ferrari: usar raycaster
+                        if (window.arquitecto3D) {
+                            const v3 = window.arquitecto3D.getVectorFromEvent(evt);
+                            if (v3) {
+                                const py = window.arquitecto3D.getPitchYawFromVector(v3);
+                                pitch = py[0]; yaw = py[1];
+                            }
+                        }
+                    }
+                    if (!pitch && !yaw && typeof window.visor360.mouseEventToCoords === 'function') {
+                        // Pannellum fallback
+                        const coords = window.visor360.mouseEventToCoords(evt);
+                        if (coords) { pitch = coords[0]; yaw = coords[1]; }
+                    }
+                }
+
+                // Restaurar cursor y botón
+                document.body.style.cursor = '';
+                btnDrone.style.background = '';
+                btnDrone.style.color = '#f59e0b';
+                btnDrone.textContent = '📌 Drone';
+                document.getElementById('panorama-container')?.removeEventListener('click', onClickScene, { capture: true });
+
+                // Pedir coordenadas lat/lng
+                const origen = window.OrigenDrone;
+                const valCoords = prompt(
+                    `🚁 Pin fijado en la escena (pitch: ${pitch.toFixed(1)}°, yaw: ${yaw.toFixed(1)}°)\n\nAhora ingresa las coordenadas GPS del drone (Lat, Lng):\nEj: -41.3245, -72.9832`,
+                    origen ? `${origen.lat}, ${origen.lng}` : ''
+                );
+
+                let latVal = null, lngVal = null;
+                if (valCoords && valCoords.includes(',')) {
+                    const parts = valCoords.split(',');
+                    latVal = parseFloat(parts[0].trim());
+                    lngVal = parseFloat(parts[1].trim());
+                    if (!isNaN(latVal) && !isNaN(lngVal)) {
+                        window.OrigenDrone = { lat: latVal, lng: lngVal };
+                        // Actualizar iframe del mapa si existe
+                        const iframe = document.getElementById('js-gmap-iframe');
+                        if (iframe) iframe.src = `https://maps.google.com/maps?q=${latVal},${lngVal}&t=k&z=16&ie=UTF8&iwloc=&output=embed`;
+                        const dirBtn = document.getElementById('js-directions-btn');
+                        if (dirBtn) dirBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${latVal},${lngVal}`;
+                    }
+                }
+
+                // Eliminar drone anterior de PuntosHorizonte
+                if (window.PuntosHorizonte) {
+                    window.PuntosHorizonte = window.PuntosHorizonte.filter(p => p.tipo !== 'drone');
+                } else {
+                    window.PuntosHorizonte = [];
+                }
+
+                // Crear el pin de drone en PuntosHorizonte
+                const nuevoDrone = {
+                    id: 'drone_' + Date.now(),
+                    tipo: 'drone',
+                    pitch: pitch,
+                    yaw: yaw,
+                    titulo: 'ORIGEN DRONE',
+                    lat: latVal,
+                    lng: lngVal
+                };
+                window.PuntosHorizonte.push(nuevoDrone);
+
+                // Reimportar pins en Ferrari
+                if (window.arquitecto3D && typeof window.arquitecto3D.importPuntosHorizonte === 'function') {
+                    window.arquitecto3D.importPuntosHorizonte();
+                }
+
+                // Guardar en nube
+                if (typeof window.StateManager !== 'undefined' && typeof window.putGithubContents === 'function') {
+                    const payload = window.StateManager.buildSnapshot();
+                    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+                    window.putGithubContents(window.FRESIA_CFG?.datosJson?.split('/').pop() || 'datos.json', encoded)
+                        .then(() => alert('🚁 Pin Drone guardado en la nube.'))
+                        .catch(() => alert('⚠️ Pin fijado localmente, error al subir a la nube.'));
+                } else {
+                    if (typeof saveToLocal === 'function') saveToLocal();
+                    alert('🚁 Origen Drone fijado localmente.');
+                }
+
+                // Recalcular rutas si existe la función
+                if (typeof syncRutasDesdeOrigen === 'function' && latVal) {
+                    syncRutasDesdeOrigen({ refreshAll: true });
+                }
+            };
+
+            document.getElementById('panorama-container')?.addEventListener('click', onClickScene, { capture: true, once: true });
         });
     }
 
-    // — Fijar Norte —
+    // — Fijar Norte (Brújula) —
     const btnNorth = document.getElementById('arq2-btn-north');
     if (btnNorth && !btnNorth.dataset.arq2Bound) {
         btnNorth.dataset.arq2Bound = '1';
         btnNorth.addEventListener('click', () => {
-            const existingBtn = document.getElementById('btn-set-north');
-            if (existingBtn) { existingBtn.click(); return; }
-            // Fallback inline
             if (!window.visor360) return;
             window.NorteOffset = window.visor360.getYaw();
-            if (typeof saveToLocal === 'function') saveToLocal();
-            alert('🧭 Brújula calibrada: El Norte Magnético apunta ahora a tu vista actual.');
+
+            // Actualizar brújula inmediatamente
             const compassDial = document.getElementById('js-compass');
-            if (compassDial) compassDial.style.transform = `rotate(${-(window.visor360.getYaw() - window.NorteOffset)}deg)`;
+            if (compassDial) compassDial.style.transform = `rotate(0deg)`;
+
+            // Guardar en local y en la NUBE
+            if (typeof saveToLocal === 'function') saveToLocal();
+
+            if (typeof window.StateManager !== 'undefined' && typeof window.putGithubContents === 'function') {
+                const payload = window.StateManager.buildSnapshot();
+                const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+                window.putGithubContents(window.FRESIA_CFG?.datosJson?.split('/').pop() || 'datos.json', encoded)
+                    .then(() => alert(`🧭 Brújula calibrada y guardada en la nube.\nNorte magnético = ${window.NorteOffset.toFixed(1)}°`))
+                    .catch(() => alert(`🧭 Brújula calibrada (Norte = ${window.NorteOffset.toFixed(1)}°)\n⚠️ Error al guardar en nube, guardado solo en local.`));
+            } else {
+                alert(`🧭 Brújula calibrada: Norte magnético = ${window.NorteOffset.toFixed(1)}°`);
+            }
         });
     }
+
 
     // — Limpiar Todo —
     const btnLimpiar = document.getElementById('arq2-btn-limpiar');

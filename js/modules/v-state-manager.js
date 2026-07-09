@@ -44,7 +44,7 @@ window.StateManager = {
                 e.tipo && ['lote', 'acceso', 'referencia', 'vista360', 'casa360', 'terreno'].includes(e.tipo)
             );
             window.PuntosHorizonte = snapshot.entidades.filter(e => 
-                e.tipo && ['horizonte', 'ruta'].includes(e.tipo)
+                e.tipo && ['horizonte', 'ruta', 'drone'].includes(e.tipo)
             );
         } else {
             // Compatibilidad V1

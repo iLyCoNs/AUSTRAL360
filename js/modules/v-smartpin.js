@@ -147,3 +147,43 @@ function generarMarcadorCasa360(hotSpotDiv, args) {
     addQuickActions(wrapper, args);
     bindPinEvents(wrapper.querySelector('.casa-glass-card'), args, hotSpotDiv);
 }
+
+// === PIN ORIGEN DRONE ===
+// Pin visual en la escena 3D que marca el punto de aterrizaje del drone.
+// Muestra las coordenadas lat/lng guardadas y permite abrirlas en Google Maps.
+function generarMarcadorDrone(hotSpotDiv, args) {
+    hotSpotDiv.style.width = '0px';
+    hotSpotDiv.style.height = '0px';
+    hotSpotDiv.setAttribute('data-pitch', args.pitch);
+    hotSpotDiv.setAttribute('data-yaw', args.yaw);
+
+    // Mover al holographic-ui-engine para que el Ferrari lo proyecte en 3D
+    const hologui = document.getElementById('holographic-ui-engine');
+    if (hologui && hotSpotDiv.parentElement !== hologui) {
+        hologui.appendChild(hotSpotDiv);
+    }
+
+    const lat = args.lat || (window.OrigenDrone && window.OrigenDrone.lat) || '';
+    const lng = args.lng || (window.OrigenDrone && window.OrigenDrone.lng) || '';
+    const mapsUrl = lat && lng
+        ? `https://www.google.com/maps?q=${lat},${lng}`
+        : '#';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'drone-hud-wrapper';
+    wrapper.innerHTML = `
+        <div class="drone-pin-card">
+            <div class="drone-pin-icon">🚁</div>
+            <div class="drone-pin-label">${args.titulo || 'ORIGEN DRONE'}</div>
+            ${lat ? `<div class="drone-pin-coords">${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}</div>` : ''}
+            ${lat ? `<a href="${mapsUrl}" target="_blank" class="drone-pin-maps-btn">📍 Ver en Maps</a>` : ''}
+        </div>
+        <div class="ruta-line-down"></div>
+        <div class="ruta-target-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b,0 0 16px #f59e0b80;"></div>
+    `;
+
+    hotSpotDiv.appendChild(wrapper);
+}
+
+// Exposición global para que Ferrari pueda llamarla por nombre
+window.generarMarcadorDrone = generarMarcadorDrone;
