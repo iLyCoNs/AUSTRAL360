@@ -146,7 +146,7 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     // Para Smart Pin V2 usamos siempre nuestra función propia
     // que NO depende de que el event.target sea el canvas WebGL
     let rawCoords;
-    if (arq2Tool === 'smart-pin-v2' || arq2PinSubTool) {
+    if (arq2Tool === 'smart-pin-v2') {
         rawCoords = arq2_screenToPanoCoords(mock.clientX, mock.clientY);
     } else {
         rawCoords = visor360.mouseEventToCoords(mock);
@@ -154,14 +154,14 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     const coords = rawCoords;
     if (!coords || isNaN(coords[0])) return;
     
-    if (arq2Tool === 'smart-pin-v2' || arq2PinSubTool) {
+    if (arq2Tool === 'smart-pin-v2') {
         let p = parseFloat(coords[0].toFixed(3)), y = parseFloat(coords[1].toFixed(3));
         let tipoFinal = 'lote';
         let statusFinal = 'disponible';
         let tituloFinal = 'Lote 00';
 
-        if (arq2PinSubTool) {
-            tipoFinal = arq2PinSubTool;
+        if (window.arq2PinSubTool) {
+            tipoFinal = window.arq2PinSubTool;
             if (tipoFinal === 'horizonte') tituloFinal = prompt('📡 PIN HORIZONTE\nTítulo (ej: Volcán Osorno):');
             else if (tipoFinal === 'ruta') tituloFinal = prompt('🚗 PIN RUTA\nTítulo (ej: Ruta V-30):');
             else if (tipoFinal === 'vista360') tituloFinal = 'VISTA 360';
