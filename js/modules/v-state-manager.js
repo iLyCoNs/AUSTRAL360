@@ -18,7 +18,11 @@ window.StateManager = {
                 ...(window.allDrawnLines || []),
                 ...(window.BaseDatosLotes || []),
                 ...(window.PuntosHorizonte || [])
-            ]
+            ],
+            // Compatibilidad legacy
+            trazos: window.allDrawnLines || [],
+            lotes: window.BaseDatosLotes || [],
+            horizontes: window.PuntosHorizonte || []
         };
     },
 

@@ -825,6 +825,10 @@ window.GlobalCloudSave = async function() {
     setExportBtnState(btn, '⏳ GUARDANDO...', '', true);
     
     try {
+        if (typeof arq2_onEnterKey === 'function') {
+            arq2_onEnterKey();
+        }
+        
         if (window.arquitecto3D && window.arquitecto3D.isActive) {
             window.arquitecto3D.syncToAllDrawnLines();
         }
