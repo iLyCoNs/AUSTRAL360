@@ -519,13 +519,13 @@ g.lote-organico.arq2-costura-selected path.linea-organico-perimetro { stroke: #0
 ...vertex-marker.origin-vertex.origin-vertex-ready { transform: scale(1.5); transform-origin: center center; }
 #layer-calles-arq2 { pointer-events: none; transition: opacity 0.2s ease; }
 body.calle-mode-active #layer-calles-arq2 { pointer-events: auto; }
-.linea-calle-arq2-fill { fill: var(--calle-color, rgb(90, 95, 105)) !important; stroke: none; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; transition: fill 0.2s, filter 0.2s; }
+.linea-calle-arq2-fill { fill: #94a3b8 !important; stroke: none; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; transition: fill 0.2s, filter 0.2s; }
 body.calle-mode-active .linea-calle-arq2-fill { pointer-events: auto; cursor: pointer; }
 body.calle-mode-active .linea-calle-arq2-fill:hover { filter: brightness(1.2); }
 /* Borde de la calle curva Arq2 — mismo estilo premium y delgado (1.2px) */
-.linea-calle-arq2-borde { fill: none; stroke: rgba(255,255,255,0.94); stroke-width: calc(var(--stroke-dyn) * 0.48); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); }
+.linea-calle-arq2-borde { fill: none; stroke: rgba(255, 255, 255, 0.8); stroke-width: calc(var(--stroke-dyn) * 0.48); stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); }
 /* Línea central de la calle curva — punteada premium amarilla y delgada */
-.linea-calle-arq2-centro { fill: none; stroke: rgba(253,224,71,0.85); stroke-width: calc(var(--stroke-dyn) * 0.32); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6,8; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; }
+.linea-calle-arq2-centro { fill: none; stroke: rgba(255, 221, 0, 0.8); stroke-width: calc(var(--stroke-dyn) * 0.32); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8,8; vector-effect: non-scaling-stroke; pointer-events: none; mix-blend-mode: normal; }
 .arq2-calle-curva-row { display: none; flex-direction: column; gap: 6px; margin: 0 0 10px; font-size: 11px; color: #cbd5e1; }
 .arq2-calle-curva-row label { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
 .arq2-calle-curva-row input[type="range"] { width: 100%; accent-color: #64748b; }
