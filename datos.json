@@ -1,8 +1,4 @@
 {
-  "configProyecto": {
-    "titulo": "PROYECTO INMOBILIARIO",
-    "subtitulo": "Masterplan Interactivo 360°"
-  },
   "origen": null,
   "norte": 0,
   "lotes": [],
@@ -422,5 +418,24 @@
       "calleCurvaAlpha": 0.7,
       "calleCurvaCurvatura": 5
     }
-  ]
+  ],
+  "configProyecto": {
+    "titulo": "PROYECTO ALERCEPATAGON 360°",
+    "subtitulo": "Masterplan Interactivo 360°",
+    "colorDisp": "#10b981",
+    "colorRes": "#f59e0b",
+    "colorVend": "#ef4444",
+    "colorNoDisp": "#94a3b8",
+    "opacidadDisp": 15,
+    "opacidadRes": 15,
+    "opacidadVend": 25,
+    "opacidadNoDisp": 25,
+    "valorUF": 0,
+    "whatsapp": "",
+    "colorPrincipal": "#10b981",
+    "logoUrl": "",
+    "bannerActivo": false,
+    "bannerTipo": "descuento",
+    "bannerTexto": ""
+  }
 }
