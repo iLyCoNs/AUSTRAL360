@@ -4,18 +4,18 @@
     "subtitulo": "Masterplan Interactivo 360°",
     "vueloCinematico": [
       {
-        "pitch": 2.239,
-        "yaw": 2.281,
+        "pitch": -5.644,
+        "yaw": -11.391,
         "hfov": 100
       },
       {
-        "pitch": 17.236,
-        "yaw": 80.547,
+        "pitch": 4.658,
+        "yaw": 71.298,
         "hfov": 100
       },
       {
-        "pitch": 81.911,
-        "yaw": 164.265,
+        "pitch": 80.834,
+        "yaw": -161.14,
         "hfov": 100
       }
     ]
