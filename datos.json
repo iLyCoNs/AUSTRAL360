@@ -1,4 +1,23 @@
 {
+  "configProyecto": {
+    "titulo": "PROYECTO ALERCEPATAGON 360°",
+    "subtitulo": "Masterplan Interactivo 360°",
+    "colorDisp": "#10b981",
+    "colorRes": "#f59e0b",
+    "colorVend": "#ef4444",
+    "colorNoDisp": "#94a3b8",
+    "opacidadDisp": 15,
+    "opacidadRes": 15,
+    "opacidadVend": 25,
+    "opacidadNoDisp": 25,
+    "valorUF": 0,
+    "whatsapp": "",
+    "colorPrincipal": "#10b981",
+    "logoUrl": "",
+    "bannerActivo": false,
+    "bannerTipo": "descuento",
+    "bannerTexto": ""
+  },
   "origen": null,
   "norte": 0,
   "lotes": [],
@@ -417,25 +436,122 @@
       "calleCurvaAncho": 8,
       "calleCurvaAlpha": 0.7,
       "calleCurvaCurvatura": 5
+    },
+    {
+      "id": "CALLE_3D_1783563658847",
+      "tipo": "calle-curva-arq2",
+      "puntos": [
+        [
+          62.039645862766136,
+          111.90122799340972
+        ],
+        [
+          64.10889526831309,
+          118.90139985903932
+        ],
+        [
+          67.45329055265971,
+          126.14908924150448
+        ],
+        [
+          70.83369065413311,
+          133.5703581287633
+        ],
+        [
+          73.39072607748022,
+          149.9034248260472
+        ],
+        [
+          69.4378001769947,
+          -177.17845117062683
+        ],
+        [
+          68.90209372906875,
+          -163.17315697035045
+        ],
+        [
+          66.6713444378976,
+          -150.56878353726296
+        ],
+        [
+          63.85511907984546,
+          -143.55552209320078
+        ]
+      ],
+      "ejeOriginal": [
+        [
+          62.039645862766136,
+          111.90122799340972
+        ],
+        [
+          64.10889526831309,
+          118.90139985903932
+        ],
+        [
+          67.45329055265971,
+          126.14908924150448
+        ],
+        [
+          70.83369065413311,
+          133.5703581287633
+        ],
+        [
+          73.39072607748022,
+          149.9034248260472
+        ],
+        [
+          69.4378001769947,
+          -177.17845117062683
+        ],
+        [
+          68.90209372906875,
+          -163.17315697035045
+        ],
+        [
+          66.6713444378976,
+          -150.56878353726296
+        ],
+        [
+          63.85511907984546,
+          -143.55552209320078
+        ]
+      ],
+      "calleCurvaAncho": 8,
+      "calleCurvaAlpha": 0.7,
+      "calleCurvaCurvatura": 5,
+      "geometryVersion": 2
+    },
+    {
+      "id": "LOTE_3D_1783563668325",
+      "puntos": [
+        [
+          61.46507703958564,
+          161.55672232080795
+        ],
+        [
+          68.2555294806706,
+          162.5628571545673
+        ],
+        [
+          69.3455718517298,
+          152.60035869529239
+        ],
+        [
+          68.72670009190882,
+          146.4289774967429
+        ],
+        [
+          67.30845308075818,
+          137.82840757556983
+        ],
+        [
+          60.1594583670964,
+          146.48936808960704
+        ]
+      ],
+      "calleCurvaAncho": 8,
+      "calleCurvaAlpha": 0.7,
+      "calleCurvaCurvatura": 5
     }
-  ],
-  "configProyecto": {
-    "titulo": "PROYECTO ALERCEPATAGON 360°",
-    "subtitulo": "Masterplan Interactivo 360°",
-    "colorDisp": "#10b981",
-    "colorRes": "#f59e0b",
-    "colorVend": "#ef4444",
-    "colorNoDisp": "#94a3b8",
-    "opacidadDisp": 15,
-    "opacidadRes": 15,
-    "opacidadVend": 25,
-    "opacidadNoDisp": 25,
-    "valorUF": 0,
-    "whatsapp": "",
-    "colorPrincipal": "#10b981",
-    "logoUrl": "",
-    "bannerActivo": false,
-    "bannerTipo": "descuento",
-    "bannerTexto": ""
-  }
+  ]
 }
