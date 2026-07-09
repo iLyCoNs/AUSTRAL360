@@ -20,18 +20,21 @@
       }
     ]
   },
-  "origen": null,
+  "origen": {
+    "lat": -41.876142,
+    "lng": -72.748158
+  },
   "norte": 0,
   "lotes": [],
   "horizontes": [
     {
-      "id": "drone_1783584480500",
+      "id": "drone_1783584542291",
       "tipo": "drone",
-      "pitch": 89.681,
-      "yaw": -56.972,
+      "pitch": 80.783,
+      "yaw": 150.455,
       "titulo": "ORIGEN DRONE",
-      "lat": null,
-      "lng": null
+      "lat": -41.876142,
+      "lng": -72.748158
     }
   ],
   "trazos": [
