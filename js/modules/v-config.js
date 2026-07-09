@@ -348,7 +348,9 @@ async function fetchMasterData() {
             if (localDataStr) {
                 try {
                     const localData = JSON.parse(localDataStr);
-                    if (localData.timestamp && data.timestamp && localData.timestamp > data.timestamp) {
+                    // Si el archivo remoto no tiene timestamp, asumimos que el local es ms nuevo.
+                    // Si ambos tienen timestamp, usamos el local si es estrictamente mayor.
+                    if (localData.timestamp && (!data.timestamp || localData.timestamp > data.timestamp)) {
                         useLocal = true;
                         console.log("Using newer localStorage data to bypass GitHub Pages cache");
                     }

@@ -1226,7 +1226,14 @@ window.arquitecto3D = {
             const pyPoints = l.points.map(pt => this.getPitchYawFromVector(pt));
             if (existing) {
                 existing.puntos = pyPoints;
-                if (l.tipo === 'calle-curva') existing.ejeOriginal = pyPoints;
+                if (l.tipo === 'calle-curva') {
+                    existing.ejeOriginal = pyPoints;
+                    // Invalidar geometra SVG 2D para que arq2_migrateCallesGeometry la regenere
+                    delete existing.geometryVersion;
+                    delete existing.left;
+                    delete existing.right;
+                    delete existing.fillPoly;
+                }
                 if (l.ancho !== undefined) existing.calleCurvaAncho = l.ancho;
                 if (l.alpha !== undefined) existing.calleCurvaAlpha = l.alpha;
                 if (l.curvatura !== undefined) existing.calleCurvaCurvatura = l.curvatura;
