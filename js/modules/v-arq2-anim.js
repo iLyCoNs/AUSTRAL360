@@ -297,6 +297,7 @@ function arq2_setTool(tool) {
         }
         // Actualiza el botón activo visualmente
         document.querySelectorAll('.arq2-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.arq2Tool === tool));
+        if (window.PinEngine) window.PinEngine.deactivate();
         return;
     }
     arq2Tool = tool;
@@ -310,6 +311,8 @@ function arq2_setTool(tool) {
     arq2_updatePanelStep();
     if (tool === 'fila-variable' && isArquitecto2Active) arq2_startDemoAnimation(false);
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();
+    // Desactivar PinEngine si no es herramienta de pines
+    if (tool !== 'smart-pin-v2' && window.PinEngine) window.PinEngine.deactivate();
 }
 
 function arq2_toggleArquitecto2(force) {
@@ -323,7 +326,13 @@ function arq2_toggleArquitecto2(force) {
         arq2_clearDraft();
         arq2_stopDemoAnimation();
         closeFranjaLotesModal();
+        // Limpiar TODOS los estados de edición para vista previa limpia
         document.body.classList.remove('eraser-mode-active');
+        document.body.classList.remove('pin-v2-active');
+        document.body.classList.remove('arq2-pin-active');
+        document.body.classList.remove('calle-mode-active');
+        window.arq2PinSubTool = null;
+        if (window.PinEngine) window.PinEngine.deactivate();
         refreshAllHotspots(true);
         if (legend) legend.style.display = 'none';
     } else {

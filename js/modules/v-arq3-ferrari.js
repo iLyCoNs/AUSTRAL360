@@ -1373,7 +1373,7 @@ window.arquitecto3D = {
         const favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]');
 
         window.BaseDatosLotes.forEach((item, index) => {
-            if (!item.tipo || !['lote', 'vista360', 'casa360', 'terreno'].includes(item.tipo)) return;
+            if (!item.tipo || !['lote', 'vista360', 'casa360', 'terreno', 'acceso', 'referencia'].includes(item.tipo)) return;
 
             // Filtro de status para lotes
             if (item.tipo === 'lote' || item.tipo === 'terreno') {
@@ -1392,7 +1392,7 @@ window.arquitecto3D = {
             div.setAttribute('data-yaw', item.yaw);
             // SmartPin NO lleva ferrari-pin-anchor-base: se centra (-50%,-50%) en el punto del lote
 
-            if (item.tipo === 'lote' || item.tipo === 'terreno') {
+            if (item.tipo === 'lote' || item.tipo === 'terreno' || item.tipo === 'acceso' || item.tipo === 'referencia') {
                 if (typeof window.generarSmartPin === 'function') window.generarSmartPin(div, item);
             } else if (item.tipo === 'vista360') {
                 if (typeof window.generarPin360 === 'function') window.generarPin360(div, item);
@@ -1513,4 +1513,6 @@ window.arquitecto3D = {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.arquitecto3D.init();
+    // Alias global para que v-pins.js y otros módulos puedan referenciarlo
+    window.MotorFerrari = window.arquitecto3D;
 });

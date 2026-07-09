@@ -49,3 +49,11 @@ Por cada tarea o bug, la respuesta debe incluir estrictamente:
 - CAUSA 2: refreshAllHotspots usaba .pnlm-hotspot-base para cleanup -> borraba los .ferrari-imported-pin que acababa de crear importPuntosHorizonte. FIX: :not(.ferrari-imported-pin) en el selector de cleanup. Mover importPuntosHorizonte DESPUES del cleanup, dentro del setTimeout.
 - CAUSA 3: generarMarcadorRuta/generarMarcadorHorizonte no estaban expuestas en window -> Ferrari llamaba window.generarMarcadorRuta() que era undefined. FIX: exponer todas las funciones de pin en window al final de v-smartpin.js.
 - CAUSA 4: Loop usaba translate(-50%,-50%) para TODOS los pines -> pines ruta/horizonte quedaban medio pin mas arriba. FIX: clase ferrari-pin-anchor-base + translate(-50%, 0) para estos pines.
+
+## Leccion Historica - PinEngine bloquea herramientas (Sesion 150+)
+- CAUSA 1: v-pin-engine.js registra listeners con capture:true en pointerup/touchend sobre panorama y SVG. Cuando PinEngine.activeTool queda truthy, intercepta TODOS los clics antes que cualquier otro handler (Goma, Lote Libre, etc.).
+- CAUSA 2: arq2_setTool en v-arq2-anim.js no llamaba PinEngine.deactivate(). Como v-arquitecto2.js sobreescribe arq2_setTool, la version de v-arq2-anim.js no se usaba pero seguia viva en arq2_toggleArquitecto2 de ese mismo archivo.
+- CAUSA 3: window.MotorFerrari nunca fue creado como alias de window.arquitecto3D. refreshAllHotspots llamaba MotorFerrari.importPuntosHorizonte() y MotorFerrari.importBaseDatosLotes() que eran undefined, por lo que los pines Ferrari nunca se reimportaban tras un refresh.
+- CAUSA 4: getHotspotsConfig solo manejaba tipo==='lote', ignorando 'terreno', 'acceso' y 'referencia'. importBaseDatosLotes en Ferrari tenia el mismo filtro incompleto.
+- FIX: Doble guard en onTap (PinEngine.activeTool + arq2Tool==='smart-pin-v2'). PinEngine.deactivate() en TODAS las copias de arq2_setTool y arq2_toggleArquitecto2. Alias window.MotorFerrari = window.arquitecto3D. Extender filtros de tipo en getHotspotsConfig y importBaseDatosLotes.
+- REGLA: Al cerrar el panel Arquitecto, limpiar TODAS las clases CSS de edicion (pin-v2-active, arq2-pin-active, calle-mode-active, eraser-mode-active) para dejar vista previa limpia del cliente.

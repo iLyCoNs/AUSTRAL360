@@ -139,6 +139,10 @@ window.PinEngine = {
     this.activeTool = null;
     document.body.classList.remove('pin-v2-active');
     document.body.classList.remove('arq2-pin-active');
+    // Limpiar estado visual de los botones de pin
+    document.querySelectorAll('.arq2-pin-btn').forEach(b => {
+      b.classList.remove('active', 'active-pin-tool');
+    });
   },
 
   placeFromEvent(e) {
@@ -178,7 +182,13 @@ window.bindUnifiedPinEvents = function() {
   const svg = document.getElementById('loteo-svg');
 
   const onTap = (e) => {
+    // DOBLE GUARD: PinEngine debe estar activo Y la herramienta maestra debe ser smart-pin-v2
     if (!window.PinEngine?.activeTool) return;
+    if (typeof arq2Tool !== 'undefined' && arq2Tool !== 'smart-pin-v2') {
+      // La herramienta cambió pero PinEngine no fue desactivado → forzar apagado
+      window.PinEngine.deactivate();
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     window.PinEngine.placeFromEvent(e);
