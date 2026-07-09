@@ -686,3 +686,9 @@ g[data-status="vendido"] > path.linea-area-fill {
 body.hide-status-disponible g[data-status='disponible'],
 body.hide-status-reservado g[data-status='reservado'],
 body.hide-status-vendido g[data-status='vendido'] { display: none !important; }
+
+.layer-manager-panel { position: fixed; top: 120px; left: 16px; width: 260px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; color: #e2e8f0; z-index: 9999; font-family: 'Inter', system-ui, sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+.layer-manager-panel h4 { margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+.layer-manager-panel label { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 8px; cursor: pointer; user-select: none; transition: color 0.2s; }
+.layer-manager-panel label:hover { color: #fff; }
+.layer-manager-panel input[type='checkbox'] { accent-color: #3b82f6; width: 14px; height: 14px; cursor: pointer; }

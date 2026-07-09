@@ -870,7 +870,8 @@ window.GlobalCloudSave = async function() {
             setExportBtnState(btn, originalHtml, '', false);
         }
     } catch (error) {
-        alert('❌ Error de conexión al guardar en la nube. Revisa tu internet e intenta de nuevo.');
+        alert('❌ Error de conexión al guardar en la nube: ' + error.message);
+        console.error(error);
         setExportBtnState(btn, originalHtml, '', false);
     } finally {
         guardarNubeEnCurso = false;
