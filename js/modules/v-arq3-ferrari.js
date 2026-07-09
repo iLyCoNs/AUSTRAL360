@@ -292,71 +292,9 @@ window.arquitecto3D = {
         container.addEventListener('pointerdown', (e) => {
             if (!this.isActive) return;
             
-            // Si estamos en modo Pin V2, insertar pin
-            if (this.currentTool === 'smart-pin') {
-                e.stopPropagation(); // Prevenir panning
-                
-                // Actualizar this.mouse antes del raycast
-                const rect = container.getBoundingClientRect();
-                this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-                this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-                
-                this.raycaster.setFromCamera(this.mouse, window.visor360.getThreeCamera());
-                const groundIntersection = this.raycaster.intersectObject(window.visor360.getThreeMesh())[0];
-                if (groundIntersection) {
-                    const pt = groundIntersection.point;
-                    const r = pt.length();
-                    const pitch = -Math.asin(pt.y / r) * 180 / Math.PI;
-                    const yaw = -Math.atan2(pt.x, -pt.z) * 180 / Math.PI;
-                    let tipoFinal = window.arq2PinSubTool || 'lote';
-                    
-                    const nuevoPin = { 
-                        pitch: parseFloat(pitch.toFixed(3)), 
-                        yaw: parseFloat(yaw.toFixed(3)), 
-                        id: 'nuevo_' + Date.now(),
-                        numero: '00',
-                        tipo: tipoFinal, 
-                        titulo: (tipoFinal === 'vista360°' || tipoFinal === 'casa360°') ? 'Vista' : '00', 
-                        status: 'disponible',
-                        cssClass: 'hotspot-lote custom-hotspot' 
-                    };
-
-                    if (typeof window.openPinEditor === 'function') {
-                        window.openPinEditor(nuevoPin, true);
-                        const modalEl = document.getElementById('pin-editor-modal');
-                        if (modalEl) {
-                            const observer = new MutationObserver((mutations) => {
-                                mutations.forEach(m => {
-                                    if (m.attributeName === 'class' && !modalEl.classList.contains('open')) {
-                                        observer.disconnect();
-                                        if (nuevoPin.id) {
-                                            if (tipoFinal === 'horizonte' || tipoFinal === 'ruta') {
-                                                if (window.PuntosHorizonte) window.PuntosHorizonte.push(nuevoPin);
-                                            } else {
-                                                if (window.BaseDatosLotes) window.BaseDatosLotes.push(nuevoPin);
-                                            }
-                                            try {
-                                                const renderPin = { ...nuevoPin };
-                                                renderPin.createTooltipArgs = renderPin;
-                                                if (typeof window.generarSmartPin === 'function') renderPin.createTooltipFunc = window.generarSmartPin;
-                                                window.visor360.addHotSpot(renderPin);
-                                                if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
-                                                if (typeof window.saveToLocal === 'function') window.saveToLocal();
-                                                if (typeof window.refreshAllHotspots === 'function') window.refreshAllHotspots();
-                                            } catch(err) { console.warn('[PinV2] addHotSpot error:', err); }
-                                        }
-                                    }
-                                });
-                            });
-                            observer.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
-                        }
-                    } else {
-                        console.warn('[Arq3] openPinEditor no encontrado.');
-                    }
-                }
-                return;
-            }
-
+            // Nota: El flujo antiguo 'smart-pin' fue deshabilitado aquí
+            // para que PinEngine capture todos los eventos unificadamente.
+            
             // Si estamos en modo goma
             if (this.currentTool === 'eraser') {
                 const loteInfo = this.getIntersectedLote(e);
