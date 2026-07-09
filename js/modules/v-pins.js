@@ -380,7 +380,23 @@ function setupDevModes() {
     });
 }
 
-function limpiarProyecto() { if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a borrar TODOS los lotes, calles y pines.\n\n¿Estás seguro?")) return; clearFranjaDraft(); BaseDatosLotes = []; PuntosHorizonte = []; allDrawnLines = []; currentLinePoints = []; document.body.classList.remove('auto-macro-active'); document.body.classList.remove('masterplan-premium-active'); refreshAllHotspots(); localStorage.removeItem(FRESIA_CFG.autosaveKey); }
+function limpiarProyecto() { 
+    if(!confirm("⚠️ ¡ADVERTENCIA NUCLEAR! Vas a borrar TODOS los lotes, calles y pines.\n\n¿Estás seguro?")) return; 
+    clearFranjaDraft(); 
+    BaseDatosLotes = []; 
+    PuntosHorizonte = []; 
+    allDrawnLines = []; 
+    currentLinePoints = []; 
+    
+    if (window.MotorFerrari && typeof window.MotorFerrari.clearAll === 'function') {
+        window.MotorFerrari.clearAll();
+    }
+    
+    document.body.classList.remove('auto-macro-active'); 
+    document.body.classList.remove('masterplan-premium-active'); 
+    refreshAllHotspots(); 
+    localStorage.removeItem(FRESIA_CFG.autosaveKey); 
+}
 
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }

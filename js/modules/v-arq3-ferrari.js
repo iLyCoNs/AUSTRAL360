@@ -1469,6 +1469,29 @@ window.arquitecto3D = {
                 });
             }
         });
+    },
+
+    clearAll: function() {
+        this.clearTemp();
+        // Remover todos los meshes
+        this.lotes.forEach(lote => {
+            if(lote.lineMesh) { lote.lineMesh.geometry.dispose(); lote.lineMesh.material.dispose(); this.group.remove(lote.lineMesh); }
+            if(lote.fillMesh) { lote.fillMesh.geometry.dispose(); lote.fillMesh.material.dispose(); this.group.remove(lote.fillMesh); }
+            if(lote.streetLeftMesh) { lote.streetLeftMesh.geometry.dispose(); lote.streetLeftMesh.material.dispose(); this.group.remove(lote.streetLeftMesh); }
+            if(lote.streetRightMesh) { lote.streetRightMesh.geometry.dispose(); lote.streetRightMesh.material.dispose(); this.group.remove(lote.streetRightMesh); }
+            if(lote.streetCenterMesh) { lote.streetCenterMesh.geometry.dispose(); lote.streetCenterMesh.material.dispose(); this.group.remove(lote.streetCenterMesh); }
+            if(lote.markerMeshes) {
+                lote.markerMeshes.forEach(m => { m.geometry.dispose(); m.material.dispose(); this.vertexMarkerGroup.remove(m); });
+            }
+        });
+        this.lotes = [];
+        
+        // Limpiar pines inyectados en HTML
+        const hologui = document.getElementById('holographic-ui-engine');
+        if (hologui) {
+            hologui.querySelectorAll('.ferrari-imported-pin').forEach(el => el.remove());
+            hologui.querySelectorAll('.ferrari-lote-pin').forEach(el => el.remove());
+        }
     }
 };
 
