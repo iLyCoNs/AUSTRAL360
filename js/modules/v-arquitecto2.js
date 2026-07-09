@@ -1073,22 +1073,31 @@ function arq2_projectCalleCurvaPaths(lineData, getCamFn, cx, cySc, f) {
 }
 
 function arq2_finishCalleCurva() {
-    if (arq2LinePoints.length < 2) { alert('Coloca al menos 2 puntos en el eje central de la calle.'); return; }
-    const geo = arq2_buildCalleCurvaGeometry([...arq2LinePoints], arq2CalleCurvaAncho, draftCalleCurvaAlpha, arq2CalleRetorno);
-    if (!geo) { alert('No se pudo generar la calle curva. Ajusta la vista e intenta de nuevo.'); return; }
+    if (arq2LinePoints.length < 2) { 
+        alert('Coloca al menos 2 puntos en el eje central de la calle.'); 
+        return; 
+    }
+    
+    const preview = arq2_getCalleCurvaPreviewLineData();
+    if (!preview || !preview.left?.length || !preview.right?.length || !preview.puntos?.length) {
+        alert('No se pudo generar la calle curva. Ajusta la vista e intenta de nuevo.');
+        return;
+    }
+    
     const id = 'arq2_calle_' + Date.now();
     allDrawnLines.push({
         id,
         tipo: 'calle-curva-arq2',
-        ejeOriginal: geo.ejeOriginal,
-        puntosSuavizados: geo.puntosSuavizados,
-        ancho: geo.ancho,
-        calleCurvaAlpha: geo.calleCurvaAlpha,
-        calleRetorno: arq2CalleRetorno,
-        left: geo.left,
-        right: geo.right,
-        puntos: geo.fillPoly
+        ejeOriginal: (preview.ejeOriginal || []).map(p => [...p]),
+        puntosSuavizados: (preview.puntosSuavizados || []).map(p => [...p]),
+        ancho: preview.ancho,
+        calleCurvaAlpha: preview.calleCurvaAlpha,
+        calleRetorno: !!preview.calleRetorno,
+        left: (preview.left || []).map(p => [...p]),
+        right: (preview.right || []).map(p => [...p]),
+        puntos: (preview.puntos || []).map(p => [...p])
     });
+    
     arq2_clearDraft();
     refreshAllHotspots(true);
     saveToLocal();
