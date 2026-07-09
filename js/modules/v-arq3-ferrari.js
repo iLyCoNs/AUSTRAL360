@@ -459,7 +459,9 @@ window.arquitecto3D = {
         const divisions = Math.max(20, cleanPts.length * 10);
         const smoothPts = curve.getPoints(divisions);
         
-        const width = Math.max(1.0, (widthFactor || window.arq2CalleCurvaAncho || 5.5)) * 1.5; // Escala empírica
+        // Escala calibrada: 1 unidad de ancho = ~0.8 unidades Three.js en la esfera panorámica
+        // Esta escala es consistente con lo que el motor SVG 2D reproduce al recargar
+        const width = Math.max(0.5, (widthFactor || window.arq2CalleCurvaAncho || 8)) * 0.8;
 
         const leftPts = [];
         const rightPts = [];
@@ -744,10 +746,18 @@ window.arquitecto3D = {
         const loteId = 'CALLE_3D_' + Date.now();
         const finalEje = [...this.tempPoints];
         
+        // Capturar valores exactos de los sliders en el momento de confirmar
+        const anchoActual = window.arq2CalleCurvaAncho || 8;
+        const alphaActual = (window.draftCalleCurvaAlpha !== undefined) ? window.draftCalleCurvaAlpha : 0.55;
+        const curvaturaActual = (window.draftCalleCurvaCurvatura !== undefined) ? window.draftCalleCurvaCurvatura : 5;
+        
         const newLote = {
             id: loteId,
             tipo: 'calle-curva',
             points: finalEje, // El eje actua como points para marcadores
+            ancho: anchoActual,
+            alpha: alphaActual,
+            curvatura: curvaturaActual,
             color: 0x94a3b8,
             animStartTime: Date.now()
         };
@@ -1244,9 +1254,9 @@ window.arquitecto3D = {
                     tipo: l.tipo === 'calle-curva' ? 'calle-curva-arq2' : (l.tipo || 'lote-organico'),
                     puntos: pyPoints,
                     ejeOriginal: l.tipo === 'calle-curva' ? pyPoints : undefined,
-                    calleCurvaAncho: l.ancho || 8,
-                    calleCurvaAlpha: l.alpha || 0.7,
-                    calleCurvaCurvatura: l.curvatura !== undefined ? l.curvatura : 5
+                    calleCurvaAncho: l.ancho ?? 8,
+                    calleCurvaAlpha: l.alpha ?? 0.55,
+                    calleCurvaCurvatura: l.curvatura ?? 5
                 });
             }
         });
