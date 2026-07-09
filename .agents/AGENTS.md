@@ -43,3 +43,9 @@ Por cada tarea o bug, la respuesta debe incluir estrictamente:
 - Vertice fantasma Drone: usar flag window.__droneClickPending para abortar arq2_onPanoramaClick antes de agregar puntos.
 - Cinematica inactiva: arq2_setTool vuelo-cinematico debe activar arquitecto3D.isActive = true para recibir clicks.
 - No usar alert() en funciones async criticas como GlobalCloudSave.
+
+## Leccion Historica - Pines Ruta/Horizonte invisibles
+- CAUSA 1: Loop startHologramLoop tenia guard isActive==true -> pines solo se proyectaban en modo dibujo Ferrari. FIX: sacar proyeccion de pines del guard, ejecutar siempre.
+- CAUSA 2: refreshAllHotspots usaba .pnlm-hotspot-base para cleanup -> borraba los .ferrari-imported-pin que acababa de crear importPuntosHorizonte. FIX: :not(.ferrari-imported-pin) en el selector de cleanup. Mover importPuntosHorizonte DESPUES del cleanup, dentro del setTimeout.
+- CAUSA 3: generarMarcadorRuta/generarMarcadorHorizonte no estaban expuestas en window -> Ferrari llamaba window.generarMarcadorRuta() que era undefined. FIX: exponer todas las funciones de pin en window al final de v-smartpin.js.
+- CAUSA 4: Loop usaba translate(-50%,-50%) para TODOS los pines -> pines ruta/horizonte quedaban medio pin mas arriba. FIX: clase ferrari-pin-anchor-base + translate(-50%, 0) para estos pines.

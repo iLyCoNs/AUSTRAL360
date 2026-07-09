@@ -218,5 +218,10 @@ function generarMarcadorDrone(hotSpotDiv, args) {
     hotSpotDiv.appendChild(wrapper);
 }
 
-// Exposición global para que Ferrari pueda llamarla por nombre
-window.generarMarcadorDrone = generarMarcadorDrone;
+// Exposición global para que Ferrari pueda invocarlas desde importPuntosHorizonte
+window.generarMarcadorDrone     = generarMarcadorDrone;
+window.generarMarcadorRuta      = generarMarcadorRuta;
+window.generarMarcadorHorizonte = generarMarcadorHorizonte;
+window.generarMarcadorCasa360   = generarMarcadorCasa360;
+window.generarSmartPin          = generarSmartPin;
+window.generarPin360            = generarPin360;

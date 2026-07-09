@@ -770,3 +770,72 @@ html.admin-mode-active .layer-manager-panel .btn-export, html.admin-mode-active 
 .ruta-hud-wrapper .r-link.gmaps:hover { background: #34d399; box-shadow: 0 0 12px rgba(52,211,153,0.6); }
 .ruta-hud-wrapper .ruta-glass-pill { border: 1px solid rgba(253,146,39,0.28); box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(253,146,39,0.08) inset; }
 .ruta-hud-wrapper .ruta-glass-pill:hover { border-color: rgba(253,146,39,0.5); box-shadow: 0 12px 40px rgba(0,0,0,0.65), 0 0 24px rgba(253,146,39,0.15); }
+
+/* === PINES FERRARI: visibilidad y posicionamiento === */
+.ferrari-imported-pin {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 6;
+}
+/* Los pines Ferrari SIEMPRE visibles (no dependen de loteo-overlay-ready) */
+.ferrari-imported-pin .ruta-hud-wrapper,
+.ferrari-imported-pin .horizon-hud-wrapper,
+.ferrari-imported-pin .drone-hud-wrapper {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+}
+body.loteo-overlay-ready .ferrari-imported-pin .ruta-hud-wrapper,
+body.loteo-overlay-ready .ferrari-imported-pin .horizon-hud-wrapper,
+body.loteo-overlay-ready .ferrari-imported-pin .drone-hud-wrapper,
+body.dev-mode-pins-active .ferrari-imported-pin .ruta-hud-wrapper,
+body.dev-mode-pins-active .ferrari-imported-pin .horizon-hud-wrapper,
+body.dev-mode-pins-active .ferrari-imported-pin .drone-hud-wrapper {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* === SMART PINS FERRARI (Lotes) === */
+.ferrari-lote-pin {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 7;
+}
+/* El smart-pin-wrapper dentro de Ferrari se centra en el punto del lote */
+.ferrari-lote-pin .smart-pin-wrapper {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+}
+body.loteo-overlay-ready .ferrari-lote-pin .smart-pin-wrapper,
+body.dev-mode-pins-active .ferrari-lote-pin .smart-pin-wrapper {
+    opacity: 1;
+    pointer-events: auto;
+}
+/* Z-index elevado al hover para que la card no quede debajo de otros pines */
+.ferrari-lote-pin:hover,
+.ferrari-lote-pin .smart-pin-wrapper:hover {
+    z-index: 999999;
+}
+/* La lote-card sale hacia arriba desde el centro del pin */
+.ferrari-lote-pin .lote-card {
+    bottom: calc(100% + 22px);
+}
+/* Pin scaler se centra en el origen del div wrapper */
+.ferrari-lote-pin .pin-scaler {
+    transform-origin: center center;
+}
+/* Ocultar en modo arrastre */
+body.panorama-dragging .ferrari-lote-pin .smart-pin-wrapper {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.1s;
+}

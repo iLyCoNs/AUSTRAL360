@@ -604,26 +604,30 @@ function refreshAllHotspots(skipIntegrity) {
     if(!visor360) return; 
     if (!skipIntegrity) ensureFranjaIntegrity(); 
     
-    if (window.MotorFerrari) {
-        if (typeof window.MotorFerrari.importAllDrawnLines === 'function') {
-            window.MotorFerrari.importAllDrawnLines();
-        }
-        if (typeof window.MotorFerrari.importPuntosHorizonte === 'function') {
-            window.MotorFerrari.importPuntosHorizonte();
-        }
+    // Importar trazos 3D Ferrari (calles/lotes)
+    if (window.MotorFerrari && typeof window.MotorFerrari.importAllDrawnLines === 'function') {
+        window.MotorFerrari.importAllDrawnLines();
     }
 
     DOMCache.markers = {}; const currentSpots = visor360.getConfig().hotSpots || [];
     for (let i = currentSpots.length - 1; i >= 0; i--) { if(currentSpots[i].id) { try { visor360.removeHotSpot(currentSpots[i].id); } catch(err) {} } }
-    document.querySelectorAll('.pnlm-hotspot-base').forEach(el => { try { if(el.parentNode) el.parentNode.removeChild(el); } catch(err) {} });
+    // CRÍTICO: NO borrar pines Ferrari (horizonte/ruta/drone ni lote)
+    document.querySelectorAll('.pnlm-hotspot-base:not(.ferrari-imported-pin):not(.ferrari-lote-pin)').forEach(el => { try { if(el.parentNode) el.parentNode.removeChild(el); } catch(err) {} });
+    
     setTimeout(() => { 
         getHotspotsConfig().forEach(hs => { try { visor360.addHotSpot(hs); } catch(err) {} }); 
+        // Reimportar pines Ferrari DESPUÉS del cleanup de Pannellum
+        if (window.MotorFerrari) {
+            if (typeof window.MotorFerrari.importPuntosHorizonte === 'function') window.MotorFerrari.importPuntosHorizonte();
+            if (typeof window.MotorFerrari.importBaseDatosLotes === 'function')  window.MotorFerrari.importBaseDatosLotes();
+        }
         syncSVGElements(); 
         if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
         updateSVGPaths(); 
         renderSidebarList(BaseDatosLotes); 
     }, 10);
 }
+
 
 function bindPinEvents(element, args, hotSpotDiv) {
     const pickPin = (e) => {

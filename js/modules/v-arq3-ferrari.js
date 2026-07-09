@@ -216,38 +216,44 @@ window.arquitecto3D = {
         const hologui = document.getElementById('holographic-ui-engine');
         
         const loop = () => {
-            if (this.isActive && window.visor360 && hologui) {
+            // === PROYECCIÓN DE PINES: SIEMPRE activa (independiente de isActive) ===
+            if (window.visor360 && hologui) {
                 const camera = window.visor360.getThreeCamera();
                 if (camera) {
+                    // Proyectar todos los pines [data-pitch][data-yaw] en el hologui
                     const pins = hologui.querySelectorAll('[data-pitch][data-yaw]');
                     pins.forEach(pin => {
                         const pitch = parseFloat(pin.getAttribute('data-pitch'));
-                        const yaw = parseFloat(pin.getAttribute('data-yaw'));
+                        const yaw   = parseFloat(pin.getAttribute('data-yaw'));
                         if (!isNaN(pitch) && !isNaN(yaw)) {
-                            // Proyectar desde el motor 3D en lugar del motor 2D de Pannellum
                             const pos3D = window.visor360.getVectorFromPitchYaw(pitch, yaw);
                             pos3D.project(camera);
-                            
-                            if (pos3D.z > 1) { // Detrás de cámara
+                            if (pos3D.z > 1) {
                                 pin.style.display = 'none';
                             } else {
                                 pin.style.display = '';
-                                const x = (pos3D.x * .5 + .5) * window.innerWidth;
+                                const x = (pos3D.x *  .5 + .5) * window.innerWidth;
                                 const y = (pos3D.y * -.5 + .5) * window.innerHeight;
-                                pin.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+                                // Pines ruta/horizonte/drone: anclar en la base (punto de anclaje = bottom del pin)
+                                // Smart pins: centrar en el punto (lote)
+                                const offset = pin.classList.contains('ferrari-pin-anchor-base')
+                                    ? `translate(${x}px, ${y}px) translate(-50%, 0)`
+                                    : `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+                                pin.style.transform = offset;
                             }
                         }
                     });
 
-                    // === BRÚJULA Ferrari: actualizar con yaw de la cámara Three.js ===
+                    // === BRÚJULA Ferrari ===
                     const compassDial = document.getElementById('js-compass');
                     if (compassDial && typeof window.visor360.getYaw === 'function') {
                         const yawActual = window.visor360.getYaw();
                         const norte = (typeof window.NorteOffset !== 'undefined') ? window.NorteOffset : 0;
                         compassDial.style.transform = `rotate(${-(yawActual - norte)}deg)`;
                     }
-                    // === MARCADORES CINEMÁTICOS: proyectar su posición en pantalla ===
-                    if (this._cinematicaMarkers && this._cinematicaMarkers.length > 0 && window.arq2VueloPoints) {
+
+                    // === MARCADORES CINEMÁTICOS (solo cuando isActive) ===
+                    if (this.isActive && this._cinematicaMarkers && this._cinematicaMarkers.length > 0 && window.arq2VueloPoints) {
                         window.arq2VueloPoints.forEach((pt, idx) => {
                             const marker = this._cinematicaMarkers[idx];
                             if (!marker || !pt) return;
@@ -256,14 +262,36 @@ window.arquitecto3D = {
                                 if (!p3 || p3.z < 0) { marker.style.display = 'none'; return; }
                                 marker.style.display = 'flex';
                                 marker.style.left = (p3.x - 20) + 'px';
-                                marker.style.top = (p3.y - 48) + 'px';
+                                marker.style.top  = (p3.y - 48) + 'px';
+                            }
+                        });
+                    }
+
+                    // === LABELS VÉRTICES TEMPORALES (solo cuando isActive dibujando) ===
+                    if (this.isActive && this.tempPoints.length > 0 && this.tempLabels.length === this.tempPoints.length) {
+                        const renderer = window.visor360.getThreeRenderer();
+                        const rect = renderer.domElement.getBoundingClientRect();
+                        this.tempPoints.forEach((pt3d, idx) => {
+                            const pt = pt3d.clone().project(camera);
+                            if (pt.z > 1) { this.tempLabels[idx].style.display = 'none'; return; }
+                            const screenX = (pt.x * 0.5 + 0.5) * rect.width;
+                            const screenY = (1 - (pt.y * 0.5 + 0.5)) * rect.height;
+                            this.tempLabels[idx].style.display = 'block';
+                            this.tempLabels[idx].style.left = (screenX + 10) + 'px';
+                            this.tempLabels[idx].style.top  = (screenY - 10) + 'px';
+                            if (idx === 0 && this.tempPoints.length >= 3) {
+                                this.tempLabels[idx].style.background = 'rgba(6, 182, 212, 0.8)';
+                                this.tempLabels[idx].style.boxShadow  = '0 0 10px #06b6d4';
+                            } else {
+                                this.tempLabels[idx].style.background = 'rgba(0,0,0,0.5)';
+                                this.tempLabels[idx].style.boxShadow  = 'none';
                             }
                         });
                     }
                 }
             }
 
-            // === BRÚJULA: actualizar siempre, independiente de isActive ===
+            // === BRÚJULA FALLBACK: actualizar siempre si hay visor ===
             const compassDial2 = document.getElementById('js-compass');
             if (compassDial2 && typeof window.visor360?.getYaw === 'function') {
                 const yawActual2 = window.visor360.getYaw();
@@ -275,6 +303,7 @@ window.arquitecto3D = {
         };
         loop();
     },
+
 
     bindEvents: function() {
         const container = document.getElementById('panorama-container');
@@ -1319,20 +1348,68 @@ window.arquitecto3D = {
             
             if (punto.tipo === 'ruta') {
                 if (typeof window.generarMarcadorRuta === 'function') window.generarMarcadorRuta(div, punto);
+                div.classList.add('ferrari-pin-anchor-base'); // anclar en base, no en centro
             } else if (punto.tipo === 'drone') {
                 if (typeof window.generarMarcadorDrone === 'function') window.generarMarcadorDrone(div, punto);
+                div.classList.add('ferrari-pin-anchor-base');
             } else {
                 if (typeof window.generarMarcadorHorizonte === 'function') window.generarMarcadorHorizonte(div, punto);
+                div.classList.add('ferrari-pin-anchor-base');
             }
             
             hologui.appendChild(div);
         });
     },
 
+    importBaseDatosLotes: function() {
+        const hologui = document.getElementById('holographic-ui-engine');
+        if (!hologui || !window.BaseDatosLotes) return;
+
+        // Eliminar pines de lote Ferrari previos
+        hologui.querySelectorAll('.ferrari-lote-pin').forEach(el => el.remove());
+
+        const activeBtn = document.querySelector('.filter-btn.active');
+        const filtroStatus = activeBtn ? activeBtn.getAttribute('data-status') : 'todos';
+        const favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]');
+
+        window.BaseDatosLotes.forEach((item, index) => {
+            if (!item.tipo || !['lote', 'vista360', 'casa360', 'terreno'].includes(item.tipo)) return;
+
+            // Filtro de status para lotes
+            if (item.tipo === 'lote' || item.tipo === 'terreno') {
+                if (filtroStatus !== 'todos' && item.status !== filtroStatus &&
+                    !(filtroStatus === 'favoritos' && favs.includes(item.id))) return;
+            } else {
+                if (filtroStatus !== 'todos' && filtroStatus !== 'favoritos') return;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'ferrari-lote-pin pnlm-hotspot-base';
+            div.style.position = 'absolute';
+            div.style.pointerEvents = 'auto';
+            div.setAttribute('data-status', item.status || 'disponible');
+            div.setAttribute('data-pitch', item.pitch);
+            div.setAttribute('data-yaw', item.yaw);
+            // SmartPin NO lleva ferrari-pin-anchor-base: se centra (-50%,-50%) en el punto del lote
+
+            if (item.tipo === 'lote' || item.tipo === 'terreno') {
+                if (typeof window.generarSmartPin === 'function') window.generarSmartPin(div, item);
+            } else if (item.tipo === 'vista360') {
+                if (typeof window.generarPin360 === 'function') window.generarPin360(div, item);
+            } else if (item.tipo === 'casa360') {
+                if (typeof window.generarMarcadorCasa360 === 'function') window.generarMarcadorCasa360(div, item);
+            }
+
+            hologui.appendChild(div);
+        });
+    },
+
+
     importAllDrawnLines: function() {
         if (!window.allDrawnLines) return;
 
         window.allDrawnLines.forEach(line => {
+
             if (line.tipo !== 'calle-curva-arq2' && line.tipo !== 'calle' && line.tipo !== 'lote' && line.tipo !== 'calle-curva' && line.tipo !== 'lote-organico') return;
             if (this.lotes.find(l => l.id === line.id)) return;
             
