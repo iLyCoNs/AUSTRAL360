@@ -694,3 +694,43 @@ body.hide-status-vendido g[data-status='vendido'] { display: none !important; }
 .layer-manager-panel input[type='checkbox'] { accent-color: #3b82f6; width: 14px; height: 14px; cursor: pointer; }
 
 .layer-manager-panel, .layer-manager-panel * { pointer-events: auto !important; }
+
+.layer-manager-panel {
+    transform: translateX(-150%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.layer-manager-panel.is-open {
+    transform: translateX(0);
+}
+.layer-toggle-fab {
+    position: fixed;
+    top: 120px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: all 0.2s;
+    pointer-events: auto;
+}
+.layer-toggle-fab:hover {
+    background: rgba(30, 41, 59, 0.95);
+    color: #fff;
+    transform: scale(1.05);
+}
+.layer-manager-panel .btn-export, .layer-manager-panel .btn-export-hr {
+    display: none;
+}
+html.admin-mode-active .layer-manager-panel .btn-export, html.admin-mode-active .layer-manager-panel .btn-export-hr {
+    display: block;
+}

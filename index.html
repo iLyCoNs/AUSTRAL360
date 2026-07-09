@@ -122,7 +122,12 @@
         </div>
         <div id="linea-pines-panel"><h4>📌 Línea Pines</h4><span id="linea-pines-status">Clic en el mapa: punto inicial y final de la fila</span><p class="linea-pines-hint">Pulsa <strong>Enter</strong> para alinear los smart pins al centro de cada lote franja. El trazo desaparece al confirmar.</p></div>
         <div id="calle-tool-panel"><h4>🛣️ Servidumbre de paso</h4><label>Grosor <span id="calle-ui-ancho-val">8.0</span></label><input type="range" id="calle-ui-ancho" min="2" max="28" step="0.5" value="8"><div id="calle-width-preview"><div id="calle-width-preview-bar"></div></div><label>Transparencia <span id="calle-ui-alpha-val">0%</span></label><input type="range" id="calle-ui-alpha" min="0" max="1" step="0.05" value="0"><label>Tamaño texto <span id="calle-ui-label-val">1.0×</span></label><input type="range" id="calle-ui-label" min="0.5" max="2.5" step="0.1" value="1"><label class="calle-ui-check"><input type="checkbox" id="calle-ui-show-label" checked> Etiqueta SERVIDUMBRE DE PASO</label><label class="calle-ui-check"><input type="checkbox" id="calle-ui-snap-franja"> Pegar a borde franja (opcional)</label><button type="button" id="btn-calle-finish">✓ Terminar calle</button><span id="calle-draw-status">Coloca al menos 2 puntos en el mapa</span><p class="calle-ui-hint">Termina con el botón verde, doble clic, Enter o clic en el último punto (verde). Luego arrastra ✥ para mover la calle.</p></div>
+        <!-- Toggle FAB -->
+        <div class="layer-toggle-fab" onclick="document.getElementById('layer-manager-panel').classList.add('is-open')" title="Capas y Filtros">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        </div>
         <div id="layer-manager-panel" class="layer-manager-panel">
+            <button type="button" style="position:absolute; right:12px; top:12px; background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; pointer-events:auto;" onclick="document.getElementById('layer-manager-panel').classList.remove('is-open')">×</button>
             <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> Capas Gráficas</h4>
             <label><input type="checkbox" id="layer-toggle-calles" checked onchange="document.body.classList.toggle('hide-layer-calles', !this.checked)"> Vialidad (Calles)</label>
             <label><input type="checkbox" id="layer-toggle-lotes" checked onchange="document.body.classList.toggle('hide-layer-lotes', !this.checked)"> Lotes y Polígonos</label>
@@ -132,8 +137,8 @@
             <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-disponible', !this.checked)"> <span style="color:#10b981;">●</span> Disponibles</label>
             <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-reservado', !this.checked)"> <span style="color:#f59e0b;">●</span> Reservados</label>
             <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-vendido', !this.checked)"> <span style="color:#ef4444;">●</span> Vendidos</label>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <button onclick="window.exportarInventarioCSV()" style="width:100%; padding:8px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:6px; font-weight:bold; cursor:pointer;">📥 Exportar Inventario CSV</button>
+            <hr class="btn-export-hr" style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
+            <button onclick="window.exportarInventarioCSV()" class="btn-export" style="width:100%; padding:8px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:6px; font-weight:bold; cursor:pointer; pointer-events:auto;">📥 Exportar Inventario CSV</button>
         </div>
         <div id="arq2-panel" class="arq2-panel">
             <div class="macos-header"><div class="macos-dots"><i></i><i></i><i></i></div><div class="dev-toolbar-title">MODO ARQUITECTO 2.0</div><button type="button" id="arq2-panel-close" class="arq2-close-btn" title="Cerrar (Alt+A)">✖</button></div>
