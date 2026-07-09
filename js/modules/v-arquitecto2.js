@@ -2794,9 +2794,6 @@ function arq2_setTool(tool) {
     arq2_ensurePanelExtras();
     document.querySelectorAll('.arq2-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.arq2Tool === tool));
 
-    const isPinV2 = tool === 'smart-pin-v2';
-    arq2_togglePinV2UI(isPinV2);
-
     document.body.classList.toggle('eraser-mode-active', tool === 'eraser');
     document.body.classList.toggle('calle-mode-active', tool === 'calle-curva-arq2' || tool === 'calle');
     const hideStreetsRow = document.getElementById('arq2-lote-libre-hide-streets-row');
@@ -2805,51 +2802,8 @@ function arq2_setTool(tool) {
     if (tool === 'fila-variable' && isArquitecto2Active) arq2_startDemoAnimation(false);
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();
 
-    // === DESACTIVAR PIN SUBTOOL al cambiar de herramienta ===
-    // Forzamos el reset directo (sin toggle) para que nunca quede pegado
-    window.arq2PinSubTool = null;
-    document.querySelectorAll('.arq2-pin-btn').forEach(b => b.classList.remove('active'));
-    document.body.classList.remove('arq2-pin-active');
-    if (window.PinEngine) window.PinEngine.deactivate();
     // Limpiar puntos de polígono para evitar que el primer click tras cambio de tool agregue vértices fantasma
     arq2LinePoints = [];
-
-    // === FEEDBACK VISUAL CINEMÁTICA + ACTIVAR MOTOR FERRARI ===
-    if (tool === 'vuelo-cinematico') {
-        const sem = document.getElementById('arq2-semaphore');
-        if (sem) {
-            sem.className = 'arq2-semaphore arq2-sem-yellow';
-            sem.textContent = '🎬 Modo Cinemática: haz clic en 3 puntos del panorama → Enter para guardar';
-            setTimeout(() => {
-                if (sem.textContent.startsWith('🎬')) {
-                    sem.className = 'arq2-semaphore arq2-sem-green';
-                    sem.textContent = 'Trazo limpio';
-                }
-            }, 5000);
-        }
-        // CRÍTICO: activar el Motor Ferrari para que sus listeners de pointerup reciban los clicks
-        if (window.arquitecto3D) {
-            window.arquitecto3D.isActive = true;
-            window.arquitecto3D.currentTool = 'cinematica';
-            // Limpiar waypoints previos para comenzar fresco
-            window.arq2VueloPoints = [];
-            window.arquitecto3D._cinematicaMarkers = window.arquitecto3D._cinematicaMarkers || [];
-            // Limpiar marcadores visuales anteriores
-            window.arquitecto3D._cinematicaMarkers.forEach(m => { if (m && m.parentNode) m.parentNode.removeChild(m); });
-            window.arquitecto3D._cinematicaMarkers = [];
-            [1, 2, 3].forEach(n => {
-                const m = document.getElementById('cinematica-marker-' + n);
-                if (m && m.parentNode) m.parentNode.removeChild(m);
-            });
-            // Actualizar botón visual del motor
-            const btnFerrari = document.getElementById('btn-arq3-mode');
-            if (btnFerrari) {
-                btnFerrari.classList.add('active');
-                btnFerrari.style.background = '#ef4444';
-                btnFerrari.style.color = '#fff';
-            }
-        }
-    }
 }
 
 function arq2_toggleArquitecto2(force) {
@@ -2862,11 +2816,7 @@ function arq2_toggleArquitecto2(force) {
         closeFranjaLotesModal();
         // Limpiar TODOS los estados de edición para vista previa limpia
         document.body.classList.remove('eraser-mode-active');
-        document.body.classList.remove('pin-v2-active');
-        document.body.classList.remove('arq2-pin-active');
         document.body.classList.remove('calle-mode-active');
-        window.arq2PinSubTool = null;
-        if (window.PinEngine) window.PinEngine.deactivate();
         refreshAllHotspots(true);
     } else {
         arq2_ensureFeedbackLayer();

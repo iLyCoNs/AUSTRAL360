@@ -1332,77 +1332,13 @@ window.arquitecto3D = {
     },
 
     importPuntosHorizonte: function() {
-        const hologui = document.getElementById('holographic-ui-engine');
-        if (!hologui || !window.PuntosHorizonte) return;
-        
-        // Remove previously imported pins
-        hologui.querySelectorAll('.ferrari-imported-pin').forEach(el => el.remove());
-        
-        window.PuntosHorizonte.forEach(punto => {
-            const div = document.createElement('div');
-            div.className = 'ferrari-imported-pin pnlm-hotspot-base'; // Use pnlm-hotspot-base to ensure styling compatibility if needed
-            div.style.position = 'absolute';
-            div.style.pointerEvents = 'auto'; // CRITICAL: make it clickable
-            div.setAttribute('data-pitch', punto.pitch);
-            div.setAttribute('data-yaw', punto.yaw);
-            
-            if (punto.tipo === 'ruta') {
-                if (typeof window.generarMarcadorRuta === 'function') window.generarMarcadorRuta(div, punto);
-                div.classList.add('ferrari-pin-anchor-base'); // anclar en base, no en centro
-            } else if (punto.tipo === 'drone') {
-                if (typeof window.generarMarcadorDrone === 'function') window.generarMarcadorDrone(div, punto);
-                div.classList.add('ferrari-pin-anchor-base');
-            } else {
-                if (typeof window.generarMarcadorHorizonte === 'function') window.generarMarcadorHorizonte(div, punto);
-                div.classList.add('ferrari-pin-anchor-base');
-            }
-            
-            hologui.appendChild(div);
-        });
+        // Obsoleto - Los pines fueron eliminados
     },
 
     importBaseDatosLotes: function() {
-        const hologui = document.getElementById('holographic-ui-engine');
-        if (!hologui || !window.BaseDatosLotes) return;
-
-        // Eliminar pines de lote Ferrari previos
-        hologui.querySelectorAll('.ferrari-lote-pin').forEach(el => el.remove());
-
-        const activeBtn = document.querySelector('.filter-btn.active');
-        const filtroStatus = activeBtn ? activeBtn.getAttribute('data-status') : 'todos';
-        const favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]');
-
-        window.BaseDatosLotes.forEach((item, index) => {
-            if (!item.tipo || !['lote', 'vista360', 'casa360', 'terreno', 'acceso', 'referencia'].includes(item.tipo)) return;
-
-            // Filtro de status para lotes
-            if (item.tipo === 'lote' || item.tipo === 'terreno') {
-                if (filtroStatus !== 'todos' && item.status !== filtroStatus &&
-                    !(filtroStatus === 'favoritos' && favs.includes(item.id))) return;
-            } else {
-                if (filtroStatus !== 'todos' && filtroStatus !== 'favoritos') return;
-            }
-
-            const div = document.createElement('div');
-            div.className = 'ferrari-lote-pin pnlm-hotspot-base';
-            div.style.position = 'absolute';
-            div.style.pointerEvents = 'auto';
-            div.setAttribute('data-status', item.status || 'disponible');
-            div.setAttribute('data-pitch', item.pitch);
-            div.setAttribute('data-yaw', item.yaw);
-            // SmartPin NO lleva ferrari-pin-anchor-base: se centra (-50%,-50%) en el punto del lote
-
-            if (item.tipo === 'lote' || item.tipo === 'terreno' || item.tipo === 'acceso' || item.tipo === 'referencia') {
-                if (typeof window.generarSmartPin === 'function') window.generarSmartPin(div, item);
-            } else if (item.tipo === 'vista360') {
-                if (typeof window.generarPin360 === 'function') window.generarPin360(div, item);
-            } else if (item.tipo === 'casa360') {
-                if (typeof window.generarMarcadorCasa360 === 'function') window.generarMarcadorCasa360(div, item);
-            }
-
-            hologui.appendChild(div);
-        });
+        // Obsoleto - Los pines fueron eliminados
     },
+
 
 
     importAllDrawnLines: function() {
