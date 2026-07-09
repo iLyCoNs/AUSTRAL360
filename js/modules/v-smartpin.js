@@ -108,15 +108,48 @@ function generarMarcadorHorizonte(hotSpotDiv, args) {
 function generarMarcadorRuta(hotSpotDiv, args) {
     hotSpotDiv.style.width = '0px'; hotSpotDiv.style.height = '0px';
     hotSpotDiv.setAttribute('data-pitch', args.pitch); hotSpotDiv.setAttribute('data-yaw', args.yaw);
-    
+
     // TRUCO SUPREMO ARQUITECTO 2.0: Mover físicamente el pin fuera del encierro WebGL
     const hologui = document.getElementById('holographic-ui-engine');
     if (hologui && hotSpotDiv.parentElement !== hologui) {
         hologui.appendChild(hotSpotDiv);
     }
-    const wrapper = document.createElement('div'); wrapper.className = 'ruta-hud-wrapper';
-    wrapper.innerHTML = `<div class="ruta-glass-pill">${buildNavGlassPillMarkup(args, { title: args.titulo || 'RUTA', rutaMobileExpand: true })}</div><div class="ruta-line-down"></div><div class="ruta-target-dot"></div>`;
-    hotSpotDiv.appendChild(wrapper); addQuickActions(wrapper, args);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ruta-hud-wrapper';
+    // El anchor hotspot está en bottom:0 left:0 — el wrapper se pinta encima del punto
+
+    const links = getNavPinLinks(args);
+    const distArr = parseMetricaRuta(args.distancia, 'KM');
+    const timeArr = parseMetricaRuta(args.tiempo, 'MIN');
+    const title   = (args.titulo || 'RUTA').toUpperCase();
+    const trafficTip = args.rutaEtiquetaTrafico ? ` title="${args.rutaEtiquetaTrafico.replace(/"/g, '&quot;')}"` : '';
+    const trfBadge = `<span class="ruta-traffic-badge">TRF</span>`;
+
+    // SVG flecha derecha > (idéntico a la foto — colapso)
+    const SVG_ARROW_RIGHT = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none"><path d="M9 18l6-6-6-6"/></svg>`;
+
+    // Bloque de métricas (distancia + tiempo) — visible al expandir
+    const pillExtra = `<div class="ruta-divider"></div><div class="ruta-metrics">` +
+        `<span class="ruta-val">${distArr.v}<small>${distArr.u}</small></span>` +
+        `<span class="ruta-val"${trafficTip}>~${timeArr.v}<small>${timeArr.u}</small>${trfBadge}</span>` +
+        `</div>` +
+        `<div class="ruta-links">` +
+        `<a href="${links.linkWaze}" target="_blank" class="r-link waze" title="Ir con Waze" draggable="false">${SVG_WAZE}</a>` +
+        `<a href="${links.linkGmapsFromProject}" target="_blank" class="r-link gmaps" title="Ir con Google Maps" draggable="false">${SVG_MAPS_PIN}</a>` +
+        `</div>`;
+
+    // Botón flecha naranja pulsante (> colapso / ↓ expandido)
+    const arrowBtn = `<button type="button" class="ruta-expand-arrow" aria-label="Desplegar distancia y navegación">${SVG_ARROW_RIGHT}</button>`;
+
+    // Glass pill completa
+    const pillContent = `<span class="ruta-title">${title}</span>${arrowBtn}<div class="horizon-pill-extra">${pillExtra}</div>`;
+
+    wrapper.innerHTML = `<div class="ruta-glass-pill">${pillContent}</div><div class="ruta-line-down"></div><div class="ruta-target-dot"></div>`;
+
+    hotSpotDiv.appendChild(wrapper);
+    addQuickActions(wrapper, args);
+
     const pill = wrapper.querySelector('.ruta-glass-pill');
     bindPinEvents(pill || wrapper, args, hotSpotDiv);
 }

@@ -220,9 +220,9 @@ body.loteo-overlay-ready .ruta-hud-wrapper, body.dev-mode-pins-active .ruta-hud-
 .horizon-expand-arrow { display: flex; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(253, 146, 39, 0.55); background: rgba(253, 146, 39, 0.18); color: #FD9227; cursor: pointer; align-items: center; justify-content: center; padding: 0; margin-left: 2px; pointer-events: auto; touch-action: manipulation; transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s; box-shadow: 0 0 10px rgba(253, 146, 39, 0.35); animation: horizonArrowPulse 1.35s ease-in-out infinite; }
 .horizon-expand-arrow svg { display: block; pointer-events: none; filter: drop-shadow(0 0 4px rgba(253, 146, 39, 0.6)); }
 @keyframes horizonArrowPulse { 0%, 100% { transform: translateX(0) scale(1); box-shadow: 0 0 8px rgba(253, 146, 39, 0.35), 0 0 0 0 rgba(253, 146, 39, 0.25); } 50% { transform: translateX(3px) scale(1.08); box-shadow: 0 0 16px rgba(253, 146, 39, 0.75), 0 0 0 4px rgba(253, 146, 39, 0.12); } }
-.ruta-expand-arrow { display: flex; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(145, 200, 255, 0.55); background: rgba(145, 200, 255, 0.18); color: #91C8FF; cursor: pointer; align-items: center; justify-content: center; padding: 0; margin-left: 2px; pointer-events: auto; touch-action: manipulation; transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s; box-shadow: 0 0 10px rgba(145, 200, 255, 0.35); animation: rutaArrowPulse 1.35s ease-in-out infinite; }
-.ruta-expand-arrow svg { display: block; pointer-events: none; filter: drop-shadow(0 0 4px rgba(145, 200, 255, 0.6)); }
-@keyframes rutaArrowPulse { 0%, 100% { transform: translateX(0) scale(1); box-shadow: 0 0 8px rgba(145, 200, 255, 0.35), 0 0 0 0 rgba(145, 200, 255, 0.25); } 50% { transform: translateX(3px) scale(1.08); box-shadow: 0 0 16px rgba(145, 200, 255, 0.75), 0 0 0 4px rgba(145, 200, 255, 0.12); } }
+.ruta-expand-arrow { display: flex; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(253, 146, 39, 0.55); background: rgba(253, 146, 39, 0.18); color: #FD9227; cursor: pointer; align-items: center; justify-content: center; padding: 0; margin-left: 2px; pointer-events: auto; touch-action: manipulation; transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, border-color 0.2s; box-shadow: 0 0 10px rgba(253, 146, 39, 0.35); animation: rutaArrowPulse 1.35s ease-in-out infinite; }
+.ruta-expand-arrow svg { display: block; pointer-events: none; filter: drop-shadow(0 0 4px rgba(253, 146, 39, 0.6)); }
+@keyframes rutaArrowPulse { 0%, 100% { transform: translateX(0) scale(1); box-shadow: 0 0 8px rgba(253, 146, 39, 0.35), 0 0 0 0 rgba(253, 146, 39, 0.25); } 50% { transform: translateX(3px) scale(1.08); box-shadow: 0 0 16px rgba(253, 146, 39, 0.75), 0 0 0 4px rgba(253, 146, 39, 0.12); } }
 
 /* Inicia Oculto / Colapsado */
 .horizon-pill-extra { max-width: 0; opacity: 0; overflow: hidden; gap: 8px; transition: max-width 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease; pointer-events: none; display: flex; align-items: center; }
@@ -757,3 +757,16 @@ html.admin-mode-active .layer-manager-panel .btn-export, html.admin-mode-active 
 .cinematica-waypoint-marker{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:99990;transform-origin:center bottom;}
 .cwm-number{width:36px;height:36px;border-radius:50%;background:rgba(168,85,247,0.95);border:2px solid #d8b4fe;color:#fff;font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(168,85,247,0.6),0 0 32px rgba(168,85,247,0.3);}
 .cwm-label{background:rgba(15,15,25,0.88);border:1px solid rgba(168,85,247,0.4);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:#d8b4fe;white-space:nowrap;backdrop-filter:blur(6px);}
+
+/* === PIN RUTA PREMIUM v2 (matching photo design) === */
+.ruta-hud-wrapper .ruta-glass-pill { gap: 8px; padding: 6px 10px 6px 16px; }
+.ruta-hud-wrapper .ruta-title { font-size: 10px; letter-spacing: 1.5px; }
+.ruta-hud-wrapper .ruta-val { font-size: 10px; }
+.ruta-hud-wrapper .ruta-val small { font-size: 7px; color: #FD9227; font-weight: 900; }
+.ruta-hud-wrapper .ruta-target-dot { width: 8px; height: 8px; background: #FD9227; border-radius: 50%; box-shadow: 0 0 0 3px rgba(253,146,39,0.22), 0 0 12px #FD9227, 0 0 22px rgba(253,146,39,0.5); margin-top: -3px; animation: rutaDotPulse 1.8s ease-in-out infinite; }
+@keyframes rutaDotPulse { 0%,100% { box-shadow: 0 0 0 3px rgba(253,146,39,0.22), 0 0 12px #FD9227, 0 0 22px rgba(253,146,39,0.5); } 50% { box-shadow: 0 0 0 6px rgba(253,146,39,0.1), 0 0 20px #FD9227, 0 0 36px rgba(253,146,39,0.7); } }
+.ruta-hud-wrapper .ruta-line-down { height: 36px; width: 2px; background: linear-gradient(to bottom, rgba(253,146,39,0.7), rgba(253,146,39,0.05)); margin-top: 1px; }
+.ruta-hud-wrapper .r-link.gmaps { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); }
+.ruta-hud-wrapper .r-link.gmaps:hover { background: #34d399; box-shadow: 0 0 12px rgba(52,211,153,0.6); }
+.ruta-hud-wrapper .ruta-glass-pill { border: 1px solid rgba(253,146,39,0.28); box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(253,146,39,0.08) inset; }
+.ruta-hud-wrapper .ruta-glass-pill:hover { border-color: rgba(253,146,39,0.5); box-shadow: 0 12px 40px rgba(0,0,0,0.65), 0 0 24px rgba(253,146,39,0.15); }
