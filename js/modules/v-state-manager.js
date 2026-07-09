@@ -36,14 +36,15 @@ window.StateManager = {
         
         if (snapshot.version >= 2 && snapshot.entidades) {
             // Re-distribuir a las capas legacy (temporal hasta migrar render)
-            window.allDrawnLines = snapshot.entidades.filter(e => 
-                e.tipo.startsWith('calle') || e.tipo.startsWith('lote-') || e.tipo.startsWith('franja') || e.tipo === 'costura' || e.tipo === 'fila-variable-lote'
-            );
+            window.allDrawnLines = snapshot.entidades.filter(e => {
+                if (!e.tipo) return true; // entidades sin tipo van a trazos por defecto
+                return e.tipo.startsWith('calle') || e.tipo.startsWith('lote-') || e.tipo.startsWith('franja') || e.tipo === 'costura' || e.tipo === 'fila-variable-lote';
+            });
             window.BaseDatosLotes = snapshot.entidades.filter(e => 
-                ['lote', 'acceso', 'referencia', 'vista360', 'casa360', 'terreno'].includes(e.tipo)
+                e.tipo && ['lote', 'acceso', 'referencia', 'vista360', 'casa360', 'terreno'].includes(e.tipo)
             );
             window.PuntosHorizonte = snapshot.entidades.filter(e => 
-                ['horizonte', 'ruta'].includes(e.tipo)
+                e.tipo && ['horizonte', 'ruta'].includes(e.tipo)
             );
         } else {
             // Compatibilidad V1

@@ -780,6 +780,13 @@ function intersectSegments2D(a1, a2, b1, b2) {
 function safeGetStorage(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSetStorage(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
 function buildCloudPayload() {
+    // Siempre usar StateManager para obtener snapshot V2 (con timestamp y entidades)
+    if (window.StateManager) {
+        const snapshot = window.StateManager.buildSnapshot();
+        if (FRESIA_CFG.payloadIncludeVista) snapshot.vista = FRESIA_CFG.vista;
+        return snapshot;
+    }
+    // Fallback legacy
     const payload = { configProyecto: ConfigProyecto, origen: OrigenDrone, norte: NorteOffset, lotes: BaseDatosLotes, horizontes: PuntosHorizonte, trazos: allDrawnLines };
     if (FRESIA_CFG.payloadIncludeVista) payload.vista = FRESIA_CFG.vista;
     return payload;
@@ -787,6 +794,7 @@ function buildCloudPayload() {
 function mergeAerialWithRemoteSuelo(remote, aerial) {
     const merged = { ...aerial };
     if (!remote) return merged;
+    // Preservar campos de datos suelo del servidor
     ['lotesSuelo', 'horizontesSuelo', 'trazosSuelo', 'norteSuelo'].forEach((k) => { if (remote[k] !== undefined) merged[k] = remote[k]; });
     return merged;
 }
