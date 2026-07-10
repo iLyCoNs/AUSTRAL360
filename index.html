@@ -40,55 +40,8 @@
             </div>
         </div>
         <div class="premium-compass-container" id="js-compass-container" title="Mantén presionado para abrir el Modo Arquitecto"><div class="compass-indicator"></div><div class="compass-dial" id="js-compass"><div class="compass-n">N</div><div class="compass-e">E</div><div class="compass-s">S</div><div class="compass-w">W</div><div class="compass-center"></div></div></div>
-        <!-- Toggle FAB -->
-        <div class="layer-toggle-fab" onclick="document.getElementById('layer-manager-panel').classList.add('is-open')" title="Capas y Filtros">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-        </div>
-        <div id="layer-manager-panel" class="layer-manager-panel">
-            <button type="button" style="position:absolute; right:12px; top:12px; background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%; pointer-events:auto;" onclick="document.getElementById('layer-manager-panel').classList.remove('is-open')">×</button>
-            <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> Capas Gráficas</h4>
-            <label><input type="checkbox" id="layer-toggle-calles" checked onchange="document.body.classList.toggle('hide-layer-calles', !this.checked)"> Vialidad (Calles)</label>
-            <label><input type="checkbox" id="layer-toggle-lotes" checked onchange="document.body.classList.toggle('hide-layer-lotes', !this.checked)"> Lotes y Polígonos</label>
-            <label><input type="checkbox" id="layer-toggle-pines" checked onchange="document.body.classList.toggle('hide-layer-pines', !this.checked)"> Pines y Señalética</label>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg> Filtros Comerciales</h4>
-            <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-disponible', !this.checked)"> <span style="color:#10b981;">●</span> Disponibles</label>
-            <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-reservado', !this.checked)"> <span style="color:#f59e0b;">●</span> Reservados</label>
-            <label><input type="checkbox" checked onchange="document.body.classList.toggle('hide-status-vendido', !this.checked)"> <span style="color:#ef4444;">●</span> Vendidos</label>
-            <hr class="btn-export-hr" style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <button onclick="window.exportarInventarioCSV()" class="btn-export" style="width:100%; padding:8px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:6px; font-weight:bold; cursor:pointer; pointer-events:auto;">📥 Exportar Inventario CSV</button>
-        </div>
-        
-        <!-- ARQUITECTO 2.0 PANEL -->
-        <div id="arquitecto2-panel" class="arq2-panel">
-            <div class="macos-header">
-                <span class="mac-dot" style="background:#ff5f56;"></span>
-                <span class="mac-dot" style="background:#ffbd2e;"></span>
-                <span class="mac-dot" style="background:#27c93f;"></span>
-                <span class="mac-title">Arquitecto 2.0</span>
-                <button class="arq2-close-btn" onclick="arq2_toggleArquitecto2(false)" style="position: absolute; right: 12px; top: 10px;">X</button>
-            </div>
-            
-            <div class="arq2-tool-row">
-                <button class="arq2-tool-btn" data-arq2-tool="kprano-capsule">✨ KpranoKiller</button>
-                <button class="arq2-tool-btn" data-arq2-tool="eraser">Goma</button>
-                <button class="arq2-tool-btn" data-arq2-tool="calle-curva-arq2">Calle 3D</button>
-                <button class="arq2-tool-btn" data-arq2-tool="lote-libre">Lote Libre</button>
-            </div>
-            
-            <div id="arq2-lote-libre-hide-streets-row" style="display: none; margin-bottom: 10px; font-size: 11px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #94a3b8;">
-                    <input type="checkbox" id="arq2-lote-libre-hide-streets" checked> Ocultar Calles (Mejora Snap)
-                </label>
-            </div>
-            
-            <div id="arq2-panel-dynamic-content">
-                <!-- Se inyecta UI dinámica de la herramienta aquí -->
-            </div>
-            
-            <hr style="border-top:1px solid rgba(255,255,255,0.1); margin:12px 0;">
-            <button onclick="GlobalCloudSave()" class="btn-export" style="width:100%; padding:8px; background:rgba(34,211,238,0.15); color:#22d3ee; border:1px solid rgba(34,211,238,0.4); border-radius:6px; font-weight:bold; cursor:pointer;">💾 Guardar Nube</button>
-        </div>
+        <!-- KpranoKiller es el unico panel de edicion -->
+        <!-- KpranoKiller: unico panel de edicion (inyectado por v-kpranokiller.js) -->
 
         <div id="global-event-interceptor" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999999;"></div>
         <div id="arq2-live-counter"></div>

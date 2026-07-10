@@ -142,12 +142,19 @@
         if (!panel) return;
         panel.classList.toggle('kpk-open', isOpen);
         if (fab) fab.classList.toggle('kpk-fab-on', isOpen);
+        document.body.classList.toggle('kpk-edit', isOpen);
 
         // Activar motor de dibujo
-        window.isArquitecto2Active = isOpen;
-        document.body.classList.toggle('arq2-active', isOpen);
+        // 1. Llamar arq2_toggleArquitecto2 primero (el puede tener su propia variable interna)
         if (typeof arq2_toggleArquitecto2 === 'function') {
             try { arq2_toggleArquitecto2(isOpen); } catch(e) {}
+        }
+        // 2. Forzar el estado global DESPUES, para que KPK tenga la ultima palabra
+        window.isArquitecto2Active = isOpen;
+        document.body.classList.toggle('arq2-active', isOpen);
+        // 3. Si se cierra, limpiar herramienta
+        if (!isOpen && typeof arq2_setTool === 'function') {
+            try { arq2_setTool(null); } catch(e) {}
         }
         if (!isOpen) {
             activeTool = null;
@@ -200,7 +207,7 @@
             });
         });
 
-        // Alt+A — unico listener global
+        // Alt+A — unico listener global. Funciona aunque el FAB este oculto.
         document.addEventListener('keydown', function(e) {
             if (!e.altKey) return;
             if (e.key !== 'a' && e.key !== 'A') return;
@@ -208,6 +215,8 @@
             var tag = document.activeElement && document.activeElement.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
             e.preventDefault();
+            // Mostrar FAB la primera vez antes de toggle
+            document.body.classList.add('kpk-edit');
             toggle();
         });
 

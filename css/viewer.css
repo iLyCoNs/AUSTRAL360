@@ -1263,3 +1263,8 @@ body.panorama-dragging .ferrari-lote-pin .smart-pin-wrapper {
 .kpk-save { display: flex; align-items: center; justify-content: center; gap: 7px; width: calc(100% - 20px); margin: 0 10px; padding: 9px; background: rgba(34,211,238,0.09); border: 1px solid rgba(34,211,238,0.28); border-radius: 9px; color: #22d3ee; font-size: 11px; font-weight: 600; cursor: pointer; letter-spacing: 0.2px; transition: all 0.17s; }
 .kpk-save svg { width: 14px; height: 14px; }
 .kpk-save:hover { background: rgba(34,211,238,0.17); border-color: rgba(34,211,238,0.45); box-shadow: 0 3px 14px rgba(34,211,238,0.18); }
+
+/* KPK: FAB oculto por defecto, visible solo en modo edicion */
+#kpk-fab { display: none !important; }
+body.kpk-edit #kpk-fab { display: flex !important; }
+body.kpk-edit #kpk-panel { pointer-events: auto; }
