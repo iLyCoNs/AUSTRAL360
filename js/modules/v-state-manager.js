@@ -34,7 +34,7 @@ window.StateManager = {
             // Re-distribuir a las capas legacy (temporal hasta migrar render)
             window.allDrawnLines = snapshot.entidades.filter(e => {
                 if (!e.tipo) return true; // entidades sin tipo van a trazos por defecto
-                return e.tipo.startsWith('calle') || e.tipo.startsWith('lote-') || e.tipo.startsWith('franja') || e.tipo === 'costura' || e.tipo === 'fila-variable-lote';
+                return e.tipo.startsWith('calle') || e.tipo.startsWith('lote-') || e.tipo.startsWith('franja') || e.tipo === 'costura' || e.tipo === 'fila-variable-lote' || e.tipo === 'kprano-capsule';
             });
         } else {
             // Compatibilidad V1

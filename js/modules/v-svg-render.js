@@ -125,29 +125,63 @@ function syncSVGElements() {
                 fObj.setAttribute('width', '240');
                 fObj.setAttribute('height', '240');
                 fObj.style.overflow = 'visible';
-                
-                const capsuleHtml = `
-                    <div class="kpk-capsule-container">
-                        <div class="kpk-ring-pulse"></div>
-                        <div class="kpk-content">
-                            <div class="kpk-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                            </div>
-                            <div class="kpk-text">${line.titulo || 'Punto 3D'}</div>
-                        </div>
-                        <div class="kpk-anchor-line"></div>
-                        <div class="kpk-anchor-dot"></div>
-                    </div>
-                `;
-                fObj.innerHTML = capsuleHtml;
+
+                // BUG FIX: Usar createElement (HTML namespace) en lugar de innerHTML
+                // para máxima compatibilidad cross-browser (Firefox, Safari, Chrome)
+                const XHTML = 'http://www.w3.org/1999/xhtml';
+                const mkEl = (tag, cls) => {
+                    const el = document.createElementNS(XHTML, tag);
+                    if (cls) el.setAttribute('class', cls);
+                    return el;
+                };
+
+                // Ícono SVG: pin location monolineal
+                const iconSvgNS = 'http://www.w3.org/2000/svg';
+                const iconSvg = document.createElementNS(iconSvgNS, 'svg');
+                iconSvg.setAttribute('viewBox', '0 0 24 24');
+                iconSvg.setAttribute('fill', 'none');
+                iconSvg.setAttribute('stroke', 'currentColor');
+                iconSvg.setAttribute('stroke-width', '2');
+                iconSvg.setAttribute('stroke-linecap', 'round');
+                iconSvg.setAttribute('stroke-linejoin', 'round');
+                const iconPath = document.createElementNS(iconSvgNS, 'path');
+                iconPath.setAttribute('d', 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z');
+                const iconCircle = document.createElementNS(iconSvgNS, 'circle');
+                iconCircle.setAttribute('cx', '12');
+                iconCircle.setAttribute('cy', '10');
+                iconCircle.setAttribute('r', '3');
+                iconSvg.appendChild(iconPath);
+                iconSvg.appendChild(iconCircle);
+
+                // Estructura DOM: container > [ring, content > [icon, text], anchor-line, anchor-dot]
+                const container  = mkEl('div', 'kpk-capsule-container');
+                const ring       = mkEl('div', 'kpk-ring-pulse');
+                const content    = mkEl('div', 'kpk-content');
+                const iconWrap   = mkEl('div', 'kpk-icon');
+                const textEl     = mkEl('div', 'kpk-text');
+                const anchorLine = mkEl('div', 'kpk-anchor-line');
+                const anchorDot  = mkEl('div', 'kpk-anchor-dot');
+
+                textEl.textContent = line.titulo || 'Punto 3D';
+                iconWrap.appendChild(iconSvg);
+                content.appendChild(iconWrap);
+                content.appendChild(textEl);
+                container.appendChild(ring);
+                container.appendChild(content);
+                container.appendChild(anchorLine);
+                container.appendChild(anchorDot);
+                fObj.appendChild(container);
+
                 bindSvgEraser(fObj, line.id);
-                
+
                 fObj.addEventListener('click', (e) => {
-                    // Logic to edit pin can go here
+                    e.stopPropagation();
+                    if (window.isArquitecto2Active) return; // en modo diseño no abrir HUD
+                    // Futuro: abrir panel info de cápsula
                 });
-                
+
                 lLotes.appendChild(fObj);
-                DOMCache.paths[line.id] = { base: [fObj] };
+                DOMCache.paths[line.id] = { base: [fObj], container, textEl };
             } else {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.dataset.lineId = line.id; g.dataset.tipo = line.tipo; g.classList.add('lote-interactivo'); 
                 const pBase = document.createElementNS("http://www.w3.org/2000/svg", "path"); 
@@ -288,8 +322,13 @@ function updateSVGPaths() {
                 fObj.style.display = 'block';
                 const px = cx + (c.x / c.z) * f;
                 const py = cy_screen - (c.y / c.z) * f;
+                // Centrar horizontalmente, anclar punto en la base (anchor-dot)
                 fObj.setAttribute('x', px - 120);
-                fObj.setAttribute('y', py - 120);
+                fObj.setAttribute('y', py - 220);
+                // Sincronizar texto si fue editado
+                if (cacheObj.textEl && cacheObj.textEl.textContent !== (lineData.titulo || 'Punto 3D')) {
+                    cacheObj.textEl.textContent = lineData.titulo || 'Punto 3D';
+                }
             }
             return;
         }

@@ -283,6 +283,18 @@ function arq2_setup() {
         el.addEventListener('mousedown', e => e.stopPropagation());
         el.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
     });
+
+    // === ALT+A: activar / desactivar Panel Arquitecto 2.0 (KpranoKiller) ===
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey && (e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey) {
+            // No disparar si el foco está en un input/textarea
+            const tag = document.activeElement?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+            e.preventDefault();
+            if (typeof arq2_toggleArquitecto2 === 'function') arq2_toggleArquitecto2();
+        }
+    });
+
     document.getElementById('arq2-smooth-toggle')?.addEventListener('change', (e) => {
         arq2SmoothCurves = !!e.target.checked;
         arq2SmoothIntensity = arq2SmoothCurves ? Math.max(1, arq2SmoothIntensity || 5) : 0;
