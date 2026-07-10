@@ -608,8 +608,7 @@ async function initPannellum() {
                     const ratioY = Math.max(-1, Math.min(1, p.y / radius));
                     const pitch = Math.asin(ratioY) * (180 / Math.PI);
                     const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
-                    // Bug 1: Devolver pitch directo y yaw invertido (-yaw) porque Three.js scale(-1,1,1) invierte el eje visual X
-                    return [pitch, -yaw];
+                    return [pitch, yaw];
                 }
             }
             return [threePitch, threeYaw];
