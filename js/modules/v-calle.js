@@ -207,26 +207,7 @@ function arq2_isCalleEjeClosed(eje) {
     return Math.hypot(first[0] - last[0], first[1] - last[1]) < 0.25;
 }
 
-function arq2_projectPointOnPolyline(p, poly) {
-    if (!poly || poly.length < 2) return null;
-    let bestDist = Infinity;
-    let bestPt = null;
-    let bestIdx = -1;
-    let bestT = 0;
-    for (let i = 0; i < poly.length - 1; i++) {
-        const a = poly[i], b = poly[i + 1];
-        const proj = projectPointOnSegment(p, a, b);
-        const d = Math.hypot(p[0] - proj[0], p[1] - proj[1]);
-        if (d < bestDist) {
-            bestDist = d;
-            bestPt = proj;
-            bestIdx = i;
-            bestT = projectionT(p, a, b);
-            bestT = Math.max(0, Math.min(1, bestT));
-        }
-    }
-    return { dist: bestDist, point: bestPt, idx: bestIdx, t: bestT };
-}
+// arq2_projectPointOnPolyline removida por duplicidad (ahora reside exclusivamente en v-arquitecto2.js)
 
 function arq2_snapStreetBorderToLots(borderPoints, snapTolDeg = 0.32) {
     if (!borderPoints || borderPoints.length === 0) return borderPoints;

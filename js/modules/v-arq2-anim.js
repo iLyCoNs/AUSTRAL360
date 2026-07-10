@@ -306,50 +306,7 @@ function arq2_setTool(tool) {
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();
 }
 
-function arq2_toggleArquitecto2(force) {
-    if (typeof force === 'boolean') isArquitecto2Active = force;
-    else isArquitecto2Active = !isArquitecto2Active;
-    document.body.classList.toggle('arq2-active', isArquitecto2Active);
-    
-    const legend = document.getElementById('github-update-legend');
-    
-    if (!isArquitecto2Active) {
-        arq2_clearDraft();
-        arq2_stopDemoAnimation();
-        closeFranjaLotesModal();
-        // Limpiar TODOS los estados de edición para vista previa limpia
-        document.body.classList.remove('eraser-mode-active');
-        document.body.classList.remove('calle-mode-active');
-        refreshAllHotspots(true);
-        if (legend) legend.style.display = 'none';
-    } else {
-        arq2_ensureFeedbackLayer();
-        arq2_ensureDemoLayer();
-        arq2_ensurePanelExtras();
-        arq2_ensureSmoothIntensityPanel();
-        arq2_setTool(arq2Tool);
-        refreshAllHotspots(true);
-        
-        if (legend) {
-            legend.style.display = 'inline';
-            if (!legend.dataset.loaded) {
-                legend.textContent = 'Verificando GitHub...';
-                fetch('https://api.github.com/repos/iLyCoNs/alercepatagon360/commits')
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data && data[0]) {
-                            const d = new Date(data[0].commit.author.date);
-                            const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            let words = data[0].commit.message.split(/\s+/).slice(0, 5).join(' ');
-                            if (data[0].commit.message.split(/\s+/).length > 5) words += '...';
-                            legend.innerHTML = `| Act. ${time}: <i>${words}</i>`;
-                            legend.dataset.loaded = 'true';
-                        }
-                    }).catch(e => { legend.style.display = 'none'; });
-            }
-        }
-    }
-}
+// arq2_toggleArquitecto2 removida por duplicidad (ahora reside exclusivamente en v-arquitecto2.js)
 function arq2_buildNonSharedEdgePaths(pts, sharedSegs, isClosed, getCamFn, cx, cySc, f) {
     let d = '';
     const segN = isClosed ? pts.length : pts.length - 1;

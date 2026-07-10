@@ -401,16 +401,26 @@ function canTriggerPolygonAutoClose() {
 }
 function isNearPolygonOriginPY(p, y, originPt) {
     if (!originPt) return false;
-    const proj = getPanoramaScreenProjector();
-    if (proj && visor360) {
-        const s0 = proj.toScreen(originPt[0], originPt[1]);
-        const s1 = proj.toScreen(p, y);
-        if (s0 && s1) {
-            const dScreen = Math.hypot(s0[0] - s1[0], s0[1] - s1[1]);
-            if (dScreen < getCloseSnapScreenRadiusPx()) return true;
+    let safeFallback = true;
+    try {
+        const proj = getPanoramaScreenProjector();
+        if (proj && window.visor360) {
+            const s0 = proj.toScreen(originPt[0], originPt[1]);
+            const s1 = proj.toScreen(p, y);
+            if (s0 && s1 && !isNaN(s0[0]) && !isNaN(s1[0])) {
+                const dScreen = Math.hypot(s0[0] - s1[0], s0[1] - s1[1]);
+                if (dScreen < getCloseSnapScreenRadiusPx()) return true;
+                safeFallback = false;
+            }
         }
+    } catch(err) {
+        // Fallback silently
     }
-    return Math.hypot(p - originPt[0], y - originPt[1]) < getCloseSnapPanoramaThreshold();
+    // Si la proyección falla o estamos muy lejos en pantalla, fallamos al umbral absoluto
+    if (safeFallback) {
+        return Math.hypot(p - originPt[0], y - originPt[1]) < getCloseSnapPanoramaThreshold();
+    }
+    return false;
 }
 function arq2_isValidPYPoint(pt) {
     return Array.isArray(pt) && pt.length >= 2 && isFinite(pt[0]) && isFinite(pt[1]) && !isNaN(pt[0]) && !isNaN(pt[1]);

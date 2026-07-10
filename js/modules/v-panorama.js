@@ -172,6 +172,11 @@ function bindPanoramaPointerEvents() {
         _arq2GestureActive = false;
         isMultiTouch = false;
         let mock = getMockEvent(e); 
+        if (!window.visor360) return; // Safeguard
+        // Evitar disparo gemelo mousedown/touchstart en móviles al dibujar
+        if (e.type === 'touchstart' && e.cancelable && (window.isArquitecto2Active || window.isDevModeDrawActive)) {
+            e.preventDefault();
+        }
         startX = mock.clientX; 
         startY = mock.clientY; 
         startTime = Date.now(); 
@@ -268,7 +273,8 @@ function bindPanoramaPointerEvents() {
             const coords = visor360.mouseEventToCoords(mock); if (coords && !isNaN(coords[0])) { pickedPin.pitch = parseFloat(coords[0].toFixed(2)); pickedPin.yaw = parseFloat(coords[1].toFixed(2)); } pickedPin = null; document.getElementById('ghost-pin').classList.remove('active'); refreshAllHotspots(); saveToLocal(); return;
         }
         const timeDiff = Date.now() - startTime; const moveDist = Math.sqrt( Math.pow(mock.clientX - startX, 2) + Math.pow(mock.clientY - startY, 2) );
-        if (timeDiff < 500 && moveDist < 10) {
+        const moveLimit = (isArquitecto2Active || isDevModeDrawActive) ? 25 : 10;
+        if (timeDiff < 500 && moveDist < moveLimit) {
             if (isArquitecto2Active && visor360) { console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360); console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360); console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360);
                 const isDbl = Date.now() - lastClickTime < 350;
                 arq2_onPanoramaClick(mock, isDbl);
@@ -740,6 +746,7 @@ async function initPannellum() {
     }, {passive: true});
     window.addEventListener('touchend', (e) => { 
         if (!e.touches || e.touches.length === 0) { threeIsDragging = false; threeLastPinchDist = -1; }
+        window.kpkMouseX = undefined; window.kpkMouseY = undefined;
     });
     window.addEventListener('touchmove', (e) => {
         if (window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv || (window.arquitecto3D && window.arquitecto3D.draggingInfo)) return;
