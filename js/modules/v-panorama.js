@@ -608,8 +608,7 @@ async function initPannellum() {
                     const ratioY = Math.max(-1, Math.min(1, p.y / radius));
                     const pitch = Math.asin(ratioY) * (180 / Math.PI);
                     const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
-                    console.log(`[Antigravity Debug] Click en: pitch=${pitch.toFixed(2)}, yaw=${yaw.toFixed(2)}. Si ves un signo negativo en yaw (ej: -yaw) en tu consola, tu navegador no ha actualizado el archivo!`);
-                    return [pitch, -yaw];
+                    return [pitch, yaw];
                 }
             }
             return [threePitch, threeYaw];

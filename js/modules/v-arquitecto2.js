@@ -295,7 +295,7 @@ function arq2_getCameraContext() {
     const container = document.getElementById('panorama-container');
     if (!visor360 || !container) return null;
     const w = container.clientWidth, h = container.clientHeight;
-    const cp = visor360.getPitch() * Math.PI / 180, cy = visor360.getYaw() * Math.PI / 180, hfov = visor360.getHfov();
+    const cp = visor360.getPitch() * Math.PI / 180, cy = -visor360.getYaw() * Math.PI / 180, hfov = visor360.getHfov();
     const sin_cp = Math.sin(cp), cos_cp = Math.cos(cp);
     const f = 0.5 * w / Math.tan(hfov * Math.PI / 360), cx = w / 2, cy_screen = h / 2;
     function getCam(pitch, yaw) {
