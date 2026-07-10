@@ -32,19 +32,6 @@ Por cada tarea o bug, la respuesta debe incluir estrictamente:
 - **Micro-intervenciones:** Los problemas complejos casi siempre tienen soluciones diminutas. Sé tan analítico y pragmático como Sonnet. Identifica la causa raíz exacta, sin adivinar, y aplica la modificación más pequeña, segura y quirúrgica posible.
 
 ## Protocolo Auto-Learn (Memoria Evolutiva)
-- **Extracción Automática:** Al finalizar con éxito una tarea compleja o resolver un bug crítico que involucró la arquitectura del motor, debes realizar una autoevaluación silenciosa de la lección técnica aprendida.
-- **Registro Inmediato:** Sin necesidad de que el usuario lo pida, utiliza tus herramientas de modificación de archivos para añadir esa lección técnica a este archivo `AGENTS.md` (bajo una sección de "Lecciones Históricas"). Esto garantiza que el sistema aprenda automáticamente de sus victorias y nunca repita un enfoque fallido en el futuro.
-
-## Lecciones Hist ricas
-- **Sustituci n de Core Engines (Reemplazo de Pannellum por Three.js):** Al reemplazar un motor central del cual depend a el resto del ecosistema, no basta con emular los m todos o inicializar la gr fica. Se debe auditar el **ciclo de vida cronol gico completo** del arranque (desde DOMContentLoaded hasta el renderizado inicial) para descubrir configuraciones impl citas (ej. hotSpots: getHotspotsConfig() que inyectaba los datos al nacer el visor). Tambi n se debe revisar el impacto de la remoci n del n cleo CSS (pannellum.css) sobre la interfaz sat lite (como la p rdida de position: absolute en los pines) y asegurar que las funciones simuladas en el Mock API que manejan animaciones (lookAt con interpolaci n de tiempo) sean programadas expl citamente para recrear el timing exacto de la experiencia del usuario (ej. vuelos cinem ticos de 3 segundos), ya que otros procesos as ncronos (setTimeout) podr an depender de la duraci n de estos eventos para detonar la interfaz.
-
-## Lecciones Historicas (Sesion 143+)
-- Pines pegados: window.arq2PinSubTool vs arq2PinSubTool son distintos en modulos. Resetear siempre directo con window.arq2PinSubTool = null.
-- Vertice fantasma Drone: usar flag window.__droneClickPending para abortar arq2_onPanoramaClick antes de agregar puntos.
-- Cinematica inactiva: arq2_setTool vuelo-cinematico debe activar arquitecto3D.isActive = true para recibir clicks.
-- No usar alert() en funciones async criticas como GlobalCloudSave.
-
-## Leccion Historica - Pines Ruta/Horizonte invisibles
 - CAUSA 1: Loop startHologramLoop tenia guard isActive==true -> pines solo se proyectaban en modo dibujo Ferrari. FIX: sacar proyeccion de pines del guard, ejecutar siempre.
 - CAUSA 2: refreshAllHotspots usaba .pnlm-hotspot-base para cleanup -> borraba los .ferrari-imported-pin que acababa de crear importPuntosHorizonte. FIX: :not(.ferrari-imported-pin) en el selector de cleanup. Mover importPuntosHorizonte DESPUES del cleanup, dentro del setTimeout.
 - CAUSA 3: generarMarcadorRuta/generarMarcadorHorizonte no estaban expuestas en window -> Ferrari llamaba window.generarMarcadorRuta() que era undefined. FIX: exponer todas las funciones de pin en window al final de v-smartpin.js.

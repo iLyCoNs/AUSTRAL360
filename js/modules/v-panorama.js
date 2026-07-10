@@ -608,7 +608,11 @@ async function initPannellum() {
                     const ratioY = Math.max(-1, Math.min(1, p.y / radius));
                     const pitch = Math.asin(ratioY) * (180 / Math.PI);
                     const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
-                    return [pitch, yaw];
+                    // getVectorFromPitchYaw usa phi=-pitch y theta=-yaw
+                    // raycaster: atan2(p.x,-p.z) = atan2(sin(-yaw),...) = -yaw_real -> negar para yaw_real
+                    // pitch: asin(p.y/r) con p.y = sin(phi) = sin(-pitch_real) = -sin(pitch_real)
+                    //        -> pitch_raycaster = asin(-sin(pitch_real)) = -pitch_real -> negar tambien
+                    return [-pitch, -yaw];
                 }
             }
             return [threePitch, threeYaw];
