@@ -1167,6 +1167,8 @@ const ARQ2_STEPS = [
     { tool: 'fila-calle', id: 'select', text: 'Haz clic sobre el borde INTERIOR de una calle para seleccionarlo como frente de los lotes.' },
     { tool: 'fila-calle', id: 'depth', text: 'Ajusta la profundidad con el slider y haz clic en «Definir Lotes».' },
     { tool: 'fila-calle', id: 'modal', text: 'Indica cuántos lotes y sus m² en la ventana — se generan alineados a la calle.' },
+    { tool: 'kprano-capsule', id: 'corners', text: 'KpranoKiller: Haz clic en el cielo o terreno para anclar una cápsula espacial 3D.' },
+    { tool: 'kprano-capsule', id: 'edit',    text: 'Las cápsulas se pegan perfectamente a la foto. Soporta HTML avanzado y Glassmorphism.' },
     { tool: 'smart-pin-v2', id: 'corners', text: 'Haz clic sobre cualquier lote libre o zona del terreno — se abrirá el editor premium para completar datos (número, precio, superficie, estado, video 360).' },
     { tool: 'smart-pin-v2', id: 'edit',    text: 'Doble clic sobre un pin existente para editar. Arrastra con el modo Pines (Ctrl+P) activo. Botones ✎/🗑 en hover para editar o eliminar.' }
 ];

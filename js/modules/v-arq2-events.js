@@ -146,7 +146,7 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     // Para Smart Pin V2 usamos siempre nuestra función propia
     // que NO depende de que el event.target sea el canvas WebGL
     let rawCoords;
-    if (arq2Tool === 'smart-pin-v2') {
+    if (arq2Tool === 'smart-pin-v2' || arq2Tool === 'kprano-capsule') {
         rawCoords = arq2_screenToPanoCoords(mock.clientX, mock.clientY);
     } else {
         rawCoords = visor360.mouseEventToCoords(mock);
@@ -222,6 +222,23 @@ function arq2_onPanoramaClick(mock, isDblClick) {
             }
             return;
         }
+    }
+
+    // === KPRANO KILLER: Crear cápsula espacial 2030 ===
+    if (arq2Tool === 'kprano-capsule') {
+        const newCapsule = {
+            id: 'kpk_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+            tipo: 'kprano-capsule',
+            puntos: [[p, y]],
+            titulo: 'Punto de Interés',
+            icono: 'star'
+        };
+        allDrawnLines.push(newCapsule);
+        GlobalCloudSave();
+        syncSVGElements();
+        updateSVGPaths();
+        arq2_setStatusText('✨ Cápsula espacial anclada en [' + p + ', ' + y + ']');
+        return;
     }
 
     if (arq2Tool === 'fila-variable' && arq2LinePoints.length === 0) arq2_stopDemoAnimation();

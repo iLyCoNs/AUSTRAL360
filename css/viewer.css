@@ -839,3 +839,122 @@ body.panorama-dragging .ferrari-lote-pin .smart-pin-wrapper {
     pointer-events: none !important;
     transition: opacity 0.1s;
 }
+
+/* ==============================================================
+   KPRANOKILLER - CÃPSULAS ESPACIALES 2030 (Spatial UI)
+   ============================================================== */
+.kpk-capsule-container {
+    width: 240px;
+    height: 240px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 20px;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* El punto de anclaje luminoso en el suelo */
+.kpk-anchor-dot {
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 15px 4px rgba(255, 255, 255, 0.8), 0 0 30px rgba(0, 195, 255, 0.6);
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+/* El lÃ¡ser/lÃ­nea de conexiÃ³n */
+.kpk-anchor-line {
+    width: 1px;
+    height: 30px;
+    background: linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0));
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+/* La cÃ¡psula Glassmorphism Flotante */
+.kpk-content {
+    background: rgba(20, 20, 25, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 30px;
+    padding: 8px 16px 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 2px 15px rgba(255,255,255,0.05);
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 3;
+}
+
+.kpk-capsule-container:hover .kpk-content {
+    transform: translateY(-8px) scale(1.05);
+    background: rgba(30, 30, 35, 0.7);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.6), inset 0 2px 15px rgba(255,255,255,0.1);
+}
+
+.kpk-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffffff, #d1d5db);
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: transform 0.4s;
+}
+
+.kpk-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kpk-capsule-container:hover .kpk-icon {
+    transform: rotate(15deg) scale(1.1);
+}
+
+.kpk-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Anillo de pulso hologrÃ¡fico en el suelo */
+.kpk-ring-pulse {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transform: translateX(-50%) rotateX(70deg);
+    animation: kpk-pulse 3s infinite cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px rgba(0, 195, 255, 0.4) inset, 0 0 10px rgba(0, 195, 255, 0.4);
+}
+
+@keyframes kpk-pulse {
+    0% { transform: translateX(-50%) rotateX(70deg) scale(0.5); opacity: 1; border-width: 2px; }
+    100% { transform: translateX(-50%) rotateX(70deg) scale(3); opacity: 0; border-width: 0px; }
+}

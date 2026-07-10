@@ -118,6 +118,36 @@ function syncSVGElements() {
                 gPrev.appendChild(pPrev);
                 lLotes.appendChild(gPrev);
                 DOMCache.paths[line.id] = { base: [pPrev] };
+            } else if (line.tipo === 'kprano-capsule') {
+                const fObj = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+                fObj.dataset.lineId = line.id;
+                fObj.dataset.tipo = line.tipo;
+                fObj.setAttribute('width', '240');
+                fObj.setAttribute('height', '240');
+                fObj.style.overflow = 'visible';
+                
+                const capsuleHtml = `
+                    <div class="kpk-capsule-container">
+                        <div class="kpk-ring-pulse"></div>
+                        <div class="kpk-content">
+                            <div class="kpk-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            </div>
+                            <div class="kpk-text">${line.titulo || 'Punto 3D'}</div>
+                        </div>
+                        <div class="kpk-anchor-line"></div>
+                        <div class="kpk-anchor-dot"></div>
+                    </div>
+                `;
+                fObj.innerHTML = capsuleHtml;
+                bindSvgEraser(fObj, line.id);
+                
+                fObj.addEventListener('click', (e) => {
+                    // Logic to edit pin can go here
+                });
+                
+                lLotes.appendChild(fObj);
+                DOMCache.paths[line.id] = { base: [fObj] };
             } else {
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.dataset.lineId = line.id; g.dataset.tipo = line.tipo; g.classList.add('lote-interactivo'); 
                 const pBase = document.createElementNS("http://www.w3.org/2000/svg", "path"); 
@@ -247,6 +277,23 @@ function updateSVGPaths() {
             arq2_syncOrganicLotePaths(lineData, cacheObj, getCam, cx, cy_screen, f);
             return;
         }
+
+        if (lineData.tipo === 'kprano-capsule' && cacheObj.base) {
+            const fObj = cacheObj.base[0];
+            const pt = lineData.puntos[0];
+            const c = getCam(pt[0], pt[1]);
+            if (c.z <= 0.0001) {
+                fObj.style.display = 'none';
+            } else {
+                fObj.style.display = 'block';
+                const px = cx + (c.x / c.z) * f;
+                const py = cy_screen - (c.y / c.z) * f;
+                fObj.setAttribute('x', px - 120);
+                fObj.setAttribute('y', py - 120);
+            }
+            return;
+        }
+
         let dBase = '';
         let pts = lineData.puntos;
         if (lineData.tipo === 'franja-curva-grupo') pts = [...lineData.frente, ...[...lineData.fondo].reverse()];
