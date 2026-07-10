@@ -389,11 +389,11 @@ let arq2FilaCalle = null; // { streetId, side ('left'|'right'), borderPts, depth
 
 function getCloseSnapScreenRadiusPx() {
     const hfov = visor360?.getHfov?.() || DEFAULT_HFOV;
-    return Math.max(6, Math.min(16, 10 / (100 / hfov)));
+    return Math.max(15, Math.min(30, 20 / (100 / hfov))); // Hitbox más amigable
 }
 function getCloseSnapPanoramaThreshold() {
     const hfov = visor360?.getHfov?.() || DEFAULT_HFOV;
-    return Math.max(1.0, SNAP_DISTANCE * 0.22 * (hfov / DEFAULT_HFOV));
+    return Math.max(1.5, SNAP_DISTANCE * 0.35 * (hfov / DEFAULT_HFOV));
 }
 function canTriggerPolygonAutoClose() {
     const last = isArquitecto2Active ? lastArq2DrawClickMs : lastDevDrawClickMs;

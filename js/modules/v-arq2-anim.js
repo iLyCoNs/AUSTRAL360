@@ -254,13 +254,8 @@ function arq2_getNextLoteNumero() {
     return String(max + 1).padStart(2, '0');
 }
 function arq2_applyAutoFill(entry) {
-    const autoNum = arq2Tool === 'relleno-auto';
+    // BUG FIX: Eliminado el prompt() nativo
     let numero = arq2_getNextLoteNumero();
-    if (!autoNum) {
-        const inp = prompt('Número de lote (Enter = correlativo):', numero);
-        if (inp === null) return false;
-        if (inp.trim()) numero = inp.trim().padStart(2, '0');
-    }
     entry.arq2Numero = numero;
     entry.franjaNumero = numero;
     entry.loteStatus = 'disponible';

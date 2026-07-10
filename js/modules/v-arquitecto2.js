@@ -2567,13 +2567,9 @@ function arq2_getNextLoteNumero() {
 }
 
 function arq2_applyAutoFill(entry) {
-    const autoNum = arq2Tool === 'relleno-auto';
+    // BUG FIX: Eliminado el prompt() nativo que bloquea el hilo en móviles y Chromium iframes.
+    // Lote libre (Lápiz) y relleno-auto ahora asumen correlativo automático transparente.
     let numero = arq2_getNextLoteNumero();
-    if (!autoNum) {
-        const inp = prompt('NÃƒÂºmero de lote (Enter = correlativo):', numero);
-        if (inp === null) return false;
-        if (inp.trim()) numero = inp.trim().padStart(2, '0');
-    }
     entry.arq2Numero = numero;
     entry.franjaNumero = numero;
     entry.loteStatus = 'disponible';
@@ -2624,8 +2620,9 @@ function arq2_setTool(tool) {
     if (tool === 'fila-variable' && isArquitecto2Active) arq2_startDemoAnimation(false);
     if (tool === 'fila-calle') arq2_setupFilaCalleListeners();
 
-    // Limpiar puntos de polígono para evitar que el primer click tras cambio de tool agregue vértices fantasma
+    // Limpiar puntos de polígono y flags conflictivos para evitar bloqueos
     arq2LinePoints = [];
+    window.__droneClickPending = false;
 }
 
 function arq2_toggleArquitecto2(force) {

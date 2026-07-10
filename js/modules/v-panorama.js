@@ -705,6 +705,7 @@ async function initPannellum() {
         threeIsDragging = true; threeLastMouseX = e.clientX; threeLastMouseY = e.clientY; 
     });
     window.addEventListener('mouseup', () => { threeIsDragging = false; });
+    window.kpkMouseX = -100; window.kpkMouseY = -100; // Cold-start fallback
     window.addEventListener('mousemove', (e) => {
         window.kpkMouseX = e.clientX;
         window.kpkMouseY = e.clientY;

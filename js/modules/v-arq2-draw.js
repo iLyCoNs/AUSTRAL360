@@ -1,71 +1,9 @@
+/*
+// MIGRADO A v-arquitecto2.js para centralizar
 function arq2_finishLoteOrganico(rawPoints, useCostura) {
-    const minPts = useCostura ? 2 : 3;
-    if (!rawPoints || rawPoints.length < minPts) return;
-    // Snap vertices to existing neighbor polygons for both costura and standard lote-libre
-    // so they align perfectly without gaps or overlaps
-    const snappedRaw = arq2_snapVerticesToExisting(rawPoints);
-    const anchors = snappedRaw.map(p => [...p]);
-    const smoothIntensity = arq2SmoothIntensity;
-    let smoothed;
-
-    // Special case: costura = dividing line — try to split parent lot first
-    if (useCostura && snappedRaw.length >= 2) {
-        const splitOK = arq2_trySplitParentLote(snappedRaw);
-        // Always save the dashed dividing line (visible separator on top of the two new lots)
-        const id = 'arq2_org_' + Date.now();
-        const costuraEstiloGuardado = arq2CosturaStyle || 'punteada';
-        const entry = {
-            id, tipo: 'lote-organico',
-            puntos: snappedRaw.map(p => [...p]),
-            sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {},
-            costuraStyle: costuraEstiloGuardado,
-            costuraEstilo: costuraEstiloGuardado,
-            esDivisoria: true
-        };
-        allDrawnLines.push(entry);
-        arq2_clearDraft();
-        refreshAllHotspots(true);
-        saveToLocal();
-        flashScreenSuccess();
-        arq2_setStatusText(splitOK ? 'Lote subdividido ✓' : 'Línea divisoria guardada ✓');
-        return;
-    }
-
-    // For costura with 3+ points: clip to parent lot boundary before saving
-    if (useCostura) {
-        // For costura (internal subdivisions): keep anchor points exact, minimal smoothing
-        smoothed = arq2_adaptiveSmooth(snappedRaw, null, Math.min(smoothIntensity, 2));
-        smoothed = arq2_restoreAnchoredVertices(smoothed, anchors, 0.04);
-        // Clip: any vertex that escaped the parent lot boundary is projected back onto it
-        smoothed = arq2_clipCosturaToParent(smoothed);
-
-    } else {
-
-        smoothed = arq2_adaptiveSmooth(snappedRaw, null, smoothIntensity);
-        smoothed = arq2_restoreAnchoredVertices(smoothed, anchors, 0.08);
-    }
-    smoothed = arq2_sanitizePolylinePoints(smoothed);
-    if (smoothed.length < 3) return;
-    const id = 'arq2_org_' + Date.now();
-    const costuraEstiloGuardado = useCostura ? (arq2CosturaStyle || 'punteada') : null;
-    const entry = { id, tipo: 'lote-organico', puntos: smoothed, sharedSegs: [], sharedSegStyles: {}, sharedSegMeta: {}, suavizadoIntensidad: smoothIntensity };
-    if (useCostura) {
-        entry.costuraStyle = costuraEstiloGuardado;
-        entry.costuraEstilo = costuraEstiloGuardado;
-    }
-    if (!arq2_applyAutoFill(entry)) return;
-    allDrawnLines.push(entry);
-    // Register shared edges so adjacent lots (costura and standard lote-libre)
-    // automatically find their shared boundaries and style them as single dashed lines.
-    arq2_registerSharedEdges(id);
-    const areaM2 = arq2_calculateRealAreaM2(smoothed);
-    if (areaM2 > 0 && areaM2 < 15) arq2_showSmallShapeSmoothHint(id);
-    arq2_clearDraft();
-    refreshAllHotspots(true);
-    saveToLocal();
-    flashScreenSuccess();
-    arq2_setStatusText('Lote ' + entry.arq2Numero + ' guardado ✓');
+    // ... codigo en v-arquitecto2.js
 }
+*/
 
 function arq2_shouldAutoCloseAt(p, y, isDblClick) {
     const pts = arq2_getActiveDrawPoints();
