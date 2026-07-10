@@ -434,55 +434,5 @@ function arq2_refreshFeedbackVisuals(mock) {
         }
     }
 }
-function arq2_updateLiveCounter(mock) {
-    const el = document.getElementById('arq2-live-counter');
-    const tip = document.getElementById('arq2-invasion-tooltip');
-    if (!el || !mock) return;
-    const pts = arq2_getActiveDrawPoints();
-    if (pts.length === 0) { el.style.display = 'none'; return; }
-    el.style.display = 'block';
-    el.style.left = mock.clientX + 'px';
-    el.style.top = mock.clientY + 'px';
-    if (arq2Tool === 'fila-variable' && document.getElementById('franja-lotes-modal')?.classList.contains('open')) {
-        const weights = getFranjaModalWeights();
-        const total = weights.reduce((a, b) => a + b, 0);
-        const activeIdx = Math.min(weights.length - 1, Math.max(0, document.querySelector('.franja-weight-input:focus') ? Array.from(document.querySelectorAll('.franja-weight-input')).indexOf(document.activeElement) : 0));
-        const current = weights[activeIdx] || 0;
-        el.textContent = 'Lote actual: ' + current + ' m² | Total hilera: ' + total + ' m²';
-    } else {
-        el.textContent = 'Vértices: ' + pts.length + (arq2Tool === 'fila-variable' ? ' (mín. 4)' : '');
-    }
-    if (tip) {
-        if (arq2InvasionActive) {
-            tip.style.display = 'block';
-            tip.style.left = mock.clientX + 'px';
-            tip.style.top = mock.clientY + 'px';
-        } else tip.style.display = 'none';
-    }
-}
-function arq2_refreshVertexMarkers(ctx) {
-    const vertsG = document.getElementById('arq2-vertices');
-    if (!vertsG || !ctx) return;
-    const ns = 'http://www.w3.org/2000/svg';
-    const { getCam, cx, cy_screen, f } = ctx;
-    const points = arq2_getActiveDrawPoints();
-    vertsG.innerHTML = '';
-    points.forEach((pt, idx) => {
-        const c = getCam(pt[0], pt[1]);
-        if (c.z <= 0.0001) return;
-        const x = cx + (c.x / c.z) * f, y = cy_screen - (c.y / c.z) * f;
-        const circle = document.createElementNS(ns, 'circle');
-        circle.setAttribute('cx', x);
-        circle.setAttribute('cy', y);
-        if (idx === points.length - 1) {
-            circle.setAttribute('r', '6');
-            circle.classList.add('arq2-vertex-pulse');
-        } else {
-            circle.setAttribute('r', '4');
-            circle.setAttribute('fill', '#10b981');
-            circle.setAttribute('stroke', '#ffffff');
-            circle.setAttribute('stroke-width', '1');
-        }
-        vertsG.appendChild(circle);
-    });
-};
+
+

@@ -479,7 +479,7 @@ function updateSVGPaths() {
             while (circles.length < activePts.length) {
                 const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 c.setAttribute("class", "kpk-draw-vertex");
-                c.setAttribute("r", "6"); // radio SVG explícito, cross-browser
+                c.setAttribute("r", "6");
                 kpkOvl.appendChild(c);
                 circles = Array.from(kpkOvl.querySelectorAll('circle.kpk-draw-vertex'));
             }
@@ -487,7 +487,7 @@ function updateSVGPaths() {
                 circles[circles.length - 1].remove();
                 circles = Array.from(kpkOvl.querySelectorAll('circle.kpk-draw-vertex'));
             }
-            // ── Posicionar círculos ──
+            // ── Posicionar y estilizar círculos ──
             activePts.forEach(function(pt, i) {
                 const c = circles[i];
                 if (!c || !pt || pt.length < 2) return;
@@ -496,14 +496,22 @@ function updateSVGPaths() {
                     c.setAttribute("cx", String(cx + (cam.x / cam.z) * f));
                     c.setAttribute("cy", String(cy_screen - (cam.y / cam.z) * f));
                     c.style.display = '';
-                    // El primer punto recibe clase especial (cierre de polígono)
-                    if (i === 0) c.setAttribute('data-role', 'first');
-                    else if (i === activePts.length - 1) c.setAttribute('data-role', 'last');
-                    else c.setAttribute('data-role', '');
+                    // Rol del punto: first=origen, last=último activo, (vacío)=intermedio
+                    if (i === 0) {
+                        c.setAttribute('data-role', 'first');
+                        c.setAttribute('r', '8');  // Cross-browser: atributo SVG como fuente de verdad
+                    } else if (i === activePts.length - 1) {
+                        c.setAttribute('data-role', 'last');
+                        c.setAttribute('r', '7');
+                    } else {
+                        c.setAttribute('data-role', '');
+                        c.setAttribute('r', '5');
+                    }
                 } else {
                     c.style.display = 'none';
                 }
             });
+
             // ── Línea guía fantasma ──
             let guide = kpkOvl.querySelector('path.kpk-draw-guide');
             if (!guide) {

@@ -481,16 +481,18 @@ body.is-touch-device .arq2-panel { backdrop-filter: none; background: rgba(9, 11
 #arq2-rubber-band { fill: none; stroke: #10b981; stroke-width: 2; stroke-dasharray: 4 4; pointer-events: none; }
 #arq2-rubber-band.arq2-invasion-warning { stroke: #ef4444; animation: arq2Shake 0.15s infinite; }
 @keyframes arq2Shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
-.arq2-vertex-pulse { fill: rgba(16,185,129,0.35); stroke: #10b981; stroke-width: 2; animation: arq2Pulse 1.2s infinite; pointer-events: none; }
-#arq2-snap-magnet { fill: rgba(6,182,212,0.2); stroke: #06b6d4; stroke-width: 2; pointer-events: none; }
-#arq2-snap-magnet.arq2-snap-pulse { animation: arq2Pulse 1.2s infinite; }
-@keyframes arq2Pulse { 0% { r: 6; opacity: 0.8; } 100% { r: 10.8; opacity: 0; } }
+/* arq2Pulse: cross-browser usando transform:scale en vez de CSS r (r no funciona en Safari/Firefox) */
+.arq2-vertex-pulse { fill: rgba(16,185,129,0.35); stroke: #10b981; stroke-width: 2; r: 6; transform-box: fill-box; transform-origin: center; animation: arq2Pulse 1.2s ease-out infinite; pointer-events: none; }
+#arq2-snap-magnet { fill: rgba(6,182,212,0.2); stroke: #06b6d4; stroke-width: 2; r: 10; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+#arq2-snap-magnet.arq2-snap-pulse { animation: arq2Pulse 1.2s ease-out infinite; }
+@keyframes arq2Pulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.85); opacity: 0; } }
 #layer-arq2-feedback { pointer-events: none; }
 g.lote-organico, g.fila-variable-lote { isolation: isolate; mix-blend-mode: normal; }
 g.lote-organico path.linea-organico-fill, g.fila-variable-lote path.linea-organico-fill { fill-opacity: 1 !important; stroke: none !important; stroke-dasharray: none !important; mix-blend-mode: normal; pointer-events: none; }
 g[data-status="disponible"] path.linea-organico-fill { fill: rgba(var(--c-disp), 0.16) !important; }
 g[data-status="reservado"] path.linea-organico-fill { fill: rgba(var(--c-res), 0.16) !important; }
 g[data-status="vendido"] path.linea-organico-fill { fill: rgba(var(--c-vend), 0.16) !important; }
+
 g[data-status="no_disponible"] path.linea-organico-fill { fill: rgba(var(--c-nodisp), 0.16) !important; }
 /* Borde exterior de lotes Arq2 — mismo estilo premium y delgado que franja lote clásica (1.2px aprox) */
 g.lote-organico path.linea-organico-perimetro, g.fila-variable-lote path.linea-organico-perimetro { fill: none !important; stroke: rgba(255,255,255,0.94) !important; stroke-width: calc(var(--stroke-dyn) * 0.48) !important; stroke-dasharray: none !important; stroke-linecap: round !important; stroke-linejoin: round !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 1px rgba(255,255,255,0.35)); mix-blend-mode: normal; pointer-events: none; }
@@ -1300,28 +1302,40 @@ circle.kpk-draw-vertex {
     fill: #ffffff;
     stroke: #10b981;
     stroke-width: 2.5;
-    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.8));
+    filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.9));
     pointer-events: none;
-    transition: r 0.15s ease;
+    transform-box: fill-box;
+    transform-origin: center;
 }
 circle.kpk-draw-vertex[data-role="first"] {
     fill: #10b981;
     stroke: #ffffff;
     stroke-width: 2;
-    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 1));
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 1));
+    animation: kpkFirstPulse 1.4s ease-in-out infinite;
 }
 circle.kpk-draw-vertex[data-role="last"] {
     fill: #fbbf24;
     stroke: #ffffff;
-    stroke-width: 2;
-    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.9));
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 1));
+    animation: kpkLastPulse 0.9s ease-in-out infinite;
 }
 path.kpk-draw-guide {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.55);
-    stroke-width: 1.5;
-    stroke-dasharray: 5 5;
+    stroke: rgba(255, 255, 255, 0.6);
+    stroke-width: 1.8;
+    stroke-dasharray: 6 5;
     pointer-events: none;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
+}
+@keyframes kpkFirstPulse {
+    0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 1)); }
+    50% { transform: scale(1.35); opacity: 0.8; filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.9)); }
+}
+@keyframes kpkLastPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.9)); }
+    50% { transform: scale(1.25); filter: drop-shadow(0 0 16px rgba(251, 191, 36, 1)); }
 }
 
 /* ============================================================
