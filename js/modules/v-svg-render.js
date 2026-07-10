@@ -427,10 +427,10 @@ function updateSVGPaths() {
                     let lastPt = pts[pts.length - 1];
                     if (lastPt && lastPt.length >= 2) {
                         let cLast = getCam(lastPt[0], lastPt[1]);
-                        if (cLast && cLast.z > 0.0001 && window.kpkMouseX !== undefined && window.kpkMouseX > -50 && !isClosed) {
+                        if (cLast && cLast.z > 0.0001 && window.lastMouseX !== undefined && !isClosed) {
                             let rect = container.getBoundingClientRect();
-                            let mx = window.kpkMouseX - rect.left;
-                            let my = window.kpkMouseY - rect.top;
+                            let mx = window.lastMouseX - rect.left;
+                            let my = window.lastMouseY - rect.top;
                             let sx = cx + (cLast.x / cLast.z) * f;
                             let sy = cy_screen - (cLast.y / cLast.z) * f;
                             guide.setAttribute("d", `M ${sx},${sy} L ${mx},${my}`);

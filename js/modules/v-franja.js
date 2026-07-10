@@ -534,6 +534,7 @@ function getPathClassForLine(line) {
     if (line.tipo === 'divisoria') return 'linea-divisoria';
     if (line.tipo === 'borde-macro') return 'linea-borde-macro';
     if (line.tipo === 'lote-organico' || line.tipo === 'fila-variable-lote') return 'linea-solida';
+    if (line.tipo === 'lote-organico-preview') return 'linea-franja-preview';
     return 'linea-solida';
 }
 function resolveSvgLayerForLine(line, layers) {

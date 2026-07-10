@@ -203,6 +203,8 @@
         if (tool === 'limpiar-todo') {
             if (confirm("PELIGRO: Esto borrara TODOS los dibujos de la foto 360 de forma irreversible y guardara los cambios en la nube. ¿Estas absolutamente seguro?")) {
                 if (typeof allDrawnLines !== 'undefined') allDrawnLines.length = 0;
+                if (typeof arq2LinePoints !== 'undefined') arq2LinePoints.length = 0;
+                if (typeof currentLinePoints !== 'undefined') currentLinePoints.length = 0;
                 if (typeof DOMCache !== 'undefined') DOMCache.paths = {};
                 if (typeof syncSVGElements === 'function') syncSVGElements();
                 if (typeof updateSVGPaths === 'function') updateSVGPaths();
