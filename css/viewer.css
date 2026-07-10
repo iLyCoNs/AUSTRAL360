@@ -1269,7 +1269,7 @@ body.panorama-dragging .ferrari-lote-pin .smart-pin-wrapper {
 body.kpk-edit #kpk-fab { display: flex !important; }
 body.kpk-edit #kpk-panel { pointer-events: auto; }
 
-/* KPK: Vertices Premium y Guia */
+/* KPK: Vertices Premium y Guia (legacy, mantenidos para VertexEditor) */
 .kpk-vertex {
     fill: #ffffff;
     stroke: rgba(0, 0, 0, 0.4);
@@ -1288,6 +1288,38 @@ body.kpk-edit #kpk-panel { pointer-events: auto; }
     stroke: rgba(255, 255, 255, 0.6);
     stroke-width: 1.5px;
     stroke-dasharray: 4 4;
+    pointer-events: none;
+}
+
+/* KPK Draw Overlay: vértices activos durante el dibujo de lote libre */
+#kpk-draw-overlay {
+    pointer-events: none;
+}
+circle.kpk-draw-vertex {
+    fill: #ffffff;
+    stroke: #10b981;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.8));
+    pointer-events: none;
+    transition: r 0.15s ease;
+}
+circle.kpk-draw-vertex[data-role="first"] {
+    fill: #10b981;
+    stroke: #ffffff;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 1));
+}
+circle.kpk-draw-vertex[data-role="last"] {
+    fill: #fbbf24;
+    stroke: #ffffff;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.9));
+}
+path.kpk-draw-guide {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
     pointer-events: none;
 }
 

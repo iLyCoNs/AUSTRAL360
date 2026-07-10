@@ -4,6 +4,11 @@ function syncSVGElements() {
     if(!lBordes) { svg.innerHTML = '<g id="layer-calles-bordes"></g><g id="layer-calles-asfalto"></g><g id="layer-calles-arq2"></g><g id="layer-lotes"></g><g id="layer-aristas"></g>'; lBordes = document.getElementById('layer-calles-bordes'); lAsfalto = document.getElementById('layer-calles-asfalto'); lLotes = document.getElementById('layer-lotes'); lAristas = document.getElementById('layer-aristas'); }
     let lCallesArq2 = document.getElementById('layer-calles-arq2');
     if (!lCallesArq2 && svg) { lCallesArq2 = document.createElementNS("http://www.w3.org/2000/svg", "g"); lCallesArq2.id = 'layer-calles-arq2'; svg.insertBefore(lCallesArq2, lLotes); }
+    // Overlay permanente de vértices de dibujo — SIEMPRE al final del SVG (sobre todos los layers)
+    // Se recrea si innerHTML destruyó el SVG, y se reposiciona al final si otro código lo movió.
+    let kpkDrawOverlay = document.getElementById('kpk-draw-overlay');
+    if (!kpkDrawOverlay) { kpkDrawOverlay = document.createElementNS("http://www.w3.org/2000/svg", "g"); kpkDrawOverlay.id = 'kpk-draw-overlay'; svg.appendChild(kpkDrawOverlay); }
+    else if (svg.lastElementChild !== kpkDrawOverlay) { svg.appendChild(kpkDrawOverlay); }
     const currentLineIds = allDrawnLines.map(l => l.id);
     if (currentLinePoints.length > 0) currentLineIds.push(currentTempLineId);
     if (isArquitecto2Active && arq2LinePoints.length > 0) {
@@ -395,77 +400,8 @@ function updateSVGPaths() {
         }
         
         // KPK Premium Vertices & Guide Line for Drawing Mode
-        if ((lineId === currentTempLineId || lineId === arq2TempLineId) && (lineData.tipo === 'lote-libre' || lineData.tipo === 'lote-organico-preview')) {
-            let parent = cacheObj.gNode || (cacheObj.base && cacheObj.base[0] ? cacheObj.base[0].parentNode : null);
-            if (parent && pts && pts.length > 0) {
-                try {
-                    // Sincronizar numero de circulos
-                    let circles = parent.querySelectorAll('.kpk-vertex');
-                    while (circles.length < pts.length) {
-                        let c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                        c.setAttribute("class", "kpk-vertex");
-                        // Bug 3: Fallback duro de radio nativo SVG porque WebKit/Safari ignoran "r" en CSS
-                        c.setAttribute("r", "3.5");
-                        parent.appendChild(c);
-                        circles = parent.querySelectorAll('.kpk-vertex');
-                    }
-                    while (circles.length > pts.length) {
-                        if (circles[circles.length - 1] && circles[circles.length - 1].parentNode) {
-                            circles[circles.length - 1].remove();
-                        }
-                        circles = parent.querySelectorAll('.kpk-vertex');
-                    }
-                    // Actualizar posicion de los vertices
-                    pts.forEach((pt, i) => {
-                        let c = circles[i];
-                        if (!c || !pt || pt.length < 2) return;
-                        let cam = getCam(pt[0], pt[1]);
-                        if (cam && cam.z > 0.0001) {
-                            c.setAttribute("cx", String(cx + (cam.x / cam.z) * f));
-                            c.setAttribute("cy", String(cy_screen - (cam.y / cam.z) * f));
-                            c.style.display = 'block';
-                            if (i === pts.length - 1) c.classList.add('kpk-vertex-active');
-                            else c.classList.remove('kpk-vertex-active');
-                        } else {
-                            c.style.display = 'none';
-                        }
-                    });
-                    
-                    // Guia fantasma (dashed)
-                    let guide = parent.querySelector('.kpk-guide-line');
-                    if (!guide) {
-                        guide = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        guide.setAttribute("class", "kpk-guide-line");
-                        parent.appendChild(guide);
-                    }
-                    let lastPt = pts[pts.length - 1];
-                    if (lastPt && lastPt.length >= 2) {
-                        let cLast = getCam(lastPt[0], lastPt[1]);
-                        if (cLast && cLast.z > 0.0001 && window.lastMouseX !== undefined && !isClosed) {
-                            let rect = container.getBoundingClientRect();
-                            let mx = window.lastMouseX - rect.left;
-                            let my = window.lastMouseY - rect.top;
-                            let sx = cx + (cLast.x / cLast.z) * f;
-                            let sy = cy_screen - (cLast.y / cLast.z) * f;
-                            guide.setAttribute("d", `M ${sx},${sy} L ${mx},${my}`);
-                            guide.style.display = 'block';
-                        } else {
-                            guide.style.display = 'none';
-                        }
-                    } else {
-                        guide.style.display = 'none';
-                    }
-                } catch(e) { console.error('KPK SVG Render Error:', e); }
-            }
-        } else {
-            // Cleanup si se guardó o canceló
-            let parent = cacheObj.gNode || (cacheObj.base && cacheObj.base[0] ? cacheObj.base[0].parentNode : null);
-            if (parent) {
-                parent.querySelectorAll('.kpk-vertex, .kpk-guide-line').forEach(el => {
-                    if (el && el.parentNode) el.remove();
-                });
-            }
-        }
+        // Los vértices se renderizan en #kpk-draw-overlay (overlay permanente arriba de todo)
+        // así nunca se pierden cuando syncSVGElements reinserta gPrev entre layers.
     });
     const guideEl = document.getElementById('arq2-guideline-svg');
     if (arq2Guideline && isArquitecto2Active && arq2LinePoints.length > 0 && svg) {
@@ -523,5 +459,76 @@ function updateSVGPaths() {
     // Vertex Editor: renderizar handles arrastrables sobre lotes guardados
     if (window.VertexEditor && window.VertexEditor.isActive()) {
         window.VertexEditor.renderHandles(getCam, cx, cy_screen, f);
+    }
+
+    // ── KPK Draw Overlay: vértices de dibujo activo ──────────────
+    // Se renderiza aquí (fuera del forEach de DOMCache) sobre el overlay permanente
+    // para evitar que la reinserción de gPrev pierda los elementos.
+    const kpkOvl = document.getElementById('kpk-draw-overlay');
+    if (kpkOvl) {
+        const isDrawingLote = isArquitecto2Active &&
+            (arq2Tool === 'lote-libre' || arq2Tool === 'lote-organico') &&
+            arq2LinePoints.length > 0;
+        const isDrawingOld = currentLinePoints.length > 0 &&
+            (currentLineType === 'lote-libre');
+        const activePts = isDrawingLote ? arq2LinePoints : (isDrawingOld ? currentLinePoints : null);
+
+        if (activePts && activePts.length > 0) {
+            // ── Sincronizar número de círculos ──
+            let circles = Array.from(kpkOvl.querySelectorAll('circle.kpk-draw-vertex'));
+            while (circles.length < activePts.length) {
+                const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                c.setAttribute("class", "kpk-draw-vertex");
+                c.setAttribute("r", "6"); // radio SVG explícito, cross-browser
+                kpkOvl.appendChild(c);
+                circles = Array.from(kpkOvl.querySelectorAll('circle.kpk-draw-vertex'));
+            }
+            while (circles.length > activePts.length) {
+                circles[circles.length - 1].remove();
+                circles = Array.from(kpkOvl.querySelectorAll('circle.kpk-draw-vertex'));
+            }
+            // ── Posicionar círculos ──
+            activePts.forEach(function(pt, i) {
+                const c = circles[i];
+                if (!c || !pt || pt.length < 2) return;
+                const cam = getCam(pt[0], pt[1]);
+                if (cam && cam.z > 0.0001) {
+                    c.setAttribute("cx", String(cx + (cam.x / cam.z) * f));
+                    c.setAttribute("cy", String(cy_screen - (cam.y / cam.z) * f));
+                    c.style.display = '';
+                    // El primer punto recibe clase especial (cierre de polígono)
+                    if (i === 0) c.setAttribute('data-role', 'first');
+                    else if (i === activePts.length - 1) c.setAttribute('data-role', 'last');
+                    else c.setAttribute('data-role', '');
+                } else {
+                    c.style.display = 'none';
+                }
+            });
+            // ── Línea guía fantasma ──
+            let guide = kpkOvl.querySelector('path.kpk-draw-guide');
+            if (!guide) {
+                guide = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                guide.setAttribute("class", "kpk-draw-guide");
+                kpkOvl.appendChild(guide);
+            }
+            const lastPt = activePts[activePts.length - 1];
+            if (lastPt && lastPt.length >= 2 && window.lastMouseX !== undefined) {
+                const cLast = getCam(lastPt[0], lastPt[1]);
+                if (cLast && cLast.z > 0.0001) {
+                    const rect = container.getBoundingClientRect();
+                    const mx = window.lastMouseX - rect.left;
+                    const my = window.lastMouseY - rect.top;
+                    const sx = cx + (cLast.x / cLast.z) * f;
+                    const sy = cy_screen - (cLast.y / cLast.z) * f;
+                    guide.setAttribute("d", `M ${sx},${sy} L ${mx},${my}`);
+                    guide.style.display = '';
+                } else { guide.style.display = 'none'; }
+            } else { guide.style.display = 'none'; }
+        } else {
+            // Limpiar overlay cuando no hay dibujo activo
+            kpkOvl.querySelectorAll('circle.kpk-draw-vertex').forEach(el => el.remove());
+            const g = kpkOvl.querySelector('path.kpk-draw-guide');
+            if (g) g.style.display = 'none';
+        }
     }
 }
