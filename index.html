@@ -42,6 +42,9 @@
         <div class="premium-compass-container" id="js-compass-container" title="Mantén presionado para abrir el Modo Arquitecto"><div class="compass-indicator"></div><div class="compass-dial" id="js-compass"><div class="compass-n">N</div><div class="compass-e">E</div><div class="compass-s">S</div><div class="compass-w">W</div><div class="compass-center"></div></div></div>
         <!-- KpranoKiller es el unico panel de edicion -->
         <!-- KpranoKiller: unico panel de edicion (inyectado por v-kpranokiller.js) -->
+        <!-- arq2-panel: panel fantasma oculto requerido por arq2_ensurePanelExtras() para insertar sliders internos -->
+        <div id="arq2-panel" style="display:none;position:absolute;pointer-events:none;" aria-hidden="true"></div>
+
 
         <div id="global-event-interceptor" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999999;"></div>
         <div id="arq2-live-counter"></div>

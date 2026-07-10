@@ -1311,7 +1311,16 @@ function arq2_ensurePanelExtras() {
             '<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="arq2-calle-no-snap" style="cursor:pointer;"><label for="arq2-calle-no-snap" style="cursor:pointer; margin: 0; font-size: 11px; color: #fca5a5;">Despejar puntos de arrastre (Sin imÃƒÂ¡n)</label></div>' +
             '<div style="margin-top: 10px; font-size: 11px; color: #10b981;"><i>Tip: Toca una calle ya dibujada para editarla (Color, Ancho, etc.) y presiona ENTER para guardar.</i></div>';
 
-        document.getElementById('arq2-panel').appendChild(rowEl);
+        let arq2Panel = document.getElementById('arq2-panel');
+        if (!arq2Panel) {
+            arq2Panel = document.createElement('div');
+            arq2Panel.id = 'arq2-panel';
+            arq2Panel.style.display = 'none';
+            arq2Panel.style.position = 'absolute';
+            arq2Panel.style.pointerEvents = 'none';
+            document.body.appendChild(arq2Panel);
+        }
+        arq2Panel.appendChild(rowEl);
         
         const slider = document.getElementById('arq2-calle-ancho');
         slider.addEventListener('input', (e) => {
