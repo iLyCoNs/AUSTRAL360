@@ -309,23 +309,28 @@ function arq2_getCameraContext() {
 
 function arq2_projectPolylineD(pts, isClosed, getCamFn, cx, cySc, f) {
     if (!pts || pts.length < 2) return '';
-    let d = '', hasVisible = false;
+    let d = '', hasVisible = false, wasSkipped = true;
     for (let i = 0; i < pts.length; i++) {
         const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
         if (!isClosed && i === pts.length - 1) break;
         const c1 = getCamFn(p1[0], p1[1]), c2 = getCamFn(p2[0], p2[1]);
-        if (c1.z <= 0.0001 && c2.z <= 0.0001) continue;
+        if (c1.z <= 0.0001 && c2.z <= 0.0001) {
+            wasSkipped = true;
+            continue;
+        }
         let s1, s2;
         if (c1.z > 0.0001) { s1 = { x: cx + (c1.x / c1.z) * f, y: cySc - (c1.y / c1.z) * f }; hasVisible = true; }
         else { const t = c1.z / (c1.z - c2.z); s1 = { x: cx + ((c1.x + t * (c2.x - c1.x)) / 0.0001) * f, y: cySc - ((c1.y + t * (c2.y - c1.y)) / 0.0001) * f }; }
         if (c2.z > 0.0001) { s2 = { x: cx + (c2.x / c2.z) * f, y: cySc - (c2.y / c2.z) * f }; hasVisible = true; }
         else { const t = c2.z / (c2.z - c1.z); s2 = { x: cx + ((c2.x + t * (c1.x - c2.x)) / 0.0001) * f, y: cySc - ((c2.y + t * (c1.y - c2.y)) / 0.0001) * f }; }
         if (isNaN(s1.x) || isNaN(s1.y) || isNaN(s2.x) || isNaN(s2.y)) {
-            console.warn('[Fila Variable] Punto de proyecciÃƒÂ³n invÃƒÂ¡lido', { p1, p2, s1, s2 });
+            console.warn('[Fila Variable] Punto de proyección inválido', { p1, p2, s1, s2 });
+            wasSkipped = true;
             continue;
         }
-        if (d === '') d += `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
+        if (d === '' || wasSkipped) d += `M ${s1.x},${s1.y} L ${s2.x},${s2.y} `;
         else { if (c1.z <= 0.0001) d += `M ${s1.x},${s1.y} `; d += `L ${s2.x},${s2.y} `; }
+        wasSkipped = false;
     }
     if (isClosed && d.trim()) d += ' Z';
     return hasVisible ? d : '';

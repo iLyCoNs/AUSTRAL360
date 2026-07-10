@@ -119,6 +119,22 @@ function arq2_onPanoramaClick(mock, isDblClick) {
         runEraserAtEvent(mock);
         return;
     }
+    let isLoteOrganico = (arq2Tool === 'lote-organico');
+    if (isLoteOrganico) {
+        let rawCoords;
+        if (typeof arq2_screenToPanoCoords === 'function') {
+            rawCoords = arq2_screenToPanoCoords(mock.clientX, mock.clientY);
+        } else {
+            rawCoords = visor360.mouseEventToCoords(mock);
+        }
+        if (rawCoords && !isNaN(rawCoords[0])) {
+            let coordsToSave = [rawCoords[0], rawCoords[1]];
+            console.log(`[Antigravity CLICK GUARDADO] pitch=${coordsToSave[0].toFixed(2)}, yaw=${coordsToSave[1].toFixed(2)}`);
+            arq2LinePoints.push(coordsToSave);
+            updateSVGPaths();
+            return;
+        }
+    }
     // Para Smart Pin V2 usamos siempre nuestra función propia
     // que NO depende de que el event.target sea el canvas WebGL
     let rawCoords;

@@ -370,7 +370,21 @@ function updateSVGPaths() {
                 dBase += `L ${clipped.x2},${clipped.y2} `; 
             }
         }
-        if (!isClosed && (lineId === currentTempLineId || lineId === lineaPinesTempId || lineId === arq2TempLineId) && window.lastMouseX !== undefined) { let mx = window.lastMouseX - DOMCache.viewport.left, my = window.lastMouseY - DOMCache.viewport.top; if(dBase === '' && pts.length > 0) { let c1 = getCam(pts[0][0], pts[0][1]); if(c1.z > 0) dBase += `M ${cx + (c1.x / c1.z) * f},${cy_screen - (c1.y / c1.z) * f} `; } dBase += `L ${mx},${my} `; hasVisiblePoints = true; }
+        if (!isClosed && (lineId === currentTempLineId || lineId === lineaPinesTempId || lineId === arq2TempLineId) && window.lastMouseX !== undefined) { 
+            let mx = window.lastMouseX - DOMCache.viewport.left, my = window.lastMouseY - DOMCache.viewport.top; 
+            if(dBase === '' && pts.length > 0) { 
+                let c1 = getCam(pts[0][0], pts[0][1]); 
+                if(c1.z > 0) {
+                    dBase += `M ${cx + (c1.x / c1.z) * f},${cy_screen - (c1.y / c1.z) * f} `; 
+                } else {
+                    console.log(`[Antigravity Error] c1.z <= 0! pitch=${pts[0][0].toFixed(2)}, yaw=${pts[0][1].toFixed(2)}. cp=${visor360.getPitch().toFixed(2)}, cy=${visor360.getYaw().toFixed(2)}, c1.z=${c1.z.toFixed(2)}`);
+                }
+            } 
+            if (dBase !== '') {
+                dBase += `L ${mx},${my} `; 
+                hasVisiblePoints = true; 
+            }
+        }
         if (isClosed && dBase.trim() !== '') dBase += ' Z';                 if (!hasVisiblePoints && isClosed) dBase = 'M -999 -999';
         if (cacheObj.base) {
             cacheObj.base.forEach(path => path.setAttribute("d", dBase.trim() !== '' ? dBase : 'M -999 -999'));
