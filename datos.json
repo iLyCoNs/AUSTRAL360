@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "timestamp": 1783668923709,
+  "timestamp": 1783670396319,
   "configProyecto": {
     "titulo": "PROYECTO INMOBILIARIO",
     "subtitulo": "Masterplan Interactivo 360°",
@@ -27,32 +27,6 @@
     "lng": -72.748158
   },
   "norte": 0,
-  "entidades": [
-    {
-      "id": "kpk_1783668923708_699",
-      "tipo": "kprano-capsule",
-      "puntos": [
-        [
-          60.533,
-          -127.486
-        ]
-      ],
-      "titulo": "Punto de Interés",
-      "icono": "star"
-    }
-  ],
-  "trazos": [
-    {
-      "id": "kpk_1783668923708_699",
-      "tipo": "kprano-capsule",
-      "puntos": [
-        [
-          60.533,
-          -127.486
-        ]
-      ],
-      "titulo": "Punto de Interés",
-      "icono": "star"
-    }
-  ]
+  "entidades": [],
+  "trazos": []
 }
