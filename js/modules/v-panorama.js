@@ -269,7 +269,7 @@ function bindPanoramaPointerEvents() {
         }
         const timeDiff = Date.now() - startTime; const moveDist = Math.sqrt( Math.pow(mock.clientX - startX, 2) + Math.pow(mock.clientY - startY, 2) );
         if (timeDiff < 500 && moveDist < 10) {
-            if (isArquitecto2Active && visor360) { console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360); console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360);
+            if (isArquitecto2Active && visor360) { console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360); console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360); console.log("[KPK-DEBUG] CLICK LLEGA - isArq2:", isArquitecto2Active, "arq2Tool:", window.arq2Tool, "visor360:", !!visor360);
                 const isDbl = Date.now() - lastClickTime < 350;
                 arq2_onPanoramaClick(mock, isDbl);
                 lastClickTime = Date.now();

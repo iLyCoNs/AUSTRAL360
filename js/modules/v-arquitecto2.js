@@ -3053,8 +3053,9 @@ function arq2_setup() {
     document.getElementById('arq2-panel-close')?.addEventListener('click', () => arq2_toggleArquitecto2(false));
     document.querySelectorAll('.arq2-tool-btn').forEach(btn => btn.addEventListener('click', () => arq2_setTool(btn.dataset.arq2Tool)));
     
-    arq2_bindPinV2Buttons();
-    arq2_togglePinV2UI(false);
+    if (typeof arq2_bindPinV2Buttons === 'function') arq2_bindPinV2Buttons();
+    if (typeof arq2_togglePinV2UI === 'function') arq2_togglePinV2UI(false);
+
 
     ['arq2-panel', 'franja-lotes-modal'].forEach(id => {
         const el = document.getElementById(id);
