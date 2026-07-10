@@ -44,7 +44,7 @@
     };
 
     var SVG_ICONS = {
-        'lote-libre':        '<polygon points="3 11 3 21 13 21 13 11 8 3 3 11"/>',
+        'lote-libre':        '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
         'calle-curva-arq2':  '<path d="M3 17c3-3 5-5 8-5s5 2 9 2"/><path d="M3 7c3 3 5 5 8 5s5-2 9-2"/>',
         'eraser':            '<path d="M20 20H7L3 16l13-13 4 4-6.5 6.5"/><path d="M6 15l3 5"/>',
         'relleno-auto':      '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>',
@@ -54,7 +54,7 @@
     };
 
     var LABELS = {
-        'lote-libre': 'Lote', 'calle-curva-arq2': 'Calle', 'eraser': 'Borrar',
+        'lote-libre': 'Lapiz', 'calle-curva-arq2': 'Calle', 'eraser': 'Borrar',
         'relleno-auto': 'Auto', 'fila-variable': 'Hilera',
         'kprano-capsule': 'Capsula', 'costura': 'Costura'
     };

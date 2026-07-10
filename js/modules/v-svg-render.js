@@ -379,6 +379,66 @@ function updateSVGPaths() {
                 applyCallePathStyles(cacheObj.base, st.ancho, st.alpha);
             }
         }
+        
+        // KPK Premium Vertices & Guide Line for Drawing Mode
+        if ((lineId === currentTempLineId || lineId === arq2TempLineId) && (lineData.tipo === 'lote-libre' || lineData.tipo === 'lote-organico-preview')) {
+            let parent = cacheObj.gNode || (cacheObj.base && cacheObj.base[0] ? cacheObj.base[0].parentNode : null);
+            if (parent && pts.length > 0) {
+                // Sincronizar numero de circulos
+                let circles = parent.querySelectorAll('.kpk-vertex');
+                while (circles.length < pts.length) {
+                    let c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    c.setAttribute("class", "kpk-vertex");
+                    parent.appendChild(c);
+                    circles = parent.querySelectorAll('.kpk-vertex');
+                }
+                while (circles.length > pts.length) {
+                    circles[circles.length - 1].remove();
+                    circles = parent.querySelectorAll('.kpk-vertex');
+                }
+                // Actualizar posicion de los vertices
+                pts.forEach((pt, i) => {
+                    let c = circles[i];
+                    let cam = getCam(pt[0], pt[1]);
+                    if (cam.z > 0.0001) {
+                        c.setAttribute("cx", String(cx + (cam.x / cam.z) * f));
+                        c.setAttribute("cy", String(cy_screen - (cam.y / cam.z) * f));
+                        c.style.display = 'block';
+                        if (i === pts.length - 1) c.classList.add('kpk-vertex-active');
+                        else c.classList.remove('kpk-vertex-active');
+                    } else {
+                        c.style.display = 'none';
+                    }
+                });
+                
+                // Guia fantasma (dashed)
+                let guide = parent.querySelector('.kpk-guide-line');
+                if (!guide) {
+                    guide = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    guide.setAttribute("class", "kpk-guide-line");
+                    parent.appendChild(guide);
+                }
+                let lastPt = pts[pts.length - 1];
+                let cLast = getCam(lastPt[0], lastPt[1]);
+                if (cLast.z > 0.0001 && window.kpkMouseX !== undefined && !isClosed) {
+                    let rect = container.getBoundingClientRect();
+                    let mx = window.kpkMouseX - rect.left;
+                    let my = window.kpkMouseY - rect.top;
+                    let sx = cx + (cLast.x / cLast.z) * f;
+                    let sy = cy_screen - (cLast.y / cLast.z) * f;
+                    guide.setAttribute("d", `M ${sx},${sy} L ${mx},${my}`);
+                    guide.style.display = 'block';
+                } else {
+                    guide.style.display = 'none';
+                }
+            }
+        } else {
+            // Cleanup si se guardó o canceló
+            let parent = cacheObj.gNode || (cacheObj.base && cacheObj.base[0] ? cacheObj.base[0].parentNode : null);
+            if (parent) {
+                parent.querySelectorAll('.kpk-vertex, .kpk-guide-line').forEach(el => el.remove());
+            }
+        }
     });
     const guideEl = document.getElementById('arq2-guideline-svg');
     if (arq2Guideline && isArquitecto2Active && arq2LinePoints.length > 0 && svg) {

@@ -706,6 +706,8 @@ async function initPannellum() {
     });
     window.addEventListener('mouseup', () => { threeIsDragging = false; });
     window.addEventListener('mousemove', (e) => {
+        window.kpkMouseX = e.clientX;
+        window.kpkMouseY = e.clientY;
         if(!threeIsDragging || window.draggingVertex || window.draggingCalleMove || window.draggingFranjaDiv || (window.arquitecto3D && window.arquitecto3D.draggingInfo)) return;
         const dx = e.clientX - threeLastMouseX;
         const dy = e.clientY - threeLastMouseY;

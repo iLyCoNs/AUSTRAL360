@@ -1268,3 +1268,25 @@ body.panorama-dragging .ferrari-lote-pin .smart-pin-wrapper {
 #kpk-fab { display: none !important; }
 body.kpk-edit #kpk-fab { display: flex !important; }
 body.kpk-edit #kpk-panel { pointer-events: auto; }
+
+/* KPK: Vertices Premium y Guia */
+.kpk-vertex {
+    fill: #ffffff;
+    stroke: rgba(0, 0, 0, 0.4);
+    stroke-width: 1.5px;
+    r: 3.5px;
+    transform-origin: center;
+    transition: r 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+}
+.kpk-vertex-active {
+    r: 5px;
+    stroke: rgba(16, 185, 129, 0.8);
+}
+.kpk-guide-line {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.6);
+    stroke-width: 1.5px;
+    stroke-dasharray: 4 4;
+    pointer-events: none;
+}
