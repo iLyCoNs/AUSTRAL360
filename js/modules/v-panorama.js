@@ -527,9 +527,9 @@ async function initPannellum() {
 
     window.visor360 = {
         getPitch: () => threePitch,
-        getYaw: () => -threeYaw,
+        getYaw: () => threeYaw,
         setPitch: (p, time) => { if (time) window.visor360.lookAt(p, undefined, undefined, time); else { threePitch = p; threeTargetPitch = p; } },
-        setYaw: (y, time) => { if (time) window.visor360.lookAt(undefined, y, undefined, time); else { threeYaw = -y; threeTargetYaw = -y; } },
+        setYaw: (y, time) => { if (time) window.visor360.lookAt(undefined, y, undefined, time); else { threeYaw = y; threeTargetYaw = y; } },
         getHfov: () => threeCamera.fov,
         setHfov: (f, time) => { if (time) window.visor360.lookAt(undefined, undefined, f, time); else { threeCamera.fov = f; threeCamera.updateProjectionMatrix(); } },
         getThreeScene: () => threeScene,
@@ -542,7 +542,7 @@ async function initPannellum() {
             threeRenderer.setSize(window.innerWidth, window.innerHeight);
         },
         lookAt: (pitch, yaw, hfov, time) => {
-            const finalYaw = yaw !== undefined ? -yaw : undefined;
+            const finalYaw = yaw !== undefined ? yaw : undefined;
             if (time && time > 0) {
                 const startTime = Date.now();
                 const startPitch = threeTargetPitch;
@@ -609,7 +609,7 @@ async function initPannellum() {
                     const pitch = Math.asin(ratioY) * (180 / Math.PI);
                     const yaw = Math.atan2(p.x, -p.z) * (180 / Math.PI);
                     console.log(`[Antigravity Debug] Click en: pitch=${pitch.toFixed(2)}, yaw=${yaw.toFixed(2)}. Si ves un signo negativo en yaw (ej: -yaw) en tu consola, tu navegador no ha actualizado el archivo!`);
-                    return [pitch, yaw];
+                    return [pitch, -yaw];
                 }
             }
             return [threePitch, threeYaw];
