@@ -79,13 +79,7 @@ window.arquitecto3D = {
                 if (row) row.style.display = 'none';
                 toolHandled = true;
             }
-            else if (tool === 'smart-pin-v2') {
-                this.currentTool = 'smart-pin';
-                const row = document.getElementById('arq2-calle-curva-row');
-                if (row) row.style.display = 'none';
-                if (typeof window.abrirSubMenuPines === 'function') window.abrirSubMenuPines();
-                toolHandled = true;
-            }
+
 
             if (toolHandled) {
                 document.querySelectorAll('.arq2-tool-btn').forEach(btn => btn.classList.remove('active'));

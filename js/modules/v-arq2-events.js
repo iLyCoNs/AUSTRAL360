@@ -154,79 +154,7 @@ function arq2_onPanoramaClick(mock, isDblClick) {
     const coords = rawCoords;
     if (!coords || isNaN(coords[0])) return;
     
-    if (arq2Tool === 'smart-pin-v2') {
-        let p = parseFloat(coords[0].toFixed(3)), y = parseFloat(coords[1].toFixed(3));
-        let tipoFinal = 'lote';
-        let statusFinal = 'disponible';
-        let tituloFinal = 'Lote 00';
 
-        if (window.arq2PinSubTool) {
-            tipoFinal = window.arq2PinSubTool;
-            if (tipoFinal === 'horizonte') tituloFinal = prompt('📡 PIN HORIZONTE\nTítulo (ej: Volcán Osorno):');
-            else if (tipoFinal === 'ruta') tituloFinal = prompt('🚗 PIN RUTA\nTítulo (ej: Ruta V-30):');
-            else if (tipoFinal === 'vista360') tituloFinal = 'VISTA 360';
-            else if (tipoFinal === 'casa360') tituloFinal = 'CASA TOUR';
-            
-            // Si el prompt fue cancelado
-            if (tituloFinal === null) return;
-        }
-
-        // NO lo insertamos en BaseDatosLotes/PuntosHorizonte aquí
-        // eso lo hace btnSavePin del modal cuando isNew=true
-        let nuevoPin = {
-            pitch: p,
-            yaw: y,
-            tipo: tipoFinal,
-            titulo: tituloFinal,
-            numero: '00',
-            precio: 'UF 0',
-            superficie: '0 m2',
-            status: statusFinal,
-            videoUrl: '',
-            coordenadasDestino: '',
-            createTooltipFunc: generarSmartPin,
-            createTooltipArgs: null
-        };
-        nuevoPin.createTooltipArgs = nuevoPin;
-        if (!window.BaseDatosLotes) window.BaseDatosLotes = [];
-        if (!window.PuntosHorizonte) window.PuntosHorizonte = [];
-
-        // Abrir el modal premium
-        if (typeof openPinEditor === 'function') {
-            openPinEditor(nuevoPin, true);
-            // Hook: cuando el modal se cierre (por Save o Cancel), verificar si el pin se guardó
-            const modalEl = document.getElementById('pin-editor-modal');
-            const observer = new MutationObserver(() => {
-                if (!modalEl.classList.contains('open')) {
-                    observer.disconnect();
-                    // Verificar si btnSavePin insertó nuestro objeto en alguno de los arrays
-                    const wasSaved = window.BaseDatosLotes.includes(nuevoPin) || window.PuntosHorizonte.includes(nuevoPin);
-                    if (wasSaved) {
-                        try {
-                            nuevoPin.createTooltipArgs = nuevoPin;
-                            nuevoPin.createTooltipFunc = generarSmartPin;
-                            visor360.addHotSpot(nuevoPin);
-                            if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
-                            if (typeof window.saveToLocal === 'function') window.saveToLocal();
-                            if (typeof window.refreshAllHotspots === 'function') window.refreshAllHotspots();
-                        } catch(err) { console.warn('[PinV2] addHotSpot error:', err); }
-                    }
-                }
-            });
-            observer.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
-        } else {
-            // Fallback
-            if (tipoFinal === 'horizonte' || tipoFinal === 'ruta') window.PuntosHorizonte.push(nuevoPin);
-            else window.BaseDatosLotes.push(nuevoPin);
-            try {
-                visor360.addHotSpot(nuevoPin);
-                if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
-                if (typeof window.saveToLocal === 'function') window.saveToLocal();
-            } catch(e) { console.warn('[PinV2] fallback error:', e); }
-        }
-        return;
-    }
-    
     let p = parseFloat(coords[0].toFixed(3)), y = parseFloat(coords[1].toFixed(3));
     // Snap on click ONLY for costura, calle-curva, and lote-libre (street edges only).
     // For lote-libre: only snap when the snap target is a street (aligns lot to calle inner border).

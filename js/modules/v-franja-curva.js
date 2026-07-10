@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // SVG #loteo-svg ya está declarado en el HTML como capa fija independiente.
     // NO recrearlo ni moverlo: hacerlo lo mete en el stacking context 3D de Pannellum y causa flotamiento permanente.
     if (!document.getElementById('loteo-svg')) { const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgEl.id = "loteo-svg"; }
-    setupUI(); setupFilters(); renderSidebarList(BaseDatosLotes); setupPegmanEngine(); setupGesturalBackdoor();
+    setupUI(); setupFilters(); renderSidebarList(); setupPegmanEngine(); setupGesturalBackdoor();
     initPannellum(); runSplashScreen(); setupDevModes(); arq2_setup(); setupModalEditor(); setupInAppModal(); setupGlobalDelegation(); setupSunEngine(); setupNavPinTouchInteractions();
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {

@@ -635,7 +635,7 @@ function refreshAllHotspots(skipIntegrity) {
         syncSVGElements(); 
         if (typeof window.arq2_recalcAllPolygonStatuses === 'function') window.arq2_recalcAllPolygonStatuses();
         updateSVGPaths(); 
-        renderSidebarList(BaseDatosLotes); 
+        renderSidebarList(); 
     }, 10);
 }
 

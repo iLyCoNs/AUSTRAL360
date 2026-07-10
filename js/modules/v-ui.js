@@ -7,16 +7,33 @@ function setupUI() {
     const btnGps = document.getElementById('js-btn-gps'); if (btnGps) { btnGps.addEventListener('click', () => { btnGps.innerText = "Sincronizando satélites..."; if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( async (pos) => { const lat = pos.coords.latitude; const lon = pos.coords.longitude; if (OrigenDrone && OrigenDrone.lat) { const est = await calcularRutaCompleta(lat, lon, OrigenDrone.lat, OrigenDrone.lng); btnGps.style.display = 'none'; document.getElementById('js-gps-result').style.display = 'block'; document.getElementById('js-gps-km').innerText = est.km; document.getElementById('js-gps-min').innerText = est.min; } else { btnGps.innerText = "Error: Drone sin origen"; } }, (err) => { btnGps.innerText = "Acceso GPS Denegado"; }, { enableHighAccuracy: true } ); } else { btnGps.innerText = "GPS No Soportado"; } }); }
 }
 
-function renderSidebarList(lista) {
+function renderSidebarList() {
     const container = document.getElementById("js-lotes-list"); if(!container) return; container.innerHTML = "";
     let favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]'); const activeBtn = document.querySelector(".filter-btn.active"); const filtroStatus = activeBtn ? activeBtn.getAttribute("data-status") : "todos";
-    lista.forEach(lote => { 
-        if(lote.tipo !== 'lote') return; 
+    
+    if (!window.allDrawnLines) return;
+
+    window.allDrawnLines.forEach(lote => { 
+        if(lote.tipo !== 'lote-organico' && lote.tipo !== 'fila-variable-lote') return; 
+        const statusReal = lote.loteStatus || 'disponible';
+        if (filtroStatus !== 'todos' && filtroStatus !== 'favoritos' && statusReal !== filtroStatus) return;
         if (filtroStatus === 'favoritos' && !favs.includes(lote.id)) return;
+
         const isFav = favs.includes(lote.id); const heartHtml = isFav ? '<span style="color:#f43f5e; font-size:10px; margin-right:4px;">❤️</span>' : '';
-        const item = document.createElement("div"); item.classList.add("lote-item"); 
-        item.innerHTML = `<div class="lote-item-info"><h4>${heartHtml}<span>${lote.numero}</span> ${lote.titulo}</h4><p>${lote.superficie}</p></div><span class="badge ${lote.status}">${lote.status.substring(0,4)} .</span>`; 
-        item.addEventListener("click", () => { visor360.lookAt(lote.pitch, lote.yaw, 80, 1500); }); 
+        const item = document.createElement("div"); item.classList.add("lote-item");
+        const loteTitulo = lote.titulo || `Lote ${lote.arq2Numero || lote.franjaNumero || '00'}`;
+        const loteSuperficie = lote.superficie || '';
+        item.innerHTML = `<div class="lote-item-info"><h4>${heartHtml}<span>${lote.arq2Numero || lote.franjaNumero || '00'}</span> ${loteTitulo}</h4><p>${loteSuperficie}</p></div><span class="badge ${statusReal}">${statusReal.substring(0,4)} .</span>`; 
+        
+        item.addEventListener("click", () => { 
+            let p = 0, y = 0;
+            if (lote.puntos && lote.puntos.length > 0) {
+                lote.puntos.forEach(pt => { p += pt.pitch; y += pt.yaw; });
+                p /= lote.puntos.length;
+                y /= lote.puntos.length;
+                visor360.lookAt(p, y, 80, 1500); 
+            }
+        }); 
         container.appendChild(item); 
     });
 }
@@ -25,8 +42,21 @@ function setupFilters() {
     document.querySelectorAll(".filter-btn").forEach(btn => { 
         btn.addEventListener("click", (e) => { 
             document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active")); e.target.classList.add("active"); refreshAllHotspots(); 
-            const status = e.target.getAttribute("data-status"); let sumP = 0, sumY = 0, c = 0; 
-            getHotspotsConfig().forEach(hs => { if (hs.createTooltipFunc === generarSmartPin && hs.createTooltipArgs) { if (status === 'todos' || hs.createTooltipArgs.status === status || status === 'favoritos') { sumP += hs.pitch; sumY += hs.yaw; c++; } } }); 
+            const status = e.target.getAttribute("data-status"); let sumP = 0, sumY = 0, c = 0;
+            if (window.allDrawnLines) {
+                window.allDrawnLines.forEach(line => {
+                    if ((line.tipo === 'lote-organico' || line.tipo === 'fila-variable-lote') && line.puntos && line.puntos.length > 0) {
+                        if (status === 'todos' || line.loteStatus === status || (status === 'favoritos' && false)) {
+                            // Calcula el centroide del lote
+                            let p = 0, y = 0;
+                            line.puntos.forEach(pt => { p += pt.pitch; y += pt.yaw; });
+                            sumP += p / line.puntos.length;
+                            sumY += y / line.puntos.length;
+                            c++;
+                        }
+                    }
+                });
+            }
             if (c > 0) visor360.lookAt(sumP / c, sumY / c, status === 'todos' ? 125 : 85, 2000); 
         }); 
     });
@@ -43,7 +73,7 @@ function renderizarThumbs() { const container = document.getElementById('mac-g-t
 function cargarFotoPrincipal(index) { galeriaIndiceActual = index; const mainImg = document.getElementById('img-gallery-main'); mainImg.classList.remove('zoomed'); mainImg.src = galeriaActiva[index]; document.querySelectorAll('.mac-g-thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); }); }
 
 window.compartirLote = function(numero, titulo, event) { if(event) event.stopPropagation(); const url = window.location.origin + window.location.pathname + '?lote=' + numero; if (navigator.share) { navigator.share({ title: titulo || 'Mira este lote', text: 'He estado revisando este Masterplan y me interesó este terreno. Míralo aquí:', url: url }).catch(()=>{}); } else { navigator.clipboard.writeText(url).then(() => { alert('✅ Enlace directo copiado al portapapeles.\nPuedes pegarlo en WhatsApp o correo.'); }); } }
-window.toggleFavorite = function(loteId, event, btnEl) { if(event) event.stopPropagation(); let favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]'); if(favs.includes(loteId)) { favs = favs.filter(id => id !== loteId); btnEl.classList.remove('active'); btnEl.innerHTML = '🤍'; } else { favs.push(loteId); btnEl.classList.add('active'); btnEl.innerHTML = '❤️'; } localStorage.setItem('mp360_favs', JSON.stringify(favs)); const activeFilter = document.querySelector('.filter-btn.active'); if(activeFilter && activeFilter.getAttribute('data-status') === 'favoritos') { document.querySelector('.filter-btn[data-status="favoritos"]').click(); } else { renderSidebarList(BaseDatosLotes); } }
+window.toggleFavorite = function(loteId, event, btnEl) { if(event) event.stopPropagation(); let favs = JSON.parse(localStorage.getItem('mp360_favs') || '[]'); if(favs.includes(loteId)) { favs = favs.filter(id => id !== loteId); btnEl.classList.remove('active'); btnEl.innerHTML = '🤍'; } else { favs.push(loteId); btnEl.classList.add('active'); btnEl.innerHTML = '❤️'; } localStorage.setItem('mp360_favs', JSON.stringify(favs)); const activeFilter = document.querySelector('.filter-btn.active'); if(activeFilter && activeFilter.getAttribute('data-status') === 'favoritos') { document.querySelector('.filter-btn[data-status="favoritos"]').click(); } else { renderSidebarList(); } }
 
 function setupSunEngine() {
     const btn = document.getElementById('js-sun-btn'); const hud = document.getElementById('sun-hud'); if(!btn || !hud) return;

@@ -58,6 +58,37 @@
             <hr class="btn-export-hr" style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
             <button onclick="window.exportarInventarioCSV()" class="btn-export" style="width:100%; padding:8px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid #10b981; border-radius:6px; font-weight:bold; cursor:pointer; pointer-events:auto;">📥 Exportar Inventario CSV</button>
         </div>
+        
+        <!-- ARQUITECTO 2.0 PANEL -->
+        <div id="arquitecto2-panel" class="arq2-panel">
+            <div class="macos-header">
+                <span class="mac-dot" style="background:#ff5f56;"></span>
+                <span class="mac-dot" style="background:#ffbd2e;"></span>
+                <span class="mac-dot" style="background:#27c93f;"></span>
+                <span class="mac-title">Arquitecto 2.0</span>
+                <button class="arq2-close-btn" onclick="arq2_toggleArquitecto2(false)" style="position: absolute; right: 12px; top: 10px;">X</button>
+            </div>
+            
+            <div class="arq2-tool-row">
+                <button class="arq2-tool-btn" data-arq2-tool="eraser">Goma</button>
+                <button class="arq2-tool-btn" data-arq2-tool="calle-curva-arq2">Calle 3D</button>
+                <button class="arq2-tool-btn" data-arq2-tool="lote-libre">Lote Libre</button>
+            </div>
+            
+            <div id="arq2-lote-libre-hide-streets-row" style="display: none; margin-bottom: 10px; font-size: 11px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #94a3b8;">
+                    <input type="checkbox" id="arq2-lote-libre-hide-streets" checked> Ocultar Calles (Mejora Snap)
+                </label>
+            </div>
+            
+            <div id="arq2-panel-dynamic-content">
+                <!-- Se inyecta UI dinámica de la herramienta aquí -->
+            </div>
+            
+            <hr style="border-top:1px solid rgba(255,255,255,0.1); margin:12px 0;">
+            <button onclick="GlobalCloudSave()" class="btn-export" style="width:100%; padding:8px; background:rgba(34,211,238,0.15); color:#22d3ee; border:1px solid rgba(34,211,238,0.4); border-radius:6px; font-weight:bold; cursor:pointer;">💾 Guardar Nube</button>
+        </div>
+
         <div id="global-event-interceptor" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999999;"></div>
         <div id="arq2-live-counter"></div>
         <div id="arq2-invasion-tooltip">Cruza una calle/lmite</div>

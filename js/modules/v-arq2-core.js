@@ -141,9 +141,7 @@ function arq2_resolveActiveStepId() {
     if (arq2Tool === 'eraser') {
         return 'corners';
     }
-    if (arq2Tool === 'smart-pin-v2') {
-        return 'corners';
-    }
+
     if (arq2Tool === 'calle-curva-arq2') {
         if (pts.length === 0) return 'draw';
         return pts.length >= 2 ? 'finish' : 'draw';
@@ -176,7 +174,7 @@ function arq2_updatePanelStep() {
     const smoothRow = document.getElementById('arq2-smooth-row');
     const filaDesc = document.getElementById('arq2-fila-desc');
     if (!list) return;
-    const toolKey = arq2Tool === 'calle-curva-arq2' ? 'calle-curva-arq2' : (arq2Tool === 'relleno-auto' ? 'relleno-auto' : (arq2Tool === 'costura' ? 'costura' : (arq2Tool === 'fila-variable' ? 'fila-variable' : (arq2Tool === 'fila-calle' ? 'fila-calle' : (arq2Tool === 'smart-pin-v2' ? 'smart-pin-v2' : (arq2Tool === 'eraser' ? 'eraser' : 'lote-libre'))))));
+    const toolKey = arq2Tool === 'calle-curva-arq2' ? 'calle-curva-arq2' : (arq2Tool === 'relleno-auto' ? 'relleno-auto' : (arq2Tool === 'costura' ? 'costura' : (arq2Tool === 'fila-variable' ? 'fila-variable' : (arq2Tool === 'fila-calle' ? 'fila-calle' : (arq2Tool === 'eraser' ? 'eraser' : 'lote-libre')))));
     const activeId = arq2_resolveActiveStepId();
     const steps = ARQ2_STEPS.filter(s => s.tool === toolKey);
     list.innerHTML = '';
