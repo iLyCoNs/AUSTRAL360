@@ -1,6 +1,4 @@
 {
-  "version": 1,
-  "updatedAt": 1783922857188,
   "lotes": [
     {
       "tipo": "lote-libre",
@@ -35,8 +33,9 @@
         -74.37157030796426,
         -111.39050515399549
       ],
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",
