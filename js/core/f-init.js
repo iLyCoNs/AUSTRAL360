@@ -421,11 +421,24 @@
     const viewerRoot = document.getElementById('pannellum-viewer');
     if (!host || !viewerRoot) return;
 
+    // Crear botón de maximizar si Pannellum no lo creó (por ejemplo en iOS Safari o dentro de iframes sin allowfullscreen)
+    let btn = viewerRoot.querySelector('.pnlm-fullscreen-toggle-button');
+    if (!btn) {
+      const controls = viewerRoot.querySelector('.pnlm-controls-container');
+      if (controls) {
+        btn = document.createElement('div');
+        btn.className = 'pnlm-fullscreen-toggle-button pnlm-sprite pnlm-fullscreen-toggle-button-inactive pnlm-controls pnlm-control';
+        btn.title = 'Pantalla completa (CSS fallback)';
+        controls.appendChild(btn);
+        console.log('[Ferrari/Init] Botón de maximizar creado manualmente para fallback');
+      }
+    }
+
     function _isFullscreen() {
       const fs = document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.msFullscreenElement;
-      return !!fs;
+      return !!fs || host.classList.contains('is-pseudo-fullscreen');
     }
 
     function _syncFullscreenButton() {
@@ -546,12 +559,28 @@
 
 
     async function _toggleHostFullscreen() {
+      const supportsNativeFS = !!(document.fullscreenEnabled ||
+        document.webkitFullscreenEnabled ||
+        document.mozFullScreenEnabled ||
+        document.msFullscreenEnabled);
+
+      if (!supportsNativeFS) {
+        host.classList.toggle('is-pseudo-fullscreen');
+        _refreshAfterFullscreen();
+        return;
+      }
+
       try {
         if (_isFullscreen()) {
-          const exit = document.exitFullscreen ||
-            document.webkitExitFullscreen ||
-            document.msExitFullscreen;
-          if (exit) await exit.call(document);
+          if (host.classList.contains('is-pseudo-fullscreen')) {
+            host.classList.remove('is-pseudo-fullscreen');
+            _refreshAfterFullscreen();
+          } else {
+            const exit = document.exitFullscreen ||
+              document.webkitExitFullscreen ||
+              document.msExitFullscreen;
+            if (exit) await exit.call(document);
+          }
         } else {
           const req = host.requestFullscreen ||
             host.webkitRequestFullscreen ||
@@ -559,7 +588,9 @@
           if (req) await req.call(host);
         }
       } catch (err) {
-        console.warn('[Ferrari/Init] Fullscreen no disponible:', err);
+        console.warn('[Ferrari/Init] Fullscreen nativo falló, usando fallback CSS:', err);
+        host.classList.toggle('is-pseudo-fullscreen');
+        _refreshAfterFullscreen();
       }
     }
 

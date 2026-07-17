@@ -285,8 +285,8 @@
     // Solo escribir atributos cuando el valor cambia (pan a fov fijo = constante)
     if (strokeW !== _lastBorderStroke) {
       _lastBorderStroke = strokeW;
-      _elShared.setAttribute('stroke-width', strokeW);
-      _elUnshared.setAttribute('stroke-width', strokeW);
+      _elShared.style.strokeWidth = strokeW + 'px';
+      _elUnshared.style.strokeWidth = strokeW + 'px';
     }
 
     const dashScale = Math.max(0.4, Math.min(2.5, scaleFactor));
