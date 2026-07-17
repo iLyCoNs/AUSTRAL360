@@ -70,8 +70,9 @@
         -86.94367318206338
       ],
       "hasSmartPin": true,
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",
