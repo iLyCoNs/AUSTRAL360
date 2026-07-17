@@ -940,6 +940,10 @@
           <input type="text" id="li-user" placeholder="Ej: iLyCoNs" autocomplete="off" spellcheck="false">
         </div>
         <div class="form-group">
+          <label>Repositorio GitHub</label>
+          <input type="text" id="li-repo" placeholder="Ej: alercepatagon360" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="form-group">
           <label>Token (PAT)</label>
           <input type="password" id="li-pat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
         </div>
@@ -1344,7 +1348,7 @@
 ══════════════════════════════════════ */
 const CFG = {
   GITHUB_OWNER: localStorage.getItem('ferrari_github_owner') || 'iLyCoNs',
-  GITHUB_REPO:  localStorage.getItem('ferrari_github_repo') || 'AUSTRAL360',
+  GITHUB_REPO:  localStorage.getItem('ferrari_github_repo') || 'alercepatagon360',
   DATA_PATH:    'data/datos.json',
   BRAND_PATH:   'data/brand.json',
   LOGO_DIR:     'assets/brand/logos',
@@ -1403,12 +1407,13 @@ function fmtCLP(n) { return new Intl.NumberFormat('es-CL',{style:'currency',curr
 /* ══ LOGIN ══ */
 async function doLogin() {
   const user = document.getElementById('li-user').value.trim();
+  const repo = document.getElementById('li-repo').value.trim();
   const pat  = document.getElementById('li-pat').value.trim();
   const err  = document.getElementById('li-err');
   const btn  = document.getElementById('btn-login');
   
   err.textContent = '';
-  if (!user || !pat) { err.textContent = 'Completa usuario y token.'; return; }
+  if (!user || !repo || !pat) { err.textContent = 'Completa usuario, repositorio y token.'; return; }
   
   btn.disabled = true; btn.textContent = 'Verificando…';
   try {
@@ -1420,7 +1425,12 @@ async function doLogin() {
     
     // Guardar credenciales para reconexión
     localStorage.setItem('ferrari_github_owner', user);
+    localStorage.setItem('ferrari_github_repo', repo);
     localStorage.setItem('ferrari_github_token', pat);
+
+    // Actualizar configuración en runtime
+    CFG.GITHUB_OWNER = user;
+    CFG.GITHUB_REPO = repo;
 
     _sess = { token: pat, user: gh };
     await enterApp();
@@ -2647,6 +2657,30 @@ function doLogout() {
 document.addEventListener('keydown', e => {
   if (e.key==='Enter' && !document.getElementById('login-screen').classList.contains('hidden')) doLogin();
 });
+
+/* ══ INITIALIZE LOGIN ON PAGE LOAD ══ */
+function initLogin() {
+  const savedUser = localStorage.getItem('ferrari_github_owner') || 'iLyCoNs';
+  const savedRepo = localStorage.getItem('ferrari_github_repo') || 'alercepatagon360';
+  const savedToken = localStorage.getItem('ferrari_github_token') || '';
+  
+  const userEl = document.getElementById('li-user');
+  const repoEl = document.getElementById('li-repo');
+  const patEl = document.getElementById('li-pat');
+  
+  if (userEl) userEl.value = savedUser;
+  if (repoEl) repoEl.value = savedRepo;
+  if (patEl) patEl.value = savedToken;
+  
+  if (savedUser && savedRepo && savedToken) {
+    doLogin();
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLogin);
+} else {
+  initLogin();
+}
 </script>
 <div id="god-layer">
   <div id="btn-close-god" onclick="toggleGodLayer()" title="Cerrar Modo Dios">✕</div>

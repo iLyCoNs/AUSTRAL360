@@ -51,7 +51,7 @@
     return localStorage.getItem('ferrari_github_owner') || 'iLyCoNs';
   }
   function _repo() {
-    return localStorage.getItem('ferrari_github_repo') || 'AUSTRAL360';
+    return localStorage.getItem('ferrari_github_repo') || 'alercepatagon360';
   }
   function _branch() {
     return localStorage.getItem('ferrari_github_branch') || 'main';

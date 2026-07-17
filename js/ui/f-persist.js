@@ -78,7 +78,7 @@
   function _repoMeta() {
     return {
       OWNER: localStorage.getItem('ferrari_github_owner') || 'iLyCoNs',
-      REPO: localStorage.getItem('ferrari_github_repo') || 'AUSTRAL360',
+      REPO: localStorage.getItem('ferrari_github_repo') || 'alercepatagon360',
       BRANCH: localStorage.getItem('ferrari_github_branch') || 'main'
     };
   }
