@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "projectName": "",
+  "projectName": "PROYECTO ALERCE PATAGÓN 360°",
   "logoPath": null,
   "logoId": null,
   "logos": [],
-  "font": "cormorant",
-  "dockStyle": "crystal",
+  "font": "montserrat",
+  "dockStyle": "graphite",
   "mobileSolid": true,
   "hideLoteFill": false,
   "contact": {
@@ -18,5 +18,5 @@
     "platformLogo": "https://raw.githubusercontent.com/iLyCoNs/austral-drones/refs/heads/main/logobanner.png",
     "platformName": "AUSTRALDRONE.CL"
   },
-  "updatedAt": 1784309368868
+  "updatedAt": 1784309397529
 }
