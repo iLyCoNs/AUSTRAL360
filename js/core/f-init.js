@@ -563,6 +563,20 @@
         document.webkitFullscreenEnabled ||
         document.mozFullScreenEnabled ||
         document.msFullscreenEnabled);
+      const inIFrame = window.self !== window.top;
+
+      // Notificar al sitio web padre por si quiere manejar la maximización del iframe
+      try {
+        window.parent.postMessage({ type: 'ferrari-fullscreen', action: 'toggle' }, '*');
+      } catch (e) {}
+
+      // IDEA NOVEDOSA: Si está dentro de un iframe en un dispositivo sin Fullscreen nativo (como iOS/iPhone),
+      // abrimos la URL directa en una nueva pestaña para poder disfrutar del recorrido al 100% de la pantalla.
+      if (inIFrame && !supportsNativeFS) {
+        console.log('[Ferrari/Init] Fullscreen nativo bloqueado por iframe en iOS. Abriendo en pestaña nueva.');
+        window.open(window.location.href, '_blank');
+        return;
+      }
 
       if (!supportsNativeFS) {
         host.classList.toggle('is-pseudo-fullscreen');
