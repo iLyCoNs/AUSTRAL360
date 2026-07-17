@@ -1,6 +1,4 @@
 {
-  "version": 1,
-  "updatedAt": 1783922857188,
   "lotes": [
     {
       "tipo": "lote-libre",
@@ -35,8 +33,9 @@
         -74.37157030796426,
         -111.39050515399549
       ],
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",
@@ -71,8 +70,9 @@
         -86.94367318206338
       ],
       "hasSmartPin": true,
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",
@@ -111,8 +111,9 @@
         -78.56620011123945,
         -52.86736369047523
       ],
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",
@@ -147,8 +148,9 @@
         -74.82047380087394,
         -27.545775603955583
       ],
-      "dimensiones": "5000",
-      "valorUF": 1500
+      "dimensiones": "",
+      "valorUF": null,
+      "fotos": []
     },
     {
       "tipo": "lote-libre",

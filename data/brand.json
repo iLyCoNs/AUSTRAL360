@@ -1,21 +1,22 @@
 {
   "version": 2,
-  "projectName": "",
+  "projectName": "PROYECTO ALERCE PATAGÓN 360°",
   "logoPath": null,
   "logoId": null,
   "logos": [],
-  "font": "cormorant",
-  "dockStyle": "crystal",
+  "font": "montserrat",
+  "dockStyle": "graphite",
   "mobileSolid": true,
+  "hideLoteFill": false,
   "contact": {
-    "whatsapp": "+56987491964",
-    "formEmail": "perito.vidal@gmail.com",
+    "whatsapp": "",
+    "formEmail": "",
     "formEnabled": true,
     "platformCta": "Consigue tu 360° aquí",
     "platformWhatsapp": "+56987491964",
     "platformWeb": "https://www.australdrone.cl",
     "platformLogo": "https://raw.githubusercontent.com/iLyCoNs/austral-drones/refs/heads/main/logobanner.png",
-    "platformName": "Austral Drone"
+    "platformName": "AUSTRALDRONE.CL"
   },
-  "updatedAt": 1783970258074
+  "updatedAt": 1784309397529
 }
