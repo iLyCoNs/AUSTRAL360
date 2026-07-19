@@ -9,7 +9,7 @@
 (function() {
   window.KPK_CONFIG = {
     // Incrementa este número si cambias la configuración general para obligar al borrado de caché
-    configVersion: 7,
+    configVersion: 8,
 
     // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
     aiProvider: 'lightning',
@@ -18,6 +18,7 @@
     aiKeys: {
       lightning:  'kpk-enc-NzE3NzY5ODdjYzJhLTdhZTgtNGEyNC1iOTQzLTIyYjJhMTYyLXRpbC1rcw==',
       openrouter: 'kpk-enc-YjU0YzU0MWU4M2M5Y2Q1MzVmY2U4ODVjM2ZkZTFhMDJkMGE0ZTlmOGZjNDFmZTA0ZmU1M2NmZGE0OGI0NzFkMS0xdi1yby1rcw==',
+      elevenlabs: 'kpk-enc-YTgzNTE5NjZlZDE0Zjc1ODkwOTIzM2Y4MmY2MjdiYzhmNTRmYjg3MmE0ZDc5ZTY0X2tz',
       groq:       '',
       gemini:     ''
     },

@@ -209,7 +209,9 @@
     const elKeyStatus = document.getElementById('kpk-el-key-status');
 
     // Restaurar preferencias guardadas
-    const savedVoiceMode = localStorage.getItem('kpk_voice_mode') || 'edge_ryan';
+    const globalElKey = _getElevenLabsKey();
+    const defaultMode = globalElKey ? 'elevenlabs' : 'edge_ryan';
+    const savedVoiceMode = localStorage.getItem('kpk_voice_mode') || defaultMode;
     if (voiceSelector) voiceSelector.value = savedVoiceMode;
     const savedElKey = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
     if (elKeyInput && savedElKey) {
