@@ -41,6 +41,12 @@
   let _jarvisMode = false;
   let _shouldRestartMic = false;
   let _activeLote = null; // Lote actualmente en foco (para contexto persistente de la IA)
+  
+  // Variables de interacción móvil y personalización
+  let _clientName = localStorage.getItem('kpk_client_name') || '';
+  let _isWaitingForName = !_clientName;
+  let _bubblePopupTimeout = null;
+  let _isAISpeaking = false;
 
   // Inicializar UI al cargar la página
   function init() {
@@ -321,6 +327,7 @@
 
     _updateSuggestiveChips();
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
+    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // ── WELCOME TOUR: Jarvis saluda al usuario 4 segundos después de cargar
     const sessionKey = 'kpk_jarvis_welcomed_' + new Date().toDateString();
@@ -334,15 +341,37 @@
         const disponibles = (window.allDrawnLines || []).filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && (l.estado === 'disponible' || !l.estado)).length;
         
         const assistantGreetingName = isGigi ? 'Gigi, su asesora virtual' : 'Jarvis, su guía virtual';
-        const welcomeText = totalLotes > 0
-          ? `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
-          : `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Estoy aquí para acompañarle en toda la experiencia, señor.`;
+        
+        let welcomeText = "";
+        if (isMobile) {
+          if (_clientName) {
+            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantGreetingName}. ¿Prefieres realizar el tour completo o explorar algún lote?`;
+          } else {
+            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantGreetingName}. Te sugiero usar el micrófono (🎙️) para hablar conmigo sin tapar el plano 360°. Para empezar, ¿cómo te gustaría que te llame?`;
+            _isWaitingForName = true;
+          }
+        } else {
+          if (_clientName) {
+            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Hacemos el tour completo o prefieres ver alguno en específico?`;
+          } else {
+            welcomeText = totalLotes > 0
+              ? `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
+              : `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Estoy aquí para acompañarle en toda la experiencia, señor.`;
+          }
+        }
 
         // Mostrar burbuja con pulso de atención
         if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
-        // Abrir panel y entregar el saludo
-        if (!_panel.classList.contains('is-open')) togglePanel();
-        appendMessage(welcomeText, 'system');
+
+        if (isMobile) {
+          // En móvil NO abrimos el panel completo, mostramos el popup translúcido
+          showMobileBubblePopup(welcomeText, true);
+        } else {
+          // En escritorio, abrir panel y entregar el saludo normal
+          if (!_panel.classList.contains('is-open')) togglePanel();
+          appendMessage(welcomeText, 'system');
+        }
+
         speakJarvis(welcomeText);
         _hasGreeted = true;
         setTimeout(() => _bubble && _bubble.classList.remove('kpk-bubble-pulse'), 3000);
@@ -353,6 +382,28 @@
   let _hasGreeted = false;
 
   function togglePanel() {
+    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      if (_panel && _panel.classList.contains('is-open')) {
+        _panel.classList.remove('is-open');
+      }
+
+      const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+      if (popup && popup.classList.contains('is-visible')) {
+        closeMobileBubblePopup();
+      } else {
+        const mode = _getVoiceMode();
+        const isGigi = mode.includes('gigi') || mode.includes('dalia');
+        const assistantName = isGigi ? 'Gigi' : 'Jarvis';
+        const txt = _clientName 
+          ? `Hola, ${_clientName}. ¿En qué te puedo ayudar hoy? Puedes presionar el micrófono o escribir.` 
+          : `Hola, soy ${assistantName}. ¿En qué te puedo ayudar hoy?`;
+        showMobileBubblePopup(txt, true);
+        speakJarvis(txt);
+      }
+      return;
+    }
+
     const isOpen = _panel.classList.toggle('is-open');
     if (isOpen) {
       _input.focus();
@@ -384,6 +435,9 @@
     _recognition.onstart = () => {
       _isListening = true;
       _btnMic.classList.add('is-active');
+      const popupMic = document.getElementById('kpk-mbp-mic-toggle');
+      if (popupMic) popupMic.classList.add('is-active');
+
       if (_jarvisMode) {
         _btnMic.style.color = '#39FF14'; // Verde neón para modo Jarvis
         _input.placeholder = "Jarvis Activo - Escuchando...";
@@ -398,6 +452,8 @@
       _btnMic.classList.remove('is-active');
       _btnMic.style.removeProperty('color');
       _input.placeholder = "Pregunta algo aquí...";
+      const popupMic = document.getElementById('kpk-mbp-mic-toggle');
+      if (popupMic) popupMic.classList.remove('is-active');
       
       // Auto-reiniciar si estamos en modo Jarvis y no se ha detenido a propósito
       if (_jarvisMode && _shouldRestartMic) {
@@ -411,6 +467,9 @@
 
     _recognition.onerror = (e) => {
       console.warn('[Ferrari/IA] Error reconocimiento de voz:', e.error);
+      const popupMic = document.getElementById('kpk-mbp-mic-toggle');
+      if (popupMic) popupMic.classList.remove('is-active');
+
       if (e.error === 'aborted') return;
       if (e.error === 'no-speech' && _jarvisMode) return; // Ignorar silencio temporal en Jarvis
       _jarvisMode = false;
@@ -646,6 +705,41 @@
   async function handleSend() {
     const prompt = _input.value.trim();
     if (!prompt && !_attachedFile) return;
+
+    // Interceptar si estamos esperando el nombre del cliente
+    if (_isWaitingForName && prompt) {
+      let name = prompt.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen)\s+/i, '').trim();
+      name = name.split(/[\s,.]+/)[0]; // Tomar el primer nombre
+      if (name.length > 20) name = name.substring(0, 20);
+
+      if (name) {
+        _clientName = name;
+        localStorage.setItem('kpk_client_name', name);
+        _isWaitingForName = false;
+
+        _input.value = '';
+        _attachedFile = null;
+
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const mode = _getVoiceMode();
+        const isGigi = mode.includes('gigi') || mode.includes('dalia');
+        const assistantGreetingName = isGigi ? 'Gigi' : 'Jarvis';
+
+        const replyText = `¡Excelente, ${_clientName}! Qué lindo nombre. Un gusto conocerte. Te comento que aquí en Austral 360 contamos con hermosas parcelas de agrado con Rol Propio listas para escriturar. ¿Te gustaría que iniciemos un tour guiado por el plano 360° o prefieres preguntarme sobre algún lote de tu interés?`;
+
+        appendMessage(prompt, 'user');
+        if (isMobile) {
+          showMobileBubblePopup(replyText, false);
+        } else {
+          appendMessage(replyText, 'system');
+        }
+
+        speakJarvis(replyText);
+        playFuturisticSound('success');
+        _updateSuggestiveChips();
+        return;
+      }
+    }
 
     // Agregar mensaje de usuario al log con enlace local temporal para descargas
     let userDisplayMsg = prompt || `Adjunto: ${_attachedFile.name}`;
@@ -1983,6 +2077,7 @@
         audio.onended = () => {
           URL.revokeObjectURL(url);
           _activeJarvisAudio = null;
+          setAISpeaking(false);
           if (_jarvisMode) {
             _shouldRestartMic = true;
             setTimeout(() => {
@@ -1993,9 +2088,10 @@
           }
           resolve(true);
         };
-        audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
-        audio.play().catch(() => resolve(false));
-      } catch(e) { resolve(false); }
+        audio.onerror = () => { URL.revokeObjectURL(url); setAISpeaking(false); resolve(false); };
+        setAISpeaking(true);
+        audio.play().catch(() => { setAISpeaking(false); resolve(false); });
+      } catch(e) { setAISpeaking(false); resolve(false); }
     });
   }
 
@@ -2018,8 +2114,10 @@
     _synthUtterance.onstart = () => {
       _shouldRestartMic = false;
       if (_recognition && _isListening) try { _recognition.stop(); } catch(e) {}
+      setAISpeaking(true);
     };
     _synthUtterance.onend = () => {
+      setAISpeaking(false);
       if (_jarvisMode) {
         _shouldRestartMic = true;
         setTimeout(() => {
@@ -2035,7 +2133,15 @@
 
   // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
   async function speakJarvis(text) {
-    if (!_speechEnabled || !text) return;
+    if (!text) return;
+
+    // Si estamos en móvil, mostrar la burbuja popup siempre (incluso si la voz está apagada)
+    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      showMobileBubblePopup(text);
+    }
+
+    if (!_speechEnabled) return;
     if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
 
     const mode = _getVoiceMode();
@@ -3128,6 +3234,23 @@
   }
 
   function showTypingIndicator() {
+    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+      if (popup) {
+        const pText = popup.querySelector('#kpk-mbp-text');
+        if (pText) {
+          pText.innerHTML = `
+            <div class="kpk-ai-typing" style="margin-bottom:0; max-width:50px; padding:6px 10px; background:transparent; border:none; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;">
+              <span></span><span></span><span></span>
+            </div>
+          `;
+        }
+        popup.style.display = 'flex';
+        popup.classList.add('is-visible');
+      }
+    }
+
     const ind = document.createElement('div');
     ind.className = 'kpk-ai-typing';
     ind.innerHTML = '<span></span><span></span><span></span>';
@@ -3245,6 +3368,8 @@ Reglas de estilo de Jarvis:
 
   return `
 ${personalityPrompt}
+
+- CLIENTE ACTUAL: ${_clientName ? `El nombre del cliente es "${_clientName}". Dirígete a él o ella usando su nombre de pila de forma natural y cálida en algunas de tus oraciones.` : 'Aún no conoces el nombre del cliente. Puedes preguntarle cómo se llama o dirigirte a él/ella de forma general.'}
 
 - Responde SIEMPRE en español impecable.
 - CONCISIÓN COMERCIAL OBLIGATORIA: Escribe respuestas cortas, directas y persuasivas de un máximo de 2 a 3 oraciones. NUNCA te extiendas en descripciones retóricas o poéticas largas para evitar la fatiga del cliente.
@@ -3846,6 +3971,173 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         handleSend();
       });
     });
+  }
+
+  // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
+  function showMobileBubblePopup(text, keepOpen) {
+    let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.id = 'kpk-mobile-ai-bubble-popup';
+      popup.className = 'kpk-mobile-ai-bubble-popup';
+      document.body.appendChild(popup);
+    }
+
+    const mode = _getVoiceMode();
+    const isGigi = mode.includes('gigi') || mode.includes('dalia');
+    const name = isGigi ? 'Gigi' : 'Jarvis';
+
+    // Iconos SVG
+    const micSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
+    const keyboardSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="8" x2="6" y2="8"></line><line x1="10" y1="8" x2="10" y2="8"></line><line x1="14" y1="8" x2="14" y2="8"></line><line x1="18" y1="8" x2="18" y2="8"></line><line x1="6" y1="12" x2="6" y2="12"></line><line x1="10" y1="12" x2="18" y2="12"></line><line x1="6" y1="16" x2="18" y2="16"></line></svg>`;
+    const sendSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+    const speakerOnSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`;
+    const speakerMutedSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+
+    const muteIcon = _speechEnabled ? speakerOnSvg : speakerMutedSvg;
+
+    popup.innerHTML = `
+      <div class="kpk-mbp-header">
+        <div class="kpk-mbp-ai-profile">
+          <span class="kpk-mbp-status-dot"></span>
+          <span class="kpk-mbp-name">${name}</span>
+        </div>
+        <div class="kpk-mbp-actions">
+          <button class="kpk-mbp-btn" id="kpk-mbp-mute-btn" title="Silenciar / Activar Voz">${muteIcon}</button>
+          <button class="kpk-mbp-btn" id="kpk-mbp-close-btn" title="Cerrar">✕</button>
+        </div>
+      </div>
+      
+      <div class="kpk-mbp-body">
+        <div class="kpk-mbp-text" id="kpk-mbp-text">${text}</div>
+      </div>
+      
+      <div class="kpk-mbp-footer">
+        <div class="kpk-mbp-input-row" id="kpk-mbp-input-row" style="display: none;">
+          <input type="text" id="kpk-mbp-text-input" placeholder="${_isWaitingForName ? 'Escribe tu nombre aquí...' : 'Pregunta algo aquí...'}" autocomplete="off">
+          <button id="kpk-mbp-send-btn">${sendSvg}</button>
+        </div>
+        
+        <div class="kpk-mbp-controls" id="kpk-mbp-controls-row">
+          <button class="kpk-mbp-control-btn kpk-mbp-keyboard-btn" id="kpk-mbp-keyboard-toggle" title="Escribir">${keyboardSvg}</button>
+          <button class="kpk-mbp-control-btn kpk-mbp-mic-btn" id="kpk-mbp-mic-toggle" title="Hablar">${micSvg}</button>
+        </div>
+      </div>
+    `;
+
+    const popupMicBtn = popup.querySelector('#kpk-mbp-mic-toggle');
+    if (_isListening) {
+      popupMicBtn.classList.add('is-active');
+    }
+
+    if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+
+    popup.querySelector('#kpk-mbp-close-btn').addEventListener('click', closeMobileBubblePopup);
+    
+    popup.querySelector('#kpk-mbp-mute-btn').addEventListener('click', () => {
+      _speechEnabled = !_speechEnabled;
+      const desktopVoiceBtn = document.getElementById('kpk-ai-toggle-voice');
+      const desktopVoiceIcon = document.getElementById('kpk-voice-icon');
+      const muteBtn = popup.querySelector('#kpk-mbp-mute-btn');
+
+      if (!_speechEnabled) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+        muteBtn.innerHTML = speakerMutedSvg;
+        if (desktopVoiceBtn) desktopVoiceBtn.style.color = 'rgba(255,255,255,0.25)';
+        setAISpeaking(false);
+      } else {
+        muteBtn.innerHTML = speakerOnSvg;
+        if (desktopVoiceBtn) desktopVoiceBtn.style.color = '#39FF14';
+        _loadEdgeTTS();
+      }
+    });
+
+    const kbdBtn = popup.querySelector('#kpk-mbp-keyboard-toggle');
+    const inputRow = popup.querySelector('#kpk-mbp-input-row');
+    const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
+    kbdBtn.addEventListener('click', () => {
+      inputRow.style.display = 'flex';
+      controlsRow.style.display = 'none';
+      const inp = popup.querySelector('#kpk-mbp-text-input');
+      inp.focus();
+    });
+
+    const sendInputText = () => {
+      const inp = popup.querySelector('#kpk-mbp-text-input');
+      const query = inp.value.trim();
+      if (!query) return;
+
+      _input.value = query;
+      inp.value = '';
+      
+      inputRow.style.display = 'none';
+      controlsRow.style.display = 'flex';
+
+      handleSend();
+    };
+
+    popup.querySelector('#kpk-mbp-send-btn').addEventListener('click', sendInputText);
+    popup.querySelector('#kpk-mbp-text-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendInputText();
+    });
+
+    popupMicBtn.addEventListener('click', () => {
+      if (_isListening) {
+        if (_recognition) _recognition.stop();
+      } else {
+        if (_recognition) {
+          _recognition.continuous = false;
+          try {
+            _recognition.start();
+          } catch(e) {}
+        }
+      }
+    });
+
+    popup.style.display = 'flex';
+    setTimeout(() => {
+      popup.classList.add('is-visible');
+    }, 50);
+
+    if (!keepOpen && !_isWaitingForName) {
+      _bubblePopupTimeout = setTimeout(() => {
+        closeMobileBubblePopup();
+      }, 7000);
+    }
+  }
+
+  function closeMobileBubblePopup() {
+    const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (popup) {
+      popup.classList.remove('is-visible');
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+      setTimeout(() => {
+        popup.style.display = 'none';
+      }, 400);
+    }
+  }
+
+  function setAISpeaking(status) {
+    _isAISpeaking = status;
+    const bubble = document.getElementById('kpk-ai-bubble');
+    if (bubble) {
+      if (status) {
+        bubble.classList.add('is-speaking');
+      } else {
+        bubble.classList.remove('is-speaking');
+        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+          if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+          if (!_isWaitingForName) {
+            _bubblePopupTimeout = setTimeout(() => {
+              closeMobileBubblePopup();
+            }, 6000);
+          }
+        }
+      }
+    }
   }
 
   // Carga inicial

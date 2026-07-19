@@ -938,4 +938,222 @@
   100% { width: 220%; height: 220%; opacity: 0; }
 }
 
+/* ==========================================================================
+   MOBILE HUD GLASSMORPHIC POPUP BUBBLE (Mobile Only Layout)
+   ========================================================================== */
+.kpk-mobile-ai-bubble-popup {
+  position: fixed;
+  bottom: 84px;
+  left: 14px;
+  right: 14px;
+  background: rgba(12, 17, 28, 0.72);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  z-index: 10005;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.kpk-mobile-ai-bubble-popup.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.kpk-mbp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 5px;
+}
+
+.kpk-mbp-ai-profile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpk-mbp-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34c759;
+  box-shadow: 0 0 6px #34c759;
+}
+
+.kpk-mbp-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.kpk-mbp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpk-mbp-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.kpk-mbp-btn:hover {
+  color: #fff;
+}
+
+.kpk-mbp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpk-mbp-text {
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.95);
+  max-height: 110px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.kpk-mbp-text::-webkit-scrollbar {
+  display: none;
+}
+
+.kpk-mbp-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 3px 8px;
+  animation: mbpInputFade 0.25s ease-out;
+}
+@keyframes mbpInputFade {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kpk-mbp-input-row input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 12px;
+  height: 26px;
+}
+
+.kpk-mbp-input-row button {
+  background: transparent;
+  border: none;
+  color: #00B4FF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpk-mbp-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.kpk-mbp-control-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.kpk-mbp-control-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.kpk-mbp-keyboard-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.kpk-mbp-mic-btn {
+  background: rgba(0, 180, 255, 0.15);
+  border-color: rgba(0, 180, 255, 0.25);
+  color: #00B4FF;
+  position: relative;
+}
+
+.kpk-mbp-mic-btn.is-active {
+  background: #FF2D8A !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  animation: micPulseGlow 1.2s infinite alternate;
+}
+
+.kpk-mbp-mic-btn.is-active::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid #FF2D8A;
+  animation: micPulseWave 1.3s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes micPulseGlow {
+  0% { box-shadow: 0 0 6px rgba(255, 45, 138, 0.4); }
+  100% { box-shadow: 0 0 16px rgba(255, 45, 138, 0.8); }
+}
+
+/* Radar-like visual interaction on the AI Bubble floating button itself when speaking */
+.kpk-ai-bubble.is-speaking {
+  animation: aiSpeakingPulse 1.2s infinite ease-in-out !important;
+  border-color: rgba(0, 180, 255, 0.85) !important;
+}
+@keyframes aiSpeakingPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 180, 255, 0.45); }
+  70% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(0, 180, 255, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 180, 255, 0); }
+}
+
+/* Ocultar el panel de chat grande en móvil por defecto si no está explícitamente abierto */
+@media (max-width: 576px) {
+  .kpk-ai-panel {
+    /* Evitar que robe espacio de clicks cuando está cerrado */
+    pointer-events: none;
+  }
+  .kpk-ai-panel.is-open {
+    pointer-events: auto;
+  }
+}
+
 
