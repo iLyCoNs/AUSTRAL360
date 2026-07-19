@@ -545,7 +545,7 @@
             model: tier.model,
             messages: messages,
             temperature: 0.3,
-            max_tokens: 800
+            max_tokens: 1000
           })
         });
 
@@ -980,7 +980,7 @@
                 ...apiHistory.map(h => ({ role: h.role, content: h.text }))
               ],
               temperature: 0.3,
-              max_tokens: 400
+              max_tokens: 1000
             };
             
             const fbRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -3057,7 +3057,10 @@ Reglas de estilo de Jarvis:
 ${personalityPrompt}
 
 - Responde SIEMPRE en español impecable.
-- Escribe respuestas completas y fluidas de 2 a 4 oraciones. NUNCA dejes frases a medias o incompletas. NUNCA expongas notas de pensamiento internas.
+- CONCISIÓN COMERCIAL OBLIGATORIA: Escribe respuestas cortas, directas y persuasivas de un máximo de 2 a 3 oraciones. NUNCA te extiendas en descripciones retóricas o poéticas largas para evitar la fatiga del cliente.
+- FRASES COMPLETAS Y CERRADAS: NUNCA cortes una frase a la mitad. Todas tus oraciones deben estar gramaticalmente completas y cerrarse con su respectivo punto final.
+- CIERRE CON SUGERENCIA ACTIVA: Finaliza tu respuesta SIEMPRE con una sugerencia o invitación concreta para que el cliente avance en el proceso (ej: descargar la ficha PDF del lote, ver la galería de fotos, o presionar el botón del Clip (📎) del chat para enviarnos su RUT y redactar la reserva).
+- NUNCA expongas notas de pensamiento internas.
 
 REQUISITOS LEGALES DE RESERVA Y COMPRA EN CHILE:
 - Ubicación del proyecto: Sector Correntoso, Comuna de Puerto Montt, Región de Los Lagos, Chile.
