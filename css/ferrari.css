@@ -1052,8 +1052,11 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   }
   .kbd-glass {
-    background: #ffffff;
-    box-shadow: 0 4px 14px rgba(15,23,42,0.12);
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #ffffff;
   }
   .kbd-toggle {
     box-shadow: 0 4px 12px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.7);
@@ -1138,8 +1141,8 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   box-shadow: 0 2px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 .ferrari-device-mid .kbd-glass {
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15,23,42,0.12);
+  background: #1e2029;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 
 /* Low tier: sombras aún más ligeras, sin text-shadow */
@@ -1147,8 +1150,8 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   box-shadow: 0 2px 10px rgba(0,0,0,0.08);
 }
 .ferrari-device-low .kbd-glass {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15,23,42,0.08);
+  background: #1e2029;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 .ferrari-device-low .kpk-brand-dock__name {
   text-shadow: none !important;
@@ -2190,11 +2193,15 @@ body.f-tool-mode .kpk-buyer-dock {
 .kbd-glass {
   border-radius: 22px;
   padding: 12px 12px 10px;
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
-    0 16px 40px rgba(15, 23, 42, 0.15),
-    0 1px 0 rgba(255,255,255,0.75) inset;
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
+  color: #ffffff;
 }
 
 .kbd-head {
@@ -2203,68 +2210,71 @@ body.f-tool-mode .kpk-buyer-dock {
 }
 .kbd-head-title {
   font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
-  text-transform: uppercase; color: rgba(15,23,42,0.45);
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.55);
 }
 .kbd-collapse {
   width: 30px; height: 30px; border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.06);
-  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   display: grid; place-items: center;
-  cursor: pointer; color: rgba(0,0,0,0.45);
+  cursor: pointer; color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
 }
-.kbd-collapse:hover { background: rgba(0,0,0,0.08); color: #0f172a; }
+.kbd-collapse:hover { background: rgba(255, 255, 255, 0.20); color: #ffffff; }
 
 .kbd-origin {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 9px 10px; border-radius: 14px;
-  background: rgba(0,122,255,0.06);
-  border: 1px solid rgba(0,122,255,0.12);
+  background: rgba(0, 180, 255, 0.10);
+  border: 1px solid rgba(0, 180, 255, 0.22);
   margin-bottom: 10px;
 }
 .kbd-origin-empty {
   width: 100%; text-align: center;
-  font-size: 11.5px; color: rgba(0,0,0,0.4); padding: 2px 0;
+  font-size: 11.5px; color: rgba(255, 255, 255, 0.5); padding: 2px 0;
 }
 .kbd-origin-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .kbd-origin-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  background: #007AFF; box-shadow: 0 0 0 4px rgba(0,122,255,0.15);
+  background: #00B4FF; box-shadow: 0 0 0 4px rgba(0, 180, 255, 0.25);
 }
 .kbd-origin-title {
-  font-size: 12.5px; font-weight: 700; color: #0f172a;
+  font-size: 12.5px; font-weight: 700; color: #ffffff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .kbd-origin-coords {
-  font-size: 10.5px; color: rgba(0,0,0,0.42); font-variant-numeric: tabular-nums;
+  font-size: 10.5px; color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums;
 }
 .kbd-origin-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 .kbd-nav-btn {
   width: 28px; height: 28px; border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   display: grid; place-items: center;
   text-decoration: none; cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }
-.kbd-nav-btn:hover { background: #fff; transform: translateY(-1px); }
+.kbd-nav-btn:hover { background: rgba(255, 255, 255, 0.20); transform: translateY(-1px); }
 .kbd-nav-btn img { display: block; }
 
 .kbd-tabs {
   display: flex; gap: 4px;
-  background: rgba(0,0,0,0.05);
-  padding: 3px; border-radius: 12px; margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.20);
+  padding: 3.5px; border-radius: 12px; margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .kbd-tab {
   flex: 1; border: none; cursor: pointer; font: inherit;
   font-size: 12.5px; font-weight: 700; letter-spacing: 0.01em;
   padding: 8px; border-radius: 10px;
-  background: transparent; color: rgba(0,0,0,0.4);
+  background: transparent; color: rgba(255, 255, 255, 0.45);
   transition: all 0.18s ease;
 }
 .kbd-tab.is-on {
-  background: #fff; color: #0f172a;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: rgba(255, 255, 255, 0.15); color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 180, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .kbd-filters {
@@ -2275,18 +2285,24 @@ body.f-tool-mode .kpk-buyer-dock {
 .kbd-filters::-webkit-scrollbar { display: none; }
 .kbd-chip {
   flex-shrink: 0;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 999px;
   padding: 6px 11px;
   font: inherit; font-size: 11.5px; font-weight: 650;
-  color: rgba(0,0,0,0.5); cursor: pointer;
+  color: rgba(255, 255, 255, 0.65); cursor: pointer;
   white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.kbd-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 .kbd-chip.is-on {
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(0, 180, 255, 0.85);
   border-color: transparent;
   color: #fff;
+  box-shadow: 0 0 10px rgba(0, 180, 255, 0.35);
 }
 
 .kbd-search-row {
@@ -2317,7 +2333,7 @@ body.f-tool-mode .kpk-buyer-dock {
 }
 .kbd-radius-label {
   font-size: 11px; font-weight: 650;
-  color: rgba(0,0,0,0.45); letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55); letter-spacing: 0.02em;
 }
 .kbd-radius-control {
   display: flex; align-items: center; gap: 10px;
@@ -2325,25 +2341,25 @@ body.f-tool-mode .kpk-buyer-dock {
 .kbd-radius-slider {
   flex: 1; height: 4px;
   -webkit-appearance: none; appearance: none;
-  background: rgba(0,0,0,0.12);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 2px; outline: none; cursor: pointer;
 }
 .kbd-radius-slider::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 16px; height: 16px; border-radius: 50%;
-  background: #2563eb; border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  background: #00B4FF; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   cursor: pointer;
 }
 .kbd-radius-slider::-moz-range-thumb {
   width: 16px; height: 16px; border-radius: 50%;
-  background: #2563eb; border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  background: #00B4FF; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   cursor: pointer;
 }
 .kbd-radius-value {
   font-size: 13px; font-weight: 700;
-  color: #0f172a; min-width: 44px; text-align: right;
+  color: #ffffff; min-width: 44px; text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2362,17 +2378,18 @@ body.f-tool-mode .kpk-buyer-dock {
   width: 100%; text-align: left;
   border: none; cursor: pointer; font: inherit;
   padding: 9px 10px; border-radius: 12px;
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   transition: background 0.15s ease;
 }
-.kbd-item:hover { background: #eef0f4; }
+.kbd-item:hover { background: rgba(255, 255, 255, 0.12); }
 .kbd-item--row {
   padding: 4px 6px 4px 4px;
   gap: 4px;
 }
 .kbd-item--row.is-on {
-  background: rgba(0, 122, 255, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.22);
+  background: rgba(0, 180, 255, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(0, 180, 255, 0.35);
 }
 .kbd-item-hit {
   flex: 1; min-width: 0;
@@ -2381,35 +2398,35 @@ body.f-tool-mode .kpk-buyer-dock {
   font: inherit; text-align: left; padding: 6px 6px;
   border-radius: 10px;
 }
-.kbd-item-hit:hover { background: rgba(0,122,255,0.06); }
+.kbd-item-hit:hover { background: rgba(0, 180, 255, 0.12); }
 .kbd-item-nav { display: flex; gap: 4px; flex-shrink: 0; padding-right: 2px; }
 
 .kbd-dot {
   width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
 }
-.kbd-dot--disponible { background: #34C759; box-shadow: 0 0 0 3px rgba(52,199,89,0.18); }
-.kbd-dot--vendido { background: #FF3B30; box-shadow: 0 0 0 3px rgba(255,59,48,0.15); }
-.kbd-dot--reservado { background: #FF9500; box-shadow: 0 0 0 3px rgba(255,149,0,0.15); }
+.kbd-dot--disponible { background: #34C759; box-shadow: 0 0 0 3px rgba(52,199,89,0.22); }
+.kbd-dot--vendido { background: #FF3B30; box-shadow: 0 0 0 3px rgba(255,59,48,0.22); }
+.kbd-dot--reservado { background: #FF9500; box-shadow: 0 0 0 3px rgba(255,149,0,0.22); }
 .kbd-dot--nodisponible { background: #8E8E93; }
 .kbd-emoji { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
 .kbd-item-main { flex: 1; min-width: 0; }
 .kbd-item-title {
-  display: block; font-size: 13px; font-weight: 650; color: #0f172a;
+  display: block; font-size: 13px; font-weight: 650; color: #ffffff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .kbd-item-sub {
-  display: block; font-size: 11px; color: rgba(0,0,0,0.45); margin-top: 1px;
+  display: block; font-size: 11px; color: rgba(255, 255, 255, 0.50); margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.kbd-chevron { color: rgba(0,0,0,0.25); font-size: 18px; font-weight: 300; }
+.kbd-chevron { color: rgba(255, 255, 255, 0.35); font-size: 18px; font-weight: 300; }
 .kbd-empty {
   text-align: center; padding: 22px 12px;
-  font-size: 12.5px; color: rgba(0,0,0,0.4); line-height: 1.4;
+  font-size: 12.5px; color: rgba(255, 255, 255, 0.50); line-height: 1.4;
 }
 .kbd-foot {
   margin-top: 8px; padding-top: 8px;
-  border-top: 1px solid rgba(0,0,0,0.06);
-  font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.38);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.50);
   letter-spacing: 0.02em;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   text-align: left;
@@ -2419,17 +2436,17 @@ body.f-tool-mode .kpk-buyer-dock {
   flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 4px;
   padding: 5px 10px; border-radius: 20px;
-  border: 1px solid rgba(0, 120, 255, 0.25);
-  background: rgba(0, 120, 255, 0.07);
+  border: 1px solid rgba(0, 180, 255, 0.35);
+  background: rgba(0, 180, 255, 0.12);
   font: inherit; font-size: 11px; font-weight: 700;
-  color: #0057cc;
+  color: #00B4FF;
   cursor: pointer; letter-spacing: 0.01em;
   transition: background 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
 }
 .kbd-map-inline-btn:hover {
-  background: rgba(0, 120, 255, 0.15);
-  border-color: rgba(0, 120, 255, 0.45);
+  background: rgba(0, 180, 255, 0.22);
+  border-color: rgba(0, 180, 255, 0.55);
 }
 
 /* Minimapa satélite — solo visible en pestaña Mapa ([hidden] debe ganar a display:flex) */
