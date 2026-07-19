@@ -481,7 +481,11 @@
       const txt = e.results[resultIdx][0].transcript.trim();
       if (txt) {
         // Mostrar feedback visual de transcripción en la burbuja móvil
-        const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        if (!popup || popup.style.display === 'none' || !popup.classList.contains('is-visible')) {
+          showMobileBubblePopup('', false);
+          popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        }
         if (popup) {
           const pText = popup.querySelector('#kpk-mbp-text');
           if (pText) {
@@ -4053,6 +4057,24 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       popup.id = 'kpk-mobile-ai-bubble-popup';
       popup.className = 'kpk-mobile-ai-bubble-popup';
       document.body.appendChild(popup);
+    } else if (popup.classList.contains('is-visible') && popup.style.display !== 'none') {
+      const txtEl = popup.querySelector('#kpk-mbp-text');
+      if (txtEl && text !== undefined && text !== '') {
+        txtEl.innerHTML = text;
+      }
+      const inputRow = popup.querySelector('.kpk-mbp-input-row');
+      const controlsRow = popup.querySelector('.kpk-mbp-controls-row');
+      if (inputRow && controlsRow) {
+        inputRow.style.display = 'none';
+        controlsRow.style.display = 'flex';
+      }
+      if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+      if (!keepOpen && !_isWaitingForName && !_jarvisMode) {
+        _bubblePopupTimeout = setTimeout(() => {
+          closeMobileBubblePopup(false);
+        }, 7000);
+      }
+      return;
     }
 
     const mode = _getVoiceMode();
@@ -4180,19 +4202,21 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     }, 50);
 
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-    if (!keepOpen && !_isWaitingForName && !_jarvisMode) {
+    if (!keepOpen && !_isWaitingForName && !_jarvisMode && !_speechEnabled) {
       _bubblePopupTimeout = setTimeout(() => {
-        closeMobileBubblePopup();
+        closeMobileBubblePopup(false);
       }, 7000);
     }
   }
 
-  function closeMobileBubblePopup() {
+  function closeMobileBubblePopup(stopSpeech = true) {
     const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (popup) {
       popup.classList.remove('is-visible');
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+      if (stopSpeech) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+      }
       setTimeout(() => {
         popup.style.display = 'none';
       }, 400);
@@ -4210,10 +4234,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobile) {
           if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-          if (!_isWaitingForName && !_jarvisMode) {
+          if (!_isWaitingForName) {
             _bubblePopupTimeout = setTimeout(() => {
-              closeMobileBubblePopup();
-            }, 6000);
+              closeMobileBubblePopup(false);
+            }, 1500);
           }
         }
       }
