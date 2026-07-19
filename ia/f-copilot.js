@@ -2757,27 +2757,66 @@
 
     for (const intent of INTENT_PATTERNS) {
       if (intent.re.test(clean)) {
-        // Usar origen del dron como fallback de coordenadas seguro en vez de Alerce
+        // Coordenadas del dron como fallback seguro
         let lat = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lat) || -41.875850;
         let lng = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lng) || -72.748294;
         let mapTitle = intent.mapTitle;
         let foundPoiName = intent.poiKey;
         let hasMatch = false;
+        let respuestaDinamica = intent.respuesta;
 
         try {
           const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
-          const match = livePins.find(p =>
-            (p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)) ||
-            (p.categoria && p.categoria.toLowerCase().includes(intent.filter))
+          // Filtrar pins que corresponden a esta categoría o palabra clave
+          const filtered = livePins.filter(p =>
+            p.tipo === 'poi' && (
+              (p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)) ||
+              (p.categoria && p.categoria.toLowerCase().includes(intent.filter))
+            )
           );
-          if (match && match.lat && match.lng) {
-            lat = match.lat;
-            lng = match.lng;
-            mapTitle = match.nombre;
-            foundPoiName = match.nombre;
+
+          if (filtered.length > 0) {
+            // Ordenar por distancia real (la menor en metros)
+            filtered.sort((a, b) => {
+              const distA = a._routeDistM != null ? a._routeDistM : (a._distM || 999999);
+              const distB = b._routeDistM != null ? b._routeDistM : (b._distM || 999999);
+              return distA - distB;
+            });
+
+            const closest = filtered[0];
+            lat = closest.lat;
+            lng = closest.lng;
+            mapTitle = closest.nombre;
+            foundPoiName = closest.nombre;
             hasMatch = true;
+
+            // Formatear distancias y tiempos reales calculados
+            const distKm = closest._routeDistM ? (closest._routeDistM / 1000).toFixed(1) + ' km' : (closest._distM ? (closest._distM / 1000).toFixed(1) + ' km' : '');
+            const tiempoMin = closest._routeDurationS ? Math.round(closest._routeDurationS / 60) + ' min' : '';
+            const travelInfo = (distKm && tiempoMin) ? `a **${distKm}** (**${tiempoMin}** en auto)` : distKm ? `a **${distKm}**` : '';
+
+            // Adaptar respuesta de Gigi o Jarvis según el género configurado
+            const voiceMode = _getVoiceMode();
+            const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+            const prefix = isG 
+              ? '¡Con gusto! Déjame ayudarte.' 
+              : 'Por supuesto, señor.';
+
+            if (intent.filter === 'educacion') {
+              respuestaDinamica = `${prefix} El colegio más cercano es la **${closest.nombre}**, que se encuentra ${travelInfo} del loteo. He activado el filtro de colegios en el radar y trazado la ruta exacta en el mapa flotante.`;
+            } else if (intent.filter === 'salud') {
+              respuestaDinamica = `${prefix} La atención médica más cercana es la **${closest.nombre}**, ubicada ${travelInfo} del proyecto. He abierto el radar de salud y cargado la ruta en el mapa interactivo.`;
+            } else if (intent.filter === 'seguridad') {
+              respuestaDinamica = `${prefix} El punto de seguridad más cercano es el **${closest.nombre}**, ubicado ${travelInfo} del proyecto. He activado el filtro de seguridad y desplegado la ruta de acceso en el mapa.`;
+            } else if (intent.filter === 'compras') {
+              respuestaDinamica = `${prefix} El comercio más cercano es **${closest.nombre}**, que está ${travelInfo} del loteo. He activado el filtro de compras en el radar y cargado la ruta de acceso en el mapa flotante.`;
+            } else if (intent.filter === 'servicios') {
+              respuestaDinamica = `${prefix} El servicio más cercano es **${closest.nombre}**, ubicado ${travelInfo} del proyecto. He activado el filtro de servicios y trazado la ruta de acceso en el mapa flotante.`;
+            }
           }
-        } catch(e) {}
+        } catch(e) {
+          console.warn('[Ferrari/IA] Error calculando POI cercano:', e);
+        }
 
         const actions = [
           { type: 'filterNearby', category: intent.filter }
@@ -2789,8 +2828,17 @@
           actions.push({ type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle });
         }
 
+        // Adaptar respuesta si el modo Gigi está activo y es la respuesta fallback
+        if (!hasMatch) {
+          const voiceMode = _getVoiceMode();
+          const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+          if (isG) {
+            respuestaDinamica = respuestaDinamica.replace(/asesor/g, 'asesora').replace(/señor/g, '😊');
+          }
+        }
+
         return {
-          text: intent.respuesta,
+          text: respuestaDinamica,
           actions: actions
         };
       }
