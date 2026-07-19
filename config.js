@@ -9,17 +9,17 @@
 (function() {
   window.KPK_CONFIG = {
     // Incrementa este número si cambias la configuración general para obligar al borrado de caché
-    configVersion: 6,
+    configVersion: 7,
 
-    // Proveedor predeterminado para todos los clientes (OpenRouter con soporte CORS en navegadores)
-    aiProvider: 'openrouter',
+    // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
+    aiProvider: 'lightning',
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {
+      lightning:  'kpk-enc-NzE3NzY5ODdjYzJhLTdhZTgtNGEyNC1iOTQzLTIyYjJhMTYyLXRpbC1rcw==',
       openrouter: 'kpk-enc-YjU0YzU0MWU4M2M5Y2Q1MzVmY2U4ODVjM2ZkZTFhMDJkMGE0ZTlmOGZjNDFmZTA0ZmU1M2NmZGE0OGI0NzFkMS0xdi1yby1rcw==',
       groq:       '',
-      gemini:     '',
-      lightning:  'kpk-enc-NzE3NzY5ODdjYzJhLTdhZTgtNGEyNC1iOTQzLTIyYjJhMTYyLXRpbC1rcw=='
+      gemini:     ''
     },
 
     // ─── ALERTAS DE WHATSAPP (CallMeBot) ───

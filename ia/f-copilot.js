@@ -61,7 +61,7 @@
     _provider = localStorage.getItem('ferrari_ai_provider')
       || cfg.aiProvider
       || remoteProvider
-      || 'openrouter';
+      || 'lightning';
 
     // Key: localStorage tiene prioridad (configurada en el admin),
     // luego KPK_CONFIG (config.local.js del servidor), nunca hardcodeada
