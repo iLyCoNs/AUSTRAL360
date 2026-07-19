@@ -1666,7 +1666,7 @@
 
   // ─── Nivel 1: ElevenLabs TTS ───────────────────────────────────────────────
   // Voice IDs oficiales:
-  const ELEVENLABS_VOICE_GIGI   = 'jBpfuIE2acCO8z3wKNLl'; // Gigi — Locutora/vendedora latina premium
+  const ELEVENLABS_VOICE_GIGI   = 'hpp4J3VqNfWAUOO0d1Us'; // Gigi (Bella) — Locutora/vendedora latina premium
   const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
 
   function _getElevenLabsKey() {
@@ -1735,8 +1735,8 @@
 
   function _voiceModeLabel(mode) {
     switch(mode) {
-      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" activa (Vendedora latina premium).';
-      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" activo (Jarvis británico premium).';
+      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" (Voz Bella - Vendedora premium)';
+      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" (Jarvis británico premium)';
       case 'edge_dalia':        return 'Edge Neural "Dalia" activa (Vendedora latina gratis).';
       case 'edge_alvaro':       return 'Edge Neural "Álvaro" activo (Hombre España gratis).';
       case 'edge_ryan':         return 'Edge Neural "Ryan" activo (Jarvis británico gratis).';
