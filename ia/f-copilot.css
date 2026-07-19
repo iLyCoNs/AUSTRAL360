@@ -1180,4 +1180,29 @@
   }
 }
 
+/* Burbuja de voz minimalista (para no obstruir el plano 360° en celular) */
+.kpk-mobile-ai-bubble-popup.kpk-mbp-minimal {
+  background: rgba(12, 17, 28, 0.52);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: 10px 14px;
+  bottom: 84px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.kpk-mobile-ai-bubble-popup.kpk-mbp-minimal .kpk-mbp-header {
+  display: none !important;
+}
+.kpk-mobile-ai-bubble-popup.kpk-mbp-minimal .kpk-mbp-footer {
+  display: none !important;
+}
+.kpk-mobile-ai-bubble-popup.kpk-mbp-minimal .kpk-mbp-text {
+  max-height: 90px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: center;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
 

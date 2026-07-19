@@ -399,7 +399,11 @@
 
       const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
       if (popup && popup.classList.contains('is-visible')) {
-        closeMobileBubblePopup();
+        if (popup.classList.contains('kpk-mbp-minimal')) {
+          expandMobileBubblePopup();
+        } else {
+          closeMobileBubblePopup();
+        }
       } else {
         const mode = _getVoiceMode();
         const isGigi = mode.includes('gigi') || mode.includes('dalia');
@@ -4080,25 +4084,44 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
   // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
   function showMobileBubblePopup(text, keepOpen) {
+    const isMinimal = _speechEnabled && !_isWaitingForName;
     let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (!popup) {
       popup = document.createElement('div');
       popup.id = 'kpk-mobile-ai-bubble-popup';
       popup.className = 'kpk-mobile-ai-bubble-popup';
       document.body.appendChild(popup);
+      
+      popup.addEventListener('click', () => {
+        if (popup.classList.contains('kpk-mbp-minimal')) {
+          expandMobileBubblePopup();
+        }
+      });
     } else if (popup.classList.contains('is-visible') && popup.style.display !== 'none') {
       const txtEl = popup.querySelector('#kpk-mbp-text');
       if (txtEl && text !== undefined && text !== '') {
         txtEl.innerHTML = text;
       }
-      const inputRow = popup.querySelector('.kpk-mbp-input-row');
-      const controlsRow = popup.querySelector('.kpk-mbp-controls-row');
-      if (inputRow && controlsRow) {
-        inputRow.style.display = 'none';
-        controlsRow.style.display = 'flex';
+      
+      if (isMinimal) {
+        popup.classList.add('kpk-mbp-minimal');
+      } else {
+        popup.classList.remove('kpk-mbp-minimal');
+        const inputRow = popup.querySelector('.kpk-mbp-input-row');
+        const controlsRow = popup.querySelector('.kpk-mbp-controls-row');
+        if (inputRow && controlsRow) {
+          if (_isWaitingForName) {
+            inputRow.style.display = 'flex';
+            controlsRow.style.display = 'none';
+          } else {
+            inputRow.style.display = 'none';
+            controlsRow.style.display = 'flex';
+          }
+        }
       }
+      
       if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-      if (!keepOpen && !_isWaitingForName && !_jarvisMode) {
+      if (!keepOpen && !_isWaitingForName && !_jarvisMode && !_speechEnabled) {
         _bubblePopupTimeout = setTimeout(() => {
           closeMobileBubblePopup(false);
         }, 7000);
@@ -4234,6 +4257,12 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       }
     });
 
+    if (isMinimal) {
+      popup.classList.add('kpk-mbp-minimal');
+    } else {
+      popup.classList.remove('kpk-mbp-minimal');
+    }
+
     popup.style.display = 'flex';
     setTimeout(() => {
       popup.classList.add('is-visible');
@@ -4258,6 +4287,23 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       setTimeout(() => {
         popup.style.display = 'none';
       }, 400);
+    }
+  }
+
+  function expandMobileBubblePopup() {
+    const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (popup) {
+      popup.classList.remove('kpk-mbp-minimal');
+      const inputRow = popup.querySelector('#kpk-mbp-input-row');
+      const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
+      if (inputRow && controlsRow) {
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
+        const input = inputRow.querySelector('input');
+        if (input) {
+          setTimeout(() => input.focus(), 100);
+        }
+      }
     }
   }
 
