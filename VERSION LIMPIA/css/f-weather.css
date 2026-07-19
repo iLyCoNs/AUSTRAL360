@@ -1,0 +1,198 @@
+/**
+ * f-weather.css — Widget meteorológico · macOS glassmorphism ultra-blur
+ */
+
+/* ─── Widget container ──────────────────────────────────────────────────────── */
+#kpk-weather-widget {
+  position: fixed;
+  /* Alineado a 1 cm (38px) del costado de las herramientas de maximización de Pannellum (left: 10px + 26px width = 36px) */
+  top: 14px;
+  left: 74px;
+  right: auto;
+  z-index: 99990;
+
+  width: 174px;
+  border-radius: 20px;
+  overflow: hidden;
+
+  /* Glassmorphism ultra-blur */
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
+
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  color: #fff;
+  user-select: none;
+  transition: box-shadow 0.25s ease, opacity 0.2s ease;
+  will-change: transform;
+}
+
+#kpk-weather-widget:hover {
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.38),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.14) inset;
+}
+
+/* ─── Handle / drag bar ─────────────────────────────────────────────────────── */
+.kpk-weather__handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px 5px;
+  cursor: grab;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.kpk-weather__handle:active { cursor: grabbing; }
+
+.kpk-weather__grip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  opacity: 0.35;
+}
+.kpk-weather__grip span {
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.kpk-weather__collapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.kpk-weather__collapse:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* ─── Body ──────────────────────────────────────────────────────────────────── */
+.kpk-weather__body {
+  padding: 10px 14px 12px;
+}
+
+/* Main row: big icon + temperature */
+.kpk-weather__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.kpk-weather__icon {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+  transition: transform 0.3s ease;
+}
+#kpk-weather-widget:hover .kpk-weather__icon {
+  transform: scale(1.08);
+}
+
+.kpk-weather__temp {
+  font-size: 36px;
+  font-weight: 300;
+  letter-spacing: -1px;
+  line-height: 1;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.25);
+}
+
+/* Condition label */
+.kpk-weather__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}
+
+/* Detail chips */
+.kpk-weather__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.kpk-weather__details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 7px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* Footer: coordinates + time */
+.kpk-weather__footer {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.38);
+  letter-spacing: 0.02em;
+  text-align: right;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 6px;
+}
+
+/* ─── Collapsed state ───────────────────────────────────────────────────────── */
+.kpk-weather--collapsed {
+  width: 44px;
+}
+.kpk-weather--collapsed .kpk-weather__grip {
+  display: none;
+}
+
+/* ─── Fullscreen adoption (inside #panorama-container) ─────────────────────── */
+.kpk-fs-adopted#kpk-weather-widget {
+  position: absolute !important;
+}
+
+/* ─── Mobile ────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  #kpk-weather-widget {
+    top: 76px;
+    left: 74px; /* Alineado a la derecha de los controles de zoom de Pannellum */
+    right: auto;
+    width: 148px;
+    border-radius: 16px;
+    transform: scale(0.6) !important;
+    transform-origin: top left !important;
+  }
+  .kpk-weather__temp { font-size: 28px; }
+  .kpk-weather__icon { font-size: 24px; }
+  .kpk-weather__body { padding: 8px 12px 10px; }
+  .kpk-weather__details span { font-size: 9.5px; padding: 2px 6px; }
+}
+
+/* ─── Animación de entrada ──────────────────────────────────────────────────── */
+@keyframes kpk-weather-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+#kpk-weather-widget {
+  animation: kpk-weather-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
