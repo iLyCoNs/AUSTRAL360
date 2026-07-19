@@ -1262,13 +1262,16 @@
     _synthUtterance = new SpeechSynthesisUtterance(cleanText);
     _synthUtterance.lang = 'es-ES';
     
+    // Asignar mejor voz masculina o natural en español según el SO (Windows, Mac, Android, iOS)
     const voices = window.speechSynthesis.getVoices();
-    const esVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) || 
-                    voices.find(v => v.lang.startsWith('es'));
-    if (esVoice) _synthUtterance.voice = esVoice;
+    const jarvisVoice = voices.find(v => v.lang.startsWith('es') && (v.name.includes('Google') || v.name.includes('Pablo') || v.name.includes('Raul') || v.name.includes('Jorge') || v.name.includes('Diego'))) ||
+                        voices.find(v => v.lang.startsWith('es') && !v.name.includes('Sabina') && !v.name.includes('Monica')) ||
+                        voices.find(v => v.lang.startsWith('es'));
+                        
+    if (jarvisVoice) _synthUtterance.voice = jarvisVoice;
     
-    _synthUtterance.rate = 1.05;
-    _synthUtterance.pitch = 0.95;
+    _synthUtterance.rate = 1.02;
+    _synthUtterance.pitch = 0.92; // Tono masculino elegante y grave de Jarvis
     
     _synthUtterance.onstart = () => {
       _shouldRestartMic = false;
