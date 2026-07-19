@@ -39,6 +39,8 @@
   let _nearbyOnPhoto = false;
   let _mapLoadedFor = null;
   let _nearbyRadius = 10; // km, configurable por el cliente 1–30
+  let _nearbySearched = false; // true una vez que se disparó la búsqueda OSM en la sesión
+  let _showMapInLugares = false; // si el usuario quiere ver el mini-mapa dentro del tab Cercanos
 
   const ICON_PLUS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   const ICON_MINUS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg>';
@@ -104,6 +106,44 @@
       waze: `https://waze.com/ul?ll=${encodeURIComponent(q)}&navigate=yes`,
       embed: `https://maps.google.com/maps?q=${encodeURIComponent(q)}&z=16&t=k&hl=es&output=embed`
     };
+  }
+
+  // Construye una URL de embed de Google Maps que muestra la búsqueda de POIs
+  // del filtro activo, centrada exactamente en las coordenadas del drone.
+  function _buildPoiMapUrl() {
+    const o = _origin();
+    if (!o) return null;
+    // Mapeo de filtro → término de búsqueda en español + inglés para mayor cobertura OSM
+    const queryMap = {
+      all:       'servicios cercanos',
+      salud:     'hospital clínica farmacia',
+      seguridad: 'carabineros bomberos policía',
+      educacion: 'colegio escuela liceo',
+      compras:   'supermercado market comercio',
+      servicios: 'bencinera gasolinera servicios'
+    };
+    const term = queryMap[_poiFilter] || 'servicios cercanos';
+    // Google Maps embed con búsqueda de tipo nearby + coordenadas de referencia exactas
+    const q = encodeURIComponent(`${term} cerca de ${o.lat},${o.lng}`);
+    return `https://www.google.com/maps/embed/v1/search?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&q=${q}&center=${o.lat},${o.lng}&zoom=14&language=es`;
+  }
+
+  // Envía el query de búsqueda de POIs abriendo Google Maps en una nueva pestaña
+  // como alternativa cuando el API key del embed falla
+  function _openPoiSearch() {
+    const o = _origin();
+    if (!o) return;
+    const queryMap = {
+      all:       'servicios',
+      salud:     'hospital farmacia',
+      seguridad: 'carabineros bomberos',
+      educacion: 'colegio escuela',
+      compras:   'supermercado',
+      servicios: 'gasolinera servicios'
+    };
+    const term = queryMap[_poiFilter] || 'servicios';
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(term)}/@${o.lat},${o.lng},14z?hl=es`;
+    window.open(url, '_blank', 'noopener');
   }
 
   function _destLinks(lat, lng) {
@@ -229,6 +269,11 @@
       if (_tab !== 'lugares') {
         _setNearbyOnPhoto(false, null);
       }
+      // Al cambiar a Cercanos desde la barra de tabs: auto-buscar si no se hizo
+      if (_tab === 'lugares' && !_nearbySearched && _origin()) {
+        _nearbySearched = true;
+        _searchNearby();
+      }
       render();
     });
 
@@ -237,7 +282,11 @@
       const chip = e.target.closest('.kbd-chip');
       if (chip) {
         if (_tab === 'lotes') _loteFilter = chip.dataset.id;
-        else _poiFilter = chip.dataset.id;
+        else {
+          _poiFilter = chip.dataset.id;
+          // Al cambiar el filtro, invalidar el mapa de POIs para que se recargue
+          _mapLoadedFor = null;
+        }
         render();
         return;
       }
@@ -284,6 +333,7 @@
       if (act === 'maps' && links) window.open(links.maps, '_blank', 'noopener');
       if (act === 'satellite' && links) window.open(links.satellite, '_blank', 'noopener');
       if (act === 'waze' && links) window.open(links.waze, '_blank', 'noopener');
+      if (act === 'search-poi') _openPoiSearch();
       if (act === 'copy' && o) {
         const txt = `${o.lat}, ${o.lng}`;
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -465,7 +515,7 @@
     `;
   }
 
-  function _renderMap() {
+  function _renderMap(embedUrl) {
     const lists = _root.querySelector('#kbd-body-lists');
     const mapBody = _root.querySelector('#kbd-body-map');
     const frame = _root.querySelector('#kbd-map-frame');
@@ -484,12 +534,15 @@
       return;
     }
 
+    // Si se pasa una URL de embed personalizada (POI search), usarla; si no, satélite de origen
+    const targetUrl = embedUrl || links.embed;
+    const cacheKey = targetUrl;
+
     if (empty) empty.hidden = true;
     if (frame) {
-      const key = `${o.lat.toFixed(5)},${o.lng.toFixed(5)}`;
-      if (_mapLoadedFor !== key) {
-        frame.src = links.embed;
-        _mapLoadedFor = key;
+      if (_mapLoadedFor !== cacheKey) {
+        frame.src = targetUrl;
+        _mapLoadedFor = cacheKey;
       }
       frame.hidden = false;
     }
@@ -498,11 +551,14 @@
       actions.innerHTML = `
         <button type="button" class="kbd-map-btn" data-act="satellite">
           <img src="${ICON_MAPS}" alt="" width="14" height="14">
-          <span>Ver satélite</span>
+          <span>Satélite</span>
         </button>
         <button type="button" class="kbd-map-btn" data-act="waze">
           <img src="${ICON_WAZE}" alt="" width="14" height="14">
-          <span>Ir con Waze</span>
+          <span>Waze</span>
+        </button>
+        <button type="button" class="kbd-map-btn" data-act="search-poi">
+          <span>🔍 Buscar en Maps</span>
         </button>
         <button type="button" class="kbd-map-btn kbd-map-btn--ghost" data-act="copy">
           <span>Copiar coords</span>
@@ -670,9 +726,26 @@
           });
         });
       }
-      foot.textContent = o
-        ? `${pins.length} lugar${pins.length !== 1 ? 'es' : ''} · toca uno para verlo en el 360°`
-        : `${pins.length} lugar${pins.length !== 1 ? 'es' : ''}`;
+      // Pie del tab con conteo y botón "Ver en mapa"
+      const hasOrigin = !!o;
+      const mapBtnHtml = hasOrigin
+        ? `<button type="button" class="kbd-map-inline-btn" data-action="view-poi-map">🗺️ Ver en mapa</button>`
+        : '';
+      foot.innerHTML = `<span>${o ? `${pins.length} lugar${pins.length !== 1 ? 'es' : ''} · toca uno para verlo en el 360°` : `${pins.length} lugar${pins.length !== 1 ? 'es' : ''}`}</span>${mapBtnHtml}`;
+
+      // Listener del botón mapa inline
+      const mapBtn = foot.querySelector('[data-action="view-poi-map"]');
+      if (mapBtn) {
+        mapBtn.addEventListener('click', () => {
+          _tab = 'mapa';
+          // Forzar reload del mapa al cambiar filtro
+          _mapLoadedFor = null;
+          const poiUrl = _buildPoiMapUrl();
+          const tabBtn = _root.querySelector('.kbd-tab[data-tab="mapa"]');
+          if (tabBtn) _root.querySelectorAll('.kbd-tab').forEach(t => t.classList.toggle('is-on', t === tabBtn));
+          _renderMap(poiUrl);
+        });
+      }
     }
   }
 
@@ -715,7 +788,62 @@
     bind();
   }
 
-  window.FerrariBuyerDock = { refresh, render, setExpanded, setCtaOpen };
+  function setTab(tabName) {
+    if (['lotes', 'lugares', 'mapa'].indexOf(tabName) === -1) return;
+    _tab = tabName;
+    const root = _ensure();
+    const tabBtn = root.querySelector(`.kbd-tab[data-tab="${tabName}"]`);
+    if (tabBtn) {
+      root.querySelectorAll('.kbd-tab').forEach(t => t.classList.toggle('is-on', t === tabBtn));
+    }
+    // Al abrir la pestaña Cercanos: auto-disparar búsqueda OSM si aún no se ha hecho
+    if (tabName === 'lugares' && !_nearbySearched && _origin()) {
+      _nearbySearched = true;
+      _searchNearby();
+    }
+    render();
+  }
+
+  function setRadius(km) {
+    const radius = Math.max(1, Math.min(30, Number(km) || 10));
+    _nearbyRadius = radius;
+    const root = _ensure();
+    const radiusVal = root.querySelector('#kbd-radius-value');
+    if (radiusVal) {
+      radiusVal.textContent = _nearbyRadius + ' km';
+    }
+    const input = root.querySelector('#kbd-radius-input');
+    if (input) {
+      input.value = _nearbyRadius;
+    }
+    render();
+  }
+
+  function getNearbyPlaces() {
+    const pins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
+    return pins.filter(p => p.tipo === 'poi' || p.tipo === 'ruta').map(p => ({
+      nombre: p.nombre || 'Lugar sin nombre',
+      categoria: p.categoria || 'Servicio',
+      distanciaM: p._distM || 0,
+      rutaM: p._routeDistM || 0,
+      tiempoRutaSeg: p._routeDurationS || 0,
+      lat: p.lat,
+      lng: p.lng
+    }));
+  }
+
+  function setFilter(filterId) {
+    if (POI_GROUPS.some(g => g.id === filterId)) {
+      _poiFilter = filterId;
+      render();
+    }
+  }
+
+  function searchNearby() {
+    _searchNearby();
+  }
+
+  window.FerrariBuyerDock = { refresh, render, setExpanded, setCtaOpen, setTab, setRadius, setFilter, getNearbyPlaces, searchNearby };
 
   console.log('[Ferrari/BuyerDock] ✓ Módulo cargado (colapsable + 360° CTA)');
 

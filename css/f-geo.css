@@ -527,8 +527,9 @@
 #panorama-container.geo-tool-active { cursor: crosshair; }
 
 @media (max-width: 720px) {
-  #f-compass { top: 8px; right: 8px; padding: 6px 8px 6px 6px; gap: 7px; }
-  .fc-ring { width: 44px; height: 44px; }
+  #f-compass { top: 76px !important; right: 12px !important; padding: 0 !important; gap: 4px !important; }
+  .fc-orb { width: 51px !important; height: 51px !important; }
+  .fc-bearing { font-size: 9.5px !important; }
   .fgp-card {
     min-width: 120px;
     max-width: min(88vw, 300px);

@@ -12,6 +12,33 @@
   <link rel="stylesheet" href="css/ferrari.css?v=29">
   <link rel="stylesheet" href="css/f-gallery.css?v=1">
   <link rel="stylesheet" href="css/f-geo.css?v=7">
+  <!-- Copiloto IA de Ventas -->
+  <link rel="stylesheet" href="ia/f-copilot.css?v=1">
+  <!-- Widget Meteorológico -->
+  <link rel="stylesheet" href="css/f-weather.css?v=1">
+  <!-- Configuración predeterminada (API keys obfuscadas) — en el repositorio -->
+  <script src="config.js?v=3"></script>
+  <!-- Configuración local (API keys de desarrollo) — gitignoreado -->
+  <script src="config.local.js" onerror="window.KPK_CONFIG=window.KPK_CONFIG||null"></script>
+  <!-- Limpiador de keys obsoletas: corre DESPUÉS de que la configuración cargó -->
+  <script>
+    (function() {
+      var cfg = window.KPK_CONFIG;
+      if (!cfg) return;
+      var currentVer = String(cfg.configVersion || '1');
+      var storedVer  = localStorage.getItem('kpk_config_version') || '0';
+      if (storedVer !== currentVer) {
+        ['ferrari_ai_provider', 'ferrari_ai_key_openrouter',
+         'ferrari_ai_key_groq', 'ferrari_ai_key_gemini',
+         'ferrari_gemini_api_key'].forEach(function(k) {
+          localStorage.removeItem(k);
+        });
+        localStorage.setItem('kpk_config_version', currentVer);
+        console.log('[KPK] Config v' + currentVer + ' cargada — keys AI sincronizadas.');
+      }
+    })();
+  </script>
+
 </head>
 <body>
 
@@ -373,6 +400,10 @@
           <span class="kpk-spec-label">Valor CLP</span>
           <span class="kpk-spec-val kpk-spec-val--clp" id="spec-val-clp">$57.000.000</span>
         </div>
+        <div class="kpk-spec-divider"></div>
+        <div class="kpk-spec-tags-container" id="spec-val-tags-container" style="display: none; padding: 12px 0 0 0;">
+          <!-- Se inyectan los tags dinámicamente -->
+        </div>
       </div>
 
       <div class="kpk-spectator-footer">
@@ -488,6 +519,12 @@
 
   <!-- Ferrari Device: detección de capacidad (debe ir antes de f-init) -->
   <script src="js/core/f-device.js?v=1"></script>
+
+  <!-- Copiloto IA de Ventas -->
+  <script src="ia/f-copilot.js?v=1"></script>
+
+  <!-- Widget Meteorológico (Open-Meteo · sin API key) -->
+  <script src="js/ui/f-weather.js?v=1"></script>
 
   <!-- Ferrari Init: último, arranca todo -->
   <script src="js/core/f-init.js?v=19"></script>

@@ -9,8 +9,8 @@
 
   const CACHE_KEY = 'ferrari360_brand';
   const CONTACT_DEFAULTS = {
-    whatsapp: '',
-    formEmail: '',
+    whatsapp: '56987491964',
+    formEmail: 'perito.vidal@gmail.com',
     formEnabled: true,
     platformCta: 'Consigue tu 360° aquí',
     platformWhatsapp: '',
@@ -29,6 +29,8 @@
     dockStyle: 'crystal',
     mobileSolid: true,
     hideLoteFill: false,
+    loteFillOnHoverOnly: false,
+    loteHoverColor: 'neon-green',
     contact: { ...CONTACT_DEFAULTS },
     updatedAt: null
   };
@@ -107,6 +109,8 @@
     if (!Array.isArray(b.logos)) b.logos = [];
     if (b.mobileSolid == null) b.mobileSolid = true;
     if (b.hideLoteFill == null) b.hideLoteFill = false;
+    if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
+    if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
     b.contact = Object.assign({}, CONTACT_DEFAULTS, (brand && brand.contact) || b.contact || {});
     // Sync logoPath from gallery
     if (b.logoId && b.logos.length) {
@@ -206,6 +210,24 @@
 
     const wantHideFill = !!_brand.hideLoteFill;
     document.body.classList.toggle('kpk-hide-lote-fill', wantHideFill);
+
+    const wantHoverOnly = !!_brand.loteFillOnHoverOnly;
+    document.body.classList.toggle('kpk-lote-fill-hover-only', wantHoverOnly);
+
+    const HOVER_COLORS = {
+      'neon-green':  'rgba(57, 255, 20, 0.35)',
+      'neon-blue':   'rgba(0, 229, 255, 0.35)',
+      'neon-pink':   'rgba(255, 0, 127, 0.35)',
+      'neon-orange': 'rgba(255, 145, 0, 0.35)',
+      'glass-white': 'rgba(255, 255, 255, 0.22)'
+    };
+    const hoverColorId = _brand.loteHoverColor || 'neon-green';
+    const resolvedColor = HOVER_COLORS[hoverColorId] || HOVER_COLORS['neon-green'];
+    if (wantHoverOnly) {
+      document.body.style.setProperty('--kpk-lote-hover-fill', resolvedColor);
+    } else {
+      document.body.style.removeProperty('--kpk-lote-hover-fill');
+    }
   }
 
   function _fromCache() {

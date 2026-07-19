@@ -116,6 +116,28 @@
       }
 
       _syncContactUI(line);
+
+      const tagsContainer = document.getElementById('spec-val-tags-container');
+      if (tagsContainer) {
+        tagsContainer.innerHTML = '';
+        if (line.caracteristicas && line.caracteristicas.trim()) {
+          const tags = line.caracteristicas.split(/[,.;]/).map(t => t.trim()).filter(Boolean);
+          if (tags.length) {
+            tags.forEach(tag => {
+              const span = document.createElement('span');
+              span.className = 'kpk-spec-tag';
+              span.innerHTML = `<span>#</span>${tag}`;
+              tagsContainer.appendChild(span);
+            });
+            tagsContainer.style.display = 'flex';
+          } else {
+            tagsContainer.style.display = 'none';
+          }
+        } else {
+          tagsContainer.style.display = 'none';
+        }
+      }
+
       _setFormOpen(false);
     }
 
@@ -391,6 +413,18 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'No se pudo enviar');
       window.FerrariUI && window.FerrariUI.showToast('✓ Solicitud enviada. Revisa tu correo.', 'success');
+      
+      // Disparar alerta silenciosa de WhatsApp al propietario
+      if (window.FerrariUI && typeof window.FerrariUI.sendWhatsAppAlert === 'function') {
+        window.FerrariUI.sendWhatsAppAlert(
+          payload.name,
+          payload.phone,
+          payload.email,
+          payload.lote,
+          payload.message
+        );
+      }
+
       if (_specFormNote) _specFormNote.textContent = 'Enviado correctamente. Te contactaremos pronto.';
       _specForm.reset();
       _specForm.querySelectorAll('.kpk-spec-type').forEach((l, i) => l.classList.toggle('is-on', i === 0));

@@ -210,45 +210,52 @@ body.edit-tool-active .edit-handle {
    ESTADOS DE LOTE (COLORES)
 ────────────────────────────────────────────── */
 /* Lote Disponible (Gris Transparente por defecto) */
-.lote-interactivo.status-disponible .path-lote-libre,
-.lote-interactivo.status-disponible .path-lote-organico,
-.lote-interactivo.status-disponible .path-franja-grupo {
+.lote-interactivo.status-disponible .path-lote,
+.lote-interactivo.status-disponible .path-default {
   fill: rgba(255, 255, 255, 0.18);
 }
 
 /* Lote Vendido (Rojo con transparencia) */
-.lote-interactivo.status-vendido .path-lote-libre,
-.lote-interactivo.status-vendido .path-lote-organico,
-.lote-interactivo.status-vendido .path-franja-grupo {
+.lote-interactivo.status-vendido .path-lote,
+.lote-interactivo.status-vendido .path-default {
   fill: rgba(255, 59, 48, 0.4);
 }
 
 /* Lote Reservado (Naranjo con transparencia) */
-.lote-interactivo.status-reservado .path-lote-libre,
-.lote-interactivo.status-reservado .path-lote-organico,
-.lote-interactivo.status-reservado .path-franja-grupo {
+.lote-interactivo.status-reservado .path-lote,
+.lote-interactivo.status-reservado .path-default {
   fill: rgba(255, 149, 0, 0.4);
 }
 
 /* Lote No Disponible (Gris Oscuro/Legend) */
-.lote-interactivo.status-nodisponible .path-lote-libre,
-.lote-interactivo.status-nodisponible .path-lote-organico,
-.lote-interactivo.status-nodisponible .path-franja-grupo {
+.lote-interactivo.status-nodisponible .path-lote,
+.lote-interactivo.status-nodisponible .path-default {
   fill: rgba(100, 100, 100, 0.5);
 }
 
-/* Transparencia absoluta en hover para lotes */
-.lote-interactivo:hover .path-lote-libre,
-.lote-interactivo:hover .path-lote-organico,
-.lote-interactivo:hover .path-franja-grupo {
+/* Transparencia absoluta en hover para lotes (desactivada en modo kpk-lote-fill-hover-only) */
+body:not(.kpk-lote-fill-hover-only) .lote-interactivo:hover .path-lote,
+body:not(.kpk-lote-fill-hover-only) .lote-interactivo:hover .path-default {
   fill: transparent !important;
 }
 
 /* Quitar relleno de lotes si la preferencia de marca está activa */
-body.kpk-hide-lote-fill .path-lote-libre,
-body.kpk-hide-lote-fill .path-lote-organico,
-body.kpk-hide-lote-fill .path-franja-grupo {
+body.kpk-hide-lote-fill .path-lote,
+body.kpk-hide-lote-fill .path-default {
   fill: transparent !important;
+}
+
+/* NUEVO: Relleno solo al pasar el cursor (Hover Only) con soporte de paleta dinámica */
+body.kpk-lote-fill-hover-only .path-lote,
+body.kpk-lote-fill-hover-only .path-default {
+  fill: transparent !important;
+  transition: fill 0.25s ease;
+}
+
+body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-lote,
+body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
+  /* Usa la variable de hover elegida, con fallback a verde neón claro */
+  fill: var(--kpk-lote-hover-fill, rgba(57, 255, 20, 0.35)) !important;
 }
 
 /* Bordes neón de lotes */
@@ -256,6 +263,7 @@ body.kpk-hide-lote-fill .path-franja-grupo {
   fill:         none;
   stroke:       var(--svg-lote);
   stroke-linejoin: round;
+  stroke-width: 1.2px; /* Más fino y elegante */
 }
 
 .path-costura {
@@ -264,6 +272,7 @@ body.kpk-hide-lote-fill .path-franja-grupo {
   stroke-dasharray: 8 6;
   pointer-events: none;
   stroke-linecap: round;
+  stroke-width: 0.9px; /* Costuras más finas */
 }
 
 /* ──────────────────────────────────────────────
@@ -1030,11 +1039,7 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 @media (max-width: 768px) {
   :root { --panel-w: calc(100vw - 24px); }
 
-  /* ── Desactivar backdrop-filter en móvil (causa #1 de lag GPU) ── */
-  * {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
+  /* El backdrop-filter se desactiva dinámicamente mediante las clases .ferrari-device-mid y .ferrari-device-low */
 
   /* ── Sombras simplificadas ── */
   .kpk-panel {
@@ -1305,25 +1310,36 @@ body.kpk-hide-lote-fill .path-franja-grupo {
   background: rgba(255, 59, 48, 0.1);
 }
 
-/* ─── MODO ESPECTADOR (Premium macOS) ─── */
+/* ─── MODO ESPECTADOR · Glassmorphism (mismo token que f-weather.css) ─── */
 .kpk-lote-panel.spectator-mode {
-  background: rgba(255,255,255,0.65);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.5);
-  box-shadow: 
-    0 20px 48px rgba(0, 0, 0, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    inset 0 1px 0 rgba(255,255,255,0.8);
+  top: 96px !important;
+  right: 24px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translateX(120%) scale(1) !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s ease !important;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
   border-radius: 20px;
-  color: #1d1d1f;
+  color: rgba(255, 255, 255, 0.92);
   padding: 0;
   width: 320px;
   max-height: none;
   overflow: visible;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+}
+.kpk-lote-panel.spectator-mode.kpk-lote-panel--open {
+  transform: translateX(0) scale(1) !important;
+  opacity: 1 !important;
 }
 .kpk-lote-panel.spectator-mode.form-open {
-  width: min(360px, calc(100vw - 24px));
+  width: 360px;
 }
 
 /* Ocultar elementos de edición */
@@ -1343,24 +1359,25 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 
 .kpk-spectator-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(0,0,0,0.05);
-  border: none;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #86868b;
-  transition: all 0.2s var(--ease-out-expo);
+  color: rgba(255, 255, 255, 0.55);
+  transition: all 0.2s ease;
 }
 .kpk-spectator-close:hover {
-  background: rgba(0,0,0,0.1);
-  color: #1d1d1f;
-  transform: scale(1.05);
+  background: rgba(255, 59, 48, 0.75);
+  border-color: transparent;
+  color: #fff;
+  transform: scale(1.06);
 }
 
 .kpk-spectator-header {
@@ -1387,10 +1404,10 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 
 .kpk-spectator-title {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #1d1d1f;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .kpk-spectator-body {
@@ -1407,28 +1424,28 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 }
 
 .kpk-spec-label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
-  color: #86868b;
+  color: rgba(255, 255, 255, 0.48);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 
 .kpk-spec-val {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: rgba(255, 255, 255, 0.92);
 }
 .kpk-spec-val--clp {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  color: #007AFF; /* Azul macOS */
+  color: rgba(0, 180, 255, 0.95);
 }
 
 .kpk-spec-divider {
   height: 1px;
-  background: rgba(0,0,0,0.06);
-  margin: 4px 0;
+  background: rgba(255, 255, 255, 0.09);
+  margin: 2px 0;
 }
 
 .kpk-spectator-footer {
@@ -1452,11 +1469,15 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 }
 
 .kpk-spec-btn--foto {
-  background: rgba(0,0,0,0.05);
-  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .kpk-spec-btn--foto:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
   transform: translateY(-1px);
 }
 
@@ -1481,14 +1502,21 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 }
 .kpk-spec-btn--mail {
   width: 100%;
-  background: linear-gradient(135deg, #1d1d1f, #3a3a3c);
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: none;
 }
-.kpk-spec-btn--mail:hover { transform: translateY(-1px); }
+.kpk-spec-btn--mail:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
 .kpk-spec-btn--mail.is-open {
-  background: rgba(0,0,0,0.08);
-  color: #1d1d1f;
+  background: rgba(0, 180, 255, 0.15);
+  border-color: rgba(0, 180, 255, 0.28);
+  color: rgba(255, 255, 255, 0.92);
   box-shadow: none;
 }
 .kpk-spec-form {
@@ -1496,9 +1524,11 @@ body.kpk-hide-lote-fill .path-franja-grupo {
   flex-direction: column;
   gap: 10px;
   padding: 0 14px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.72);
-  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -1518,53 +1548,64 @@ body.kpk-hide-lote-fill .path-franja-grupo {
 }
 .kpk-spec-form-head { margin-bottom: 2px; }
 .kpk-spec-form-title {
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-size: 14px; font-weight: 650; color: #1d1d1f;
+  font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-size: 13.5px; font-weight: 650; color: rgba(255,255,255,0.90);
 }
-.kpk-spec-form-sub { font-size: 11.5px; color: #86868b; margin-top: 2px; }
+.kpk-spec-form-sub { font-size: 11px; color: rgba(255,255,255,0.42); margin-top: 2px; }
 .kpk-spec-form-types { display: flex; gap: 6px; }
 .kpk-spec-type {
   flex: 1; text-align: center;
-  padding: 8px 6px; border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.7);
-  font-size: 12px; font-weight: 650; color: #86868b;
+  padding: 7px 6px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.08);
+  font-size: 12px; font-weight: 650; color: rgba(255,255,255,0.55);
   cursor: pointer;
 }
 .kpk-spec-type input { position: absolute; opacity: 0; pointer-events: none; }
 .kpk-spec-type.is-on {
-  background: rgba(0,122,255,0.1);
-  border-color: rgba(0,122,255,0.35);
-  color: #007AFF;
+  background: rgba(0, 180, 255, 0.18);
+  border-color: rgba(0, 180, 255, 0.40);
+  color: rgba(0, 200, 255, 0.95);
 }
 .kpk-spec-field { display: flex; flex-direction: column; gap: 5px; }
 .kpk-spec-field span {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
-  text-transform: uppercase; color: #86868b;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: rgba(255,255,255,0.40);
 }
 .kpk-spec-field input,
 .kpk-spec-field textarea {
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 11px;
-  padding: 10px 12px;
-  font: inherit; font-size: 13.5px; color: #1d1d1f;
-  background: rgba(255,255,255,0.9);
+  padding: 9px 12px;
+  font: inherit; font-size: 13px; color: rgba(255,255,255,0.90);
+  background: rgba(255,255,255,0.08);
   outline: none; resize: vertical;
 }
+.kpk-spec-field input::placeholder,
+.kpk-spec-field textarea::placeholder { color: rgba(255,255,255,0.28); }
 .kpk-spec-field input:focus,
 .kpk-spec-field textarea:focus {
-  border-color: #007AFF;
-  box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+  border-color: rgba(0, 180, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.12);
+  background: rgba(255,255,255,0.11);
 }
 .kpk-spec-btn--submit {
   width: 100%;
-  background: linear-gradient(135deg, #007AFF, #1a8fff);
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(0,122,255,0.28);
+  background: rgba(0, 180, 255, 0.22);
+  border: 1px solid rgba(0, 180, 255, 0.35);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(0, 180, 255, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
-.kpk-spec-btn--submit:disabled { opacity: 0.6; pointer-events: none; }
+.kpk-spec-btn--submit:hover {
+  background: rgba(0, 180, 255, 0.32);
+  box-shadow: 0 6px 18px rgba(0, 180, 255, 0.22);
+  transform: translateY(-1px);
+}
+.kpk-spec-btn--submit:disabled { opacity: 0.5; pointer-events: none; }
 .kpk-spec-form-note {
-  font-size: 11.5px; color: #86868b; text-align: center; margin: 0; line-height: 1.35;
+  font-size: 10.5px; color: rgba(255,255,255,0.32); text-align: center; margin: 0; line-height: 1.35;
 }
 .kpk-spec-honey {
   position: absolute !important;
@@ -2369,7 +2410,26 @@ body.f-tool-mode .kpk-buyer-dock {
   margin-top: 8px; padding-top: 8px;
   border-top: 1px solid rgba(0,0,0,0.06);
   font-size: 11px; font-weight: 600; color: rgba(0,0,0,0.38);
-  text-align: center; letter-spacing: 0.02em;
+  letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  text-align: left;
+}
+/* Botón "Ver en mapa" inline en el pie del tab Cercanos */
+.kbd-map-inline-btn {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 20px;
+  border: 1px solid rgba(0, 120, 255, 0.25);
+  background: rgba(0, 120, 255, 0.07);
+  font: inherit; font-size: 11px; font-weight: 700;
+  color: #0057cc;
+  cursor: pointer; letter-spacing: 0.01em;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.kbd-map-inline-btn:hover {
+  background: rgba(0, 120, 255, 0.15);
+  border-color: rgba(0, 120, 255, 0.45);
 }
 
 /* Minimapa satélite — solo visible en pestaña Mapa ([hidden] debe ganar a display:flex) */
@@ -2456,16 +2516,54 @@ body.f-tool-mode .kpk-buyer-dock {
     height: 36px !important;
   }
 
-  /* Adapt spectrometer modal size and remove transparency for mobile */
+  /* Adapt spectrometer modal to a premium bottom sheet on mobile devices */
   .kpk-lote-panel.spectator-mode {
-    width: min(300px, calc(100vw - 20px)) !important;
-    background: #ffffff !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border: 1px solid rgba(0,0,0,0.12) !important;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 14px !important;
+    left: 50% !important;
+    right: auto !important;
+    width: 250px !important; /* 30% más angosto */
+    max-width: calc(100vw - 20px) !important;
+    border-radius: 18px !important;
+    /* Transición de deslizamiento premium centrado */
+    transform: translateX(-50%) translateY(120%) scale(0.98) !important;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease !important;
+    z-index: 99999 !important;
   }
+  
+  .kpk-lote-panel.spectator-mode.kpk-lote-panel--open {
+    transform: translateX(-50%) translateY(0) scale(1) !important;
+  }
+
   .kpk-lote-panel.spectator-mode.form-open {
-    width: min(320px, calc(100vw - 20px)) !important;
+    width: 280px !important; /* Más angosto también en formulario */
+    height: min(72vh, 460px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* --- Afinación de bordes de lotes en móvil --- */
+  .path-border-neon {
+    stroke-width: 0.8px !important;
+  }
+  .path-costura {
+    stroke-width: 0.6px !important;
+  }
+
+  /* --- Reposicionamiento del HUD de coordenadas en móvil (evita solapamiento con docks) --- */
+  #kpk-hud-layer {
+    bottom: 74px !important;
+    left: 12px !important;
+    padding: 0 !important;
+  }
+  .hud-chip {
+    padding: 4px 10px !important;
+    font-size: 10px !important;
+    background: rgba(10, 10, 15, 0.60) !important;
+    backdrop-filter: blur(12px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 6px !important;
   }
 }
 

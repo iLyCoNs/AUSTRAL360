@@ -679,6 +679,27 @@
     .brand-switch input:checked + span { background: var(--accent); box-shadow: 0 0 8px rgba(0,180,255,0.3); }
     .brand-switch input:checked + span::before { transform: translateX(18px); }
 
+    /* ── PALETA DE COLORES (Hover Only) ── */
+    .hover-color-picker {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 14px; border-radius: 12px;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+      margin-top: 4px;
+    }
+    .hcp-label { font-size: 12.5px; font-weight: 500; color: var(--text-2); }
+    .hcp-options { display: flex; gap: 8px; align-items: center; }
+    .hcp-dot {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; position: relative; transition: all 0.2s var(--ease); outline: none;
+    }
+    .hcp-dot:hover { transform: scale(1.18); }
+    .hcp-dot.active {
+      border: 2px solid #ffffff !important;
+      transform: scale(1.22);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 255, 255, 0.45) !important;
+    }
+
+
     .brand-dock-preview {
       margin-top: 2px;
       display: flex; justify-content: center; align-items: center;
@@ -909,7 +930,44 @@
       background: rgba(255,0,0,0.7); border-color: var(--red);
       transform: scale(1.1); box-shadow: 0 0 20px rgba(255,59,48,0.3);
     }
+
+    /* ══ ESTILOS DE ETIQUETAS PREMIUM (HASHTAGS) ══ */
+    .kpk-spec-tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 16px 16px 16px;
+      justify-content: flex-start;
+    }
+    .kpk-spec-tag {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #e5e7eb;
+      padding: 5px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .kpk-spec-tag span {
+      color: #00B4FF;
+      font-weight: 700;
+    }
+    .kpk-spec-tag:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(0, 180, 255, 0.35);
+      transform: translateY(-1.5px);
+      color: #fff;
+    }
   </style>
+  <!-- Configuración predeterminada y local -->
+  <script src="config.js?v=3"></script>
+  <script src="config.local.js" onerror="window.KPK_CONFIG=window.KPK_CONFIG||null"></script>
 </head>
 <body>
 <!-- ═══ TUTORIAL OVERLAY ═══ -->
@@ -1060,6 +1118,30 @@
             <input type="text" id="brand-name" placeholder="Ej: Residencial Los Álamos" maxlength="90" oninput="liveBrandPreview()">
           </div>
 
+          <div class="efield full">
+            <label>Proveedor de Inteligencia Artificial (Copiloto)</label>
+            <select id="brand-ai-provider" onchange="onAIProviderChange()" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
+              <option value="gemini">Google AI Studio (Gemini 1.5 Flash)</option>
+              <option value="groq">Groq API (Llama 3.1 / Gemma 2)</option>
+              <option value="openrouter" selected>OpenRouter API (Mistral 7B · Gratis)</option>
+              <option value="lightning">Lightning.ai (Gemini 3.5 Flash · Gratis 30M)</option>
+            </select>
+          </div>
+
+          <div class="efield full">
+            <label id="lbl-ai-key">API Key del Proveedor Seleccionado</label>
+            <div class="kpk-ai-key-input-container" style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="brand-ai-key" placeholder="Pega tu API Key aquí..." oninput="onAIKeyChange()" style="flex: 1; padding-right: 42px;">
+              <button type="button" id="btn-toggle-ai-key" onclick="toggleAIKeyVisibility()" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; padding: 4px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="brand-opt-hint" id="ai-key-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Clave de acceso de la IA. Se almacena localmente de forma segura en este navegador.</span>
+          </div>
+
           <div>
             <div class="brand-opt-label">Tipografía del dock</div>
             <div class="brand-font-grid" id="brand-font-grid">
@@ -1132,6 +1214,31 @@
             </div>
           </label>
 
+          <label class="brand-toggle" for="brand-lote-fill-hover-only">
+            <div class="brand-toggle-text">
+              <strong>Relleno solo en Hover</strong>
+              Oculta el relleno interior de todos los lotes, pero muestra el relleno de color del lote de manera individual al pasar el cursor sobre él.
+            </div>
+            <div class="brand-switch">
+              <input type="checkbox" id="brand-lote-fill-hover-only" onchange="liveBrandPreview()">
+              <span></span>
+            </div>
+          </label>
+
+          <div id="brand-hover-color-container" style="display: none; margin-top: 4px;">
+            <div class="hover-color-picker">
+              <div class="hcp-label">Color de realce (Hover):</div>
+              <div class="hcp-options">
+                <button type="button" class="hcp-dot active" data-color="neon-green" style="background: #39FF14; box-shadow: 0 0 8px rgba(57, 255, 20, 0.6);" onclick="setHoverColor('neon-green')" title="Verde Neón Claro"></button>
+                <button type="button" class="hcp-dot" data-color="neon-blue" style="background: #00E5FF; box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);" onclick="setHoverColor('neon-blue')" title="Celeste Neón"></button>
+                <button type="button" class="hcp-dot" data-color="neon-pink" style="background: #FF007F; box-shadow: 0 0 8px rgba(255, 0, 127, 0.6);" onclick="setHoverColor('neon-pink')" title="Rosa Neón"></button>
+                <button type="button" class="hcp-dot" data-color="neon-orange" style="background: #FF9100; box-shadow: 0 0 8px rgba(255, 145, 0, 0.6);" onclick="setHoverColor('neon-orange')" title="Naranja Neón"></button>
+                <button type="button" class="hcp-dot" data-color="glass-white" style="background: #FFFFFF; box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);" onclick="setHoverColor('glass-white')" title="Cristal Blanco"></button>
+              </div>
+            </div>
+          </div>
+
+
           <div>
             <div class="brand-opt-label">Vista previa del tour</div>
             <div class="brand-dock-preview" aria-label="Vista previa del dock">
@@ -1195,6 +1302,34 @@
               La primera vez debes confirmar el correo en el link que FormSubmit te envia.
             </p>
           </div>
+
+          <div class="ecard" style="padding:16px 18px;margin:12px 0 0">
+            <div class="ecard-title">Notificaciones de Reservas a tu WhatsApp (Gratis)</div>
+            <div class="egrid">
+              <div class="efield full">
+                <label class="brand-toggle" for="contact-wa-alerts-enabled" style="margin:0">
+                  <div class="brand-toggle-text">
+                    <strong>Habilitar notificaciones por WhatsApp</strong>
+                    Recibe un WhatsApp cada vez que un cliente cotice o reserve en la web.
+                  </div>
+                  <div class="brand-switch">
+                    <input type="checkbox" id="contact-wa-alerts-enabled">
+                    <span></span>
+                  </div>
+                </label>
+              </div>
+              <div class="efield">
+                <label>Tu número de celular (con código de país, ej: 56987491964)</label>
+                <input type="text" id="contact-wa-alerts-phone" placeholder="56987491964" inputmode="tel">
+              </div>
+              <div class="efield">
+                <label>API Key de CallMeBot (clave recibida por WhatsApp)</label>
+                <input type="password" id="contact-wa-alerts-key" placeholder="Pega tu API Key aquí...">
+              </div>
+            </div>
+            <p class="brand-card-sub" style="margin:12px 0 0; font-size:11px;">
+              <strong>Cómo obtener la API Key gratis:</strong> Agrega a tus contactos al bot de WhatsApp <strong>+34 621 34 22 27</strong> (o haz click <a href="https://wa.me/34621342227" target="_blank" style="color:var(--accent)">aquí</a>), mándale el mensaje <code>I allow callmebot to send me messages</code> y te devolverá tu clave de 6 dígitos al instante.
+            </p>
 
           <div class="ecard" id="contact-platform-lock" style="padding:16px 18px;margin:0" hidden>
             <div class="ecard-title">Plataforma · Consigue tu 360 <span style="opacity:.5;font-weight:500;text-transform:none;letter-spacing:0">(ALT+X)</span></div>
@@ -1268,6 +1403,11 @@
               <label>Valor en UF</label>
               <input type="number" id="f-uf" placeholder="Ej: 1500" min="0" oninput="liveUpdate()">
             </div>
+            <div class="efield full" style="grid-column: span 2;">
+              <label>Cualidades / Características Especiales (para la IA y Espectador)</label>
+              <textarea id="f-caracteristicas" placeholder="Ej: Hermosa vista despejada, terreno 100% plano, árboles nativos, sol de tarde, cerca de la playa..." oninput="liveUpdate()" style="width: 100%; min-height: 80px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; font-family: inherit; font-size: 13.5px; resize: vertical; outline: none; transition: border-color 0.2s;"></textarea>
+              <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Describe los detalles de valor de esta parcela. El Copiloto de Ventas IA las usará para buscar y responder de forma inteligente.</span>
+            </div>
             <div class="clp-line">
               <span>Valor estimado en CLP</span>
               <strong id="f-clp">—</strong>
@@ -1322,6 +1462,10 @@
               <div class="prow"><span class="plabel">Valor UF</span><span class="pval" id="p-uf">— UF</span></div>
               <div class="prow"><span class="plabel">Valor CLP</span><span class="pval clp" id="p-clp">—</span></div>
             </div>
+            <div class="pdiv" id="p-caracteristicas-div" style="display: none; height: 1px; background: rgba(255,255,255,0.06); margin: 10px 0;"></div>
+            <div class="kpk-spec-tags-container" id="p-caracteristicas-tags-container" style="display: none; padding: 4px 16px 16px 16px;">
+              <!-- Se previsualizan los tags en tiempo real -->
+            </div>
             <div class="pfoot">
               <div class="pbtn foto" id="p-btn-foto" onclick="previewGallery()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -1363,8 +1507,8 @@ try {
   if (cachedBackup) _backupSmartPins = JSON.parse(cachedBackup);
 } catch(e) {}
 const CONTACT_DEFAULTS = {
-  whatsapp: '',
-  formEmail: '',
+  whatsapp: '56987491964',
+  formEmail: 'perito.vidal@gmail.com',
   formEnabled: true,
   platformCta: 'Consigue tu 360° aquí',
   platformWhatsapp: '',
@@ -1613,6 +1757,8 @@ function selectLote(id) {
   document.getElementById('f-titulo').value = l.titulo || '';
   document.getElementById('f-dim').value    = l.dimensiones || '';
   document.getElementById('f-uf').value     = l.valorUF || '';
+  const descEl = document.getElementById('f-caracteristicas');
+  if (descEl) descEl.value = l.caracteristicas || '';
   _estado = l.estado || 'disponible';
   refreshEstadoBtns();
   liveUpdate();
@@ -1806,8 +1952,129 @@ function _ghHeaders() {
 }
 
 
+let _hoverColorSelected = 'neon-green';
+
+function setHoverColor(colorId) {
+  _hoverColorSelected = colorId;
+  const dots = document.querySelectorAll('.hcp-dot');
+  dots.forEach(dot => {
+    dot.classList.toggle('active', dot.getAttribute('data-color') === colorId);
+  });
+  liveBrandPreview();
+}
+
+function onAIProviderChange() {
+  const provider = document.getElementById('brand-ai-provider').value;
+  localStorage.setItem('ferrari_ai_provider', provider);
+
+  const lblKey = document.getElementById('lbl-ai-key');
+  const txtKey = document.getElementById('brand-ai-key');
+  const hintKey = document.getElementById('ai-key-hint');
+
+  // Resetear visibilidad a oculto al cambiar de proveedor
+  if (txtKey) txtKey.type = 'password';
+  const btnToggle = document.getElementById('btn-toggle-ai-key');
+  if (btnToggle) {
+    btnToggle.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    `;
+  }
+
+  // Cargar clave guardada para este proveedor
+  // Prioridad: localStorage → config.local.js (KPK_CONFIG) → vacío
+  const cfg = window.KPK_CONFIG || {};
+  let savedKey = localStorage.getItem(`ferrari_ai_key_${provider}`)
+    || (cfg.aiKeys && cfg.aiKeys[provider])
+    || (_brand.aiKeys && _brand.aiKeys[provider])
+    || '';
+
+  // Desofuscar si viene encriptada
+  savedKey = _deobfuscateKey(savedKey);
+
+  if (txtKey) txtKey.value = savedKey;
+
+  // Actualizar placeholders y descripciones
+  if (provider === 'gemini') {
+    if (lblKey) lblKey.textContent = 'API Key de Google AI Studio (Gemini)';
+    if (txtKey) txtKey.placeholder = 'AIzaSy... o token AQ...';
+    if (hintKey) hintKey.innerHTML = 'Soporta API Keys normales (empiezan con AIzaSy) y tokens OAuth de Google Cloud (empiezan con AQ).';
+  } else if (provider === 'groq') {
+    if (lblKey) lblKey.textContent = 'API Key de Groq';
+    if (txtKey) txtKey.placeholder = 'gsk_...';
+    if (hintKey) hintKey.innerHTML = 'Consigue tu llave gratis registrándote en <a href="https://console.groq.com" target="_blank" style="color:var(--accent)">console.groq.com</a>. Modelo: llama-3.1-8b-instant.';
+  } else if (provider === 'openrouter') {
+    if (lblKey) lblKey.textContent = 'API Key de OpenRouter';
+    if (txtKey) txtKey.placeholder = 'sk-or-v1-...';
+    if (hintKey) hintKey.innerHTML = 'Consigue tu llave gratis registrándote en <a href="https://openrouter.ai" target="_blank" style="color:var(--accent)">openrouter.ai</a>. Modelo gratis recomendado: google/gemma-4-26b-a4b-it:free.';
+  } else if (provider === 'lightning') {
+    if (lblKey) lblKey.textContent = 'API Key de Lightning.ai';
+    if (txtKey) txtKey.placeholder = 'sk-lit-...';
+    if (hintKey) hintKey.innerHTML = 'Pega tu API Key de <a href="https://lightning.ai" target="_blank" style="color:var(--accent)">lightning.ai</a>. Modelo: google/gemini-3.5-flash (30M tokens gratis al mes).';
+  }
+}
+
+function onAIKeyChange() {
+  const provider = document.getElementById('brand-ai-provider').value;
+  const val = (document.getElementById('brand-ai-key').value || '').trim();
+  localStorage.setItem(`ferrari_ai_key_${provider}`, val);
+  
+  // Sincronizar clave global para compatibilidad
+  if (provider === 'gemini') {
+    localStorage.setItem('ferrari_gemini_api_key', val);
+  }
+}
+
+function toggleAIKeyVisibility() {
+  const txtKey = document.getElementById('brand-ai-key');
+  const btn = document.getElementById('btn-toggle-ai-key');
+  if (!txtKey || !btn) return;
+
+  const isPassword = txtKey.type === 'password';
+  txtKey.type = isPassword ? 'text' : 'password';
+
+  if (isPassword) {
+    // Icono Ojo Abierto con diagonal (Ocultar)
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+      </svg>
+    `;
+  } else {
+    // Icono Ojo Cerrado estándar (Mostrar)
+    btn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    `;
+  }
+}
+
+
+
+function _obfuscateKey(key) {
+  if (!key) return '';
+  if (key.startsWith('kpk-enc-')) return key;
+  return 'kpk-enc-' + btoa(key.split('').reverse().join(''));
+}
+
+function _deobfuscateKey(encKey) {
+  if (!encKey) return '';
+  if (!encKey.startsWith('kpk-enc-')) return encKey;
+  try {
+    const rawBase = encKey.substring(8);
+    return atob(rawBase).split('').reverse().join('');
+  } catch (e) {
+    return encKey;
+  }
+}
+
 function _brandDefaults() {
-  return { version: 2, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '' }, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
 }
 
 function _normalizeBrand(raw) {
@@ -1818,6 +2085,10 @@ function _normalizeBrand(raw) {
   if (!Array.isArray(b.logos)) b.logos = [];
   if (b.mobileSolid == null) b.mobileSolid = true;
   if (b.hideLoteFill == null) b.hideLoteFill = false;
+  if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
+  if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
+  if (b.aiProvider == null) b.aiProvider = 'openrouter';
+  if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
     b.logoId = 'legacy';
@@ -2047,6 +2318,32 @@ function liveBrandPreview() {
     dock.setAttribute('aria-hidden', 'true');
     if (previewEmpty) previewEmpty.hidden = false;
   }
+  const hideLoteFillEl = document.getElementById('brand-hide-lote-fill');
+  const hideLoteFill = hideLoteFillEl ? !!hideLoteFillEl.checked : false;
+  document.body.classList.toggle('kpk-hide-lote-fill', hideLoteFill);
+
+  const hoverOnlyEl = document.getElementById('brand-lote-fill-hover-only');
+  const hoverOnly = hoverOnlyEl ? !!hoverOnlyEl.checked : false;
+  document.body.classList.toggle('kpk-lote-fill-hover-only', hoverOnly);
+
+  const colorContainer = document.getElementById('brand-hover-color-container');
+  if (colorContainer) {
+    colorContainer.style.display = hoverOnly ? 'block' : 'none';
+  }
+
+  const HOVER_COLORS = {
+    'neon-green':  'rgba(57, 255, 20, 0.35)',
+    'neon-blue':   'rgba(0, 229, 255, 0.35)',
+    'neon-pink':   'rgba(255, 0, 127, 0.35)',
+    'neon-orange': 'rgba(255, 145, 0, 0.35)',
+    'glass-white': 'rgba(255, 255, 255, 0.22)'
+  };
+  if (hoverOnly) {
+    const colorVal = HOVER_COLORS[_hoverColorSelected] || HOVER_COLORS['neon-green'];
+    document.body.style.setProperty('--kpk-lote-hover-fill', colorVal);
+  } else {
+    document.body.style.removeProperty('--kpk-lote-hover-fill');
+  }
 }
 
 function clearBrandLogo() {
@@ -2222,6 +2519,30 @@ async function loadBrandFromGitHub() {
   if (solidEl) solidEl.checked = _brand.mobileSolid !== false;
   const hideFillEl = document.getElementById('brand-hide-lote-fill');
   if (hideFillEl) hideFillEl.checked = _brand.hideLoteFill === true;
+  const hoverOnlyEl = document.getElementById('brand-lote-fill-hover-only');
+  if (hoverOnlyEl) hoverOnlyEl.checked = _brand.loteFillOnHoverOnly === true;
+
+  // Sincronizar llaves remotas al localStorage para evitar borrados accidentales al guardar
+  if (_brand.aiKeys) {
+    for (const key in _brand.aiKeys) {
+      if (_brand.aiKeys[key]) {
+        localStorage.setItem(`ferrari_ai_key_${key}`, _deobfuscateKey(_brand.aiKeys[key]));
+      }
+    }
+  }
+
+  const providerEl = document.getElementById('brand-ai-provider');
+  if (providerEl) {
+    providerEl.value = localStorage.getItem('ferrari_ai_provider') || _brand.aiProvider || 'gemini';
+  }
+  onAIProviderChange();
+
+  _hoverColorSelected = _brand.loteHoverColor || 'neon-green';
+  const dots = document.querySelectorAll('.hcp-dot');
+  dots.forEach(dot => {
+    dot.classList.toggle('active', dot.getAttribute('data-color') === _hoverColorSelected);
+  });
+
   _brandFont = BRAND_FONTS[_brand.font] ? _brand.font : 'cormorant';
   _brandStyle = BRAND_STYLES.indexOf(_brand.dockStyle) !== -1 ? _brand.dockStyle : 'crystal';
   setBrandFont(_brandFont);
@@ -2286,6 +2607,12 @@ async function saveBrand() {
     const hideLoteFill = document.getElementById('brand-hide-lote-fill')
       ? !!document.getElementById('brand-hide-lote-fill').checked
       : false;
+    const loteFillOnHoverOnly = document.getElementById('brand-lote-fill-hover-only')
+      ? !!document.getElementById('brand-lote-fill-hover-only').checked
+      : false;
+    const aiProvider = document.getElementById('brand-ai-provider')
+      ? document.getElementById('brand-ai-provider').value
+      : 'gemini';
     const stamp = Date.now();
 
     // 1) Subir logos pendientes
@@ -2328,6 +2655,15 @@ async function saveBrand() {
       dockStyle: _brandStyle,
       mobileSolid,
       hideLoteFill,
+      loteFillOnHoverOnly,
+      loteHoverColor: _hoverColorSelected,
+      aiProvider,
+      aiKeys: {
+        openrouter: _obfuscateKey(localStorage.getItem('ferrari_ai_key_openrouter') || ''),
+        groq:       _obfuscateKey(localStorage.getItem('ferrari_ai_key_groq') || ''),
+        gemini:     _obfuscateKey(localStorage.getItem('ferrari_ai_key_gemini') || ''),
+        lightning:  _obfuscateKey(localStorage.getItem('ferrari_ai_key_lightning') || '')
+      },
       contact: _readContactFromForm(),
       updatedAt: stamp
     };
@@ -2392,7 +2728,12 @@ function _readContactFromForm() {
     platformWhatsapp: (document.getElementById('contact-platform-wa') && document.getElementById('contact-platform-wa').value || '').trim(),
     platformWeb: (document.getElementById('contact-platform-web') && document.getElementById('contact-platform-web').value || '').trim() || CONTACT_DEFAULTS.platformWeb,
     platformLogo: (document.getElementById('contact-platform-logo') && document.getElementById('contact-platform-logo').value || '').trim() || CONTACT_DEFAULTS.platformLogo,
-    platformName: (document.getElementById('contact-platform-name') && document.getElementById('contact-platform-name').value || '').trim() || CONTACT_DEFAULTS.platformName
+    platformName: (document.getElementById('contact-platform-name') && document.getElementById('contact-platform-name').value || '').trim() || CONTACT_DEFAULTS.platformName,
+    
+    // Alertas de WhatsApp (ofuscadas para el JSON de GitHub)
+    waAlertsEnabled: document.getElementById('contact-wa-alerts-enabled') ? !!document.getElementById('contact-wa-alerts-enabled').checked : false,
+    waAlertsPhone: (document.getElementById('contact-wa-alerts-phone') && document.getElementById('contact-wa-alerts-phone').value || '').trim(),
+    waAlertsKey: _obfuscateKey((document.getElementById('contact-wa-alerts-key') && document.getElementById('contact-wa-alerts-key').value || '').trim())
   };
 }
 
@@ -2403,6 +2744,13 @@ function _fillContactForm(contact) {
   set('contact-form-email', c.formEmail);
   const en = document.getElementById('contact-form-enabled');
   if (en) en.checked = c.formEnabled !== false;
+  
+  // Alertas de WhatsApp
+  const waEn = document.getElementById('contact-wa-alerts-enabled');
+  if (waEn) waEn.checked = !!c.waAlertsEnabled;
+  set('contact-wa-alerts-phone', c.waAlertsPhone || '');
+  set('contact-wa-alerts-key', _deobfuscateKey(c.waAlertsKey || ''));
+
   set('contact-platform-cta', c.platformCta);
   set('contact-platform-wa', c.platformWhatsapp);
   set('contact-platform-web', c.platformWeb);
@@ -2494,6 +2842,21 @@ function liveUpdate() {
   document.getElementById('p-clp').textContent   = clpRaw ? '~ '+fmtCLP(clpRaw) : '—';
   document.getElementById('f-clp').textContent   = clpRaw ? '~ '+fmtCLP(clpRaw) : '—';
 
+  const desc = document.getElementById('f-caracteristicas') ? document.getElementById('f-caracteristicas').value : '';
+  const descWrap = document.getElementById('p-caracteristicas-wrap');
+  const descDiv = document.getElementById('p-caracteristicas-div');
+  const descTxt = document.getElementById('p-caracteristicas');
+  if (descWrap && descTxt && descDiv) {
+    if (desc.trim()) {
+      descTxt.textContent = desc;
+      descWrap.style.display = 'block';
+      descDiv.style.display = 'block';
+    } else {
+      descWrap.style.display = 'none';
+      descDiv.style.display = 'none';
+    }
+  }
+
   const fotos = _cid ? _currentFotos() : [];
   const previewBtn = document.getElementById('p-btn-foto');
   if (previewBtn) previewBtn.classList.toggle('is-empty', !fotos.length);
@@ -2508,6 +2871,8 @@ async function saveLote() {
   l.estado      = _estado;
   l.dimensiones = document.getElementById('f-dim').value.trim();
   l.valorUF     = document.getElementById('f-uf').value ? parseFloat(document.getElementById('f-uf').value) : null;
+  const descEl  = document.getElementById('f-caracteristicas');
+  if (descEl) l.caracteristicas = descEl.value.trim();
   if (!Array.isArray(l.fotos)) l.fotos = [];
 
   saveAll();
@@ -2674,38 +3039,44 @@ document.addEventListener('keydown', e => {
     const steps = [
       {
         el: '#brand-card',
-        title: 'Paso 1: Identidad del proyecto',
-        text: 'Aquí gestionas la galería de logos (subir, usar, renombrar, borrar), tipografía y skin del dock. Todo se publica en GitHub.',
+        title: 'Paso 1: Identidad y Copiloto IA',
+        text: 'Aquí personalizas el nombre del proyecto, logo, colores y configuras el Proveedor de IA (recomendamos seleccionar OpenRouter con el modelo gratuito "google/gemma-4-26b-a4b-it:free" pegando su API Key). Todo se publica automáticamente.',
+        pos: 'left'
+      },
+      {
+        el: '[data-section="contacto"]',
+        title: 'Paso 2: Contacto y Alertas WhatsApp',
+        text: 'Aquí defines el WhatsApp de ventas para tus clientes y el correo de FormSubmit. También puedes activar las Alertas por WhatsApp de CallMeBot para recibir avisos de compras al instante.',
         pos: 'left'
       },
       {
         el: '.sidebar',
-        title: 'Paso 2: Lista de Lotes',
-        text: 'Usa Lotes, Identidad (dock) y Contacto (WhatsApp, FormSubmit y CTA 360). En Lotes elige un Smart Pin para editarlo.',
+        title: 'Paso 3: Lista de Lotes',
+        text: 'Visualiza la base de datos de todas tus parcelas. Selecciona un lote de la lista para editar sus precios, estado o arrastrar fotos directamente.',
         pos: 'right'
       },
       {
         el: '.editor',
-        title: 'Paso 3: Área de Edición',
-        text: 'Aquí editas precio, estado y la galería de fotos del lote. Arrastra imágenes al bloque “Galería de fotos” y previsualiza cómo las verá el espectador.',
+        title: 'Paso 4: Área de Edición de Lotes',
+        text: 'Modifica detalles individuales del lote seleccionado (precio UF, superficie m², tags de características) y añade galerías de fotos que verá el comprador.',
         pos: 'left'
       },
       {
         el: '#btn-save-all',
-        title: 'Paso 4: Guardar Cambios',
-        text: '¡Muy importante! Después de modificar uno o varios lotes, debes presionar este botón para que los datos suban a la nube y los clientes puedan ver los cambios en la plataforma pública.',
+        title: 'Paso 5: Guardar y Publicar en GitHub',
+        text: '¡Crítico! Después de realizar cualquier cambio en los lotes o configuraciones, presiona este botón para que todo suba a la nube y los clientes lo vean en la web pública.',
         pos: 'bottom'
       },
       {
         el: '#btn-god-link',
-        title: 'Paso 5: Modo Dios',
-        text: 'Si necesitas dibujar nuevos lotes sobre el mapa o arrastrar los pines para ordenarlos, presiona aquí para abrir la capa especial del Modo Dios.',
+        title: 'Paso 6: Modo Dios (Dibujo y Pines)',
+        text: 'Accede a la herramienta visual avanzada para trazar nuevos polígonos de lotes o mover de posición física los Smart Pins sobre la foto 360°.',
         pos: 'bottom'
       },
       {
         el: null, // Centrado
         title: '¡Todo listo!',
-        text: 'Ya sabes lo básico para administrar tu plataforma. Publica la identidad del proyecto y selecciona un lote de la lista izquierda para comenzar.',
+        text: 'Ya conoces todas las secciones. Selecciona un lote de la lista o navega por los tabs para configurar tu proyecto a medida.',
         pos: 'center'
       }
     ];

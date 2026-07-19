@@ -481,6 +481,14 @@
         host.appendChild(buyerDock);
         buyerDock.classList.add('kpk-fs-adopted');
       }
+      // Widget de clima (creado dinámicamente por f-weather.js)
+      const weatherWidget = document.getElementById('kpk-weather-widget');
+      if (weatherWidget && !host.contains(weatherWidget)) {
+        weatherWidget._fsParent      = weatherWidget.parentNode;
+        weatherWidget._fsNextSibling = weatherWidget.nextSibling;
+        host.appendChild(weatherWidget);
+        weatherWidget.classList.add('kpk-fs-adopted');
+      }
       document.body.classList.add('is-fullscreen');
     }
 
@@ -510,6 +518,20 @@
         buyerDock.classList.remove('kpk-fs-adopted');
         delete buyerDock._fsParent;
         delete buyerDock._fsNextSibling;
+      }
+      // Widget de clima
+      const weatherWidget = document.getElementById('kpk-weather-widget');
+      if (weatherWidget && weatherWidget.classList.contains('kpk-fs-adopted')) {
+        const p  = weatherWidget._fsParent      || document.body;
+        const ns = weatherWidget._fsNextSibling || null;
+        if (ns && ns.parentNode === p) {
+          p.insertBefore(weatherWidget, ns);
+        } else {
+          p.appendChild(weatherWidget);
+        }
+        weatherWidget.classList.remove('kpk-fs-adopted');
+        delete weatherWidget._fsParent;
+        delete weatherWidget._fsNextSibling;
       }
       document.body.classList.remove('is-fullscreen');
     }
@@ -554,6 +576,8 @@
         if (window.FerrariRAF && window.FerrariRAF.markDataDirty) {
           window.FerrariRAF.markDataDirty();
         }
+        // Disparar evento de resize global para que el chatbot y otros componentes se reconfiguren
+        window.dispatchEvent(new Event('resize'));
       }, 120);
     }
 
