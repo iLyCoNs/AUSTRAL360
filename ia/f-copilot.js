@@ -47,6 +47,8 @@
   let _isWaitingForName = !_clientName;
   let _bubblePopupTimeout = null;
   let _isAISpeaking = false;
+  let _lastSpokenText = '';
+  let _aiSpeechStartTime = 0;
 
   // Inicializar UI al cargar la página
   function init() {
@@ -495,11 +497,25 @@
       _shouldRestartMic = false;
     };
 
+    const calculateSimilarity = (str1, str2) => {
+      const words1 = str1.toLowerCase().split(/\s+/).filter(Boolean);
+      const words2 = str2.toLowerCase().split(/\s+/).filter(Boolean);
+      if (!words1.length || !words2.length) return 0;
+      const intersection = words1.filter(w => words2.includes(w));
+      return intersection.length / Math.max(words1.length, words2.length);
+    };
+
     _recognition.onspeechstart = () => {
       const isSpeaking = _isAISpeaking || _activeJarvisAudio || (_activeAudioCtx && _activeAudioCtx.state === 'running') || (window.speechSynthesis && window.speechSynthesis.speaking) || _activeAudioSource;
       if (isSpeaking) {
-        console.log('[Ferrari/IA] User speech detected (barge-in). Interruption triggered.');
-        stopAISpeech();
+        const elapsed = Date.now() - _aiSpeechStartTime;
+        // Evitar auto-interrupción por eco inicial (guardia de 1.2 segundos para estabilización)
+        if (elapsed > 1200) {
+          console.log('[Ferrari/IA] User speech detected (barge-in). Interruption triggered.');
+          stopAISpeech();
+        } else {
+          console.log('[Ferrari/IA] Speech detected too early, ignoring to prevent echo self-interruption.');
+        }
       }
     };
 
@@ -507,6 +523,16 @@
       const resultIdx = e.results.length - 1;
       const txt = e.results[resultIdx][0].transcript.trim();
       if (txt) {
+        // Filtrado de Eco Acústico (Software-based AEC)
+        if (_lastSpokenText) {
+          const cleanLast = _lastSpokenText.toLowerCase();
+          const cleanTxt = txt.toLowerCase();
+          if (cleanLast.includes(cleanTxt) || cleanTxt.includes(cleanLast) || calculateSimilarity(cleanTxt, cleanLast) > 0.5) {
+            console.log('[Ferrari/IA] Eco detectado (la IA se escuchó a sí misma). Ignorando transcripción:', txt);
+            return;
+          }
+        }
+
         // Mostrar feedback visual de transcripción en la burbuja móvil
         let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
         if (!popup || popup.style.display === 'none' || !popup.classList.contains('is-visible')) {
@@ -2217,6 +2243,7 @@
   // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
   async function speakJarvis(text) {
     if (!text) return;
+    _lastSpokenText = _cleanTextForTTS(text);
 
     // Si estamos en móvil, mostrar la burbuja popup siempre (incluso si la voz está apagada)
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -2378,6 +2405,9 @@
   let _activeAudioCtx = null;
 
   function playAudioBase64(base64Data, fallbackText = '') {
+    if (fallbackText) {
+      _lastSpokenText = _cleanTextForTTS(fallbackText);
+    }
     try {
       // Detener audio anterior si estuviera sonando
       if (_activeAudioSource) {
@@ -2407,8 +2437,11 @@
         source.connect(ctx.destination);
         _activeAudioSource = source;
 
+        setAISpeaking(true);
+
         source.onended = () => {
           _activeAudioSource = null;
+          setAISpeaking(false);
           if (_jarvisMode) {
             _shouldRestartMic = true;
             setTimeout(() => {
@@ -2428,11 +2461,13 @@
         source.start(0);
       }, (err) => {
         console.error('[Ferrari/IA] Error decodificando audio de Gemini:', err);
+        setAISpeaking(false);
         // Fallback si la decodificación falla
         speakJarvis(fallbackText);
       });
     } catch (e) {
       console.error('[Ferrari/IA] Error al reproducir audio base64:', e);
+      setAISpeaking(false);
     }
   }
 
@@ -4439,6 +4474,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
   function setAISpeaking(status) {
     _isAISpeaking = status;
+    if (status) {
+      _aiSpeechStartTime = Date.now();
+    }
     const bubble = document.getElementById('kpk-ai-bubble');
     if (bubble) {
       if (status) {
@@ -4448,7 +4486,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobile) {
           if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-          if (!_isWaitingForName) {
+          // Si estamos en JarvisMode continuo, NO cerrar el popup automáticamente 
+          // para mantener la interfaz de voz activa y visible (estilo Gemini Live)
+          if (!_isWaitingForName && !_jarvisMode) {
             _bubblePopupTimeout = setTimeout(() => {
               closeMobileBubblePopup(false);
             }, 1500);
