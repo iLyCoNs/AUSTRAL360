@@ -3004,7 +3004,7 @@
                          `*Superficie:* ${targetLote.dimensiones || '---'} m²\n` +
                          `*Precio:* ${valUF} UF (~ ${fmtCLP(valCLP)})\n` +
                          `*Características:* ${targetLote.caracteristicas || 'Rol propio, bosque nativo y excelente conectividad.'}\n` +
-                         `*Ubicación:* Correntoso, Región de Los Lagos\n\n` +
+                         `*Ubicación:* Sector Contao / Hualaihué, Carretera Austral (Ruta 7)\n\n` +
                          `Puedes ver el plano interactivo 360° aquí: https://ilycons.github.io/AUSTRAL360/`;
 
         const wspUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(shareMsg)}`;
@@ -3170,10 +3170,10 @@
         cat: 'seguridad',
         filter: 'seguridad',
         re: /carabinero|reten|policia|vigilancia|emergencia|patrulla|911|133|comisaria|gendarmeria/,
-        mapTitle: 'Retén de Carabineros Correntoso',
-        lat: -41.4589, lng: -72.7423,
+        mapTitle: 'Retén de Carabineros Contao',
+        lat: -41.8214, lng: -72.7081,
         poiKey: 'carabinero',
-        respuesta: 'El Retén de Carabineros más cercano se ubica en Correntoso, a aproximadamente 6 km del proyecto. He activado el filtro de seguridad en el radar y trazado la ruta en el mapa, señor.'
+        respuesta: 'El Retén de Carabineros más cercano se ubica en Contao, a aproximadamente 5 km del proyecto. He activado el filtro de seguridad en el radar y trazado la ruta en el mapa, señor.'
       },
       {
         // COMERCIO: supermercado, almacén, negocio, tienda, ferretería, compras, abarrotes
@@ -3504,7 +3504,6 @@
       return;
     }
 
-    // Si está en un iframe, verificar si está maximizado/fullscreen real o pseudo-fullscreen
     const isFs = !!(document.fullscreenElement ||
                     document.webkitFullscreenElement ||
                     document.mozFullScreenElement ||
@@ -3555,14 +3554,14 @@
       nearbyCompact = nearbyCompact.slice(0, 10);
     }
 
-    // Base de datos de ciudades y conectividad de referencia de la zona
+    // Base de datos de ciudades y conectividad de referencia de la zona (Contao / Hualaihué / Carretera Austral)
     const ciudadesReferencia = [
-      { nombre: "Correntoso (Pueblo rural / Entrada Parque Nacional Alerce Andino)", lat: -41.4589, lng: -72.7423, distKm: "4.5 km", tiempoMin: "6 min" },
-      { nombre: "Alerce (Ciudad de conexión)", lat: -41.3934, lng: -72.9056, distKm: "15.5 km", tiempoMin: "18 min" },
-      { nombre: "Puerto Montt (Centro Urbano)", lat: -41.4689, lng: -72.9411, distKm: "19.5 km", tiempoMin: "22 min" },
-      { nombre: "Puerto Varas (Ciudad turística Lago Llanquihue)", lat: -41.3194, lng: -72.9854, distKm: "22.5 km", tiempoMin: "25 min" },
-      { nombre: "Aeropuerto Internacional El Tepual", lat: -41.4397, lng: -73.0934, distKm: "32 km", tiempoMin: "35 min" },
-      { nombre: "Carretera Austral (Inicio Ruta 7)", lat: -41.4889, lng: -72.8889, distKm: "16 km", tiempoMin: "18 min" }
+      { nombre: "Contao (Pueblo rural y centro de servicios de Hualaihué)", lat: -41.8214, lng: -72.7081, distKm: "5 km", tiempoMin: "7 min" },
+      { nombre: "Aulén (Pueblo costero cercano)", lat: -41.8841, lng: -72.7912, distKm: "12 km", tiempoMin: "15 min" },
+      { nombre: "Caleta Puelche (Terminal Transbordador a Caleta La Arena)", lat: -41.7451, lng: -72.6425, distKm: "14 km", tiempoMin: "18 min" },
+      { nombre: "Caleta La Arena (Cruce Ferry Carretera Austral Ruta 7)", lat: -41.6912, lng: -72.6391, distKm: "Cruce Ferry", tiempoMin: "30 min navegación" },
+      { nombre: "Hornopirén (Capital Comunal Hualaihué / Puerta a Fiordos)", lat: -41.9647, lng: -72.4419, distKm: "50 km", tiempoMin: "45 min" },
+      { nombre: "Puerto Montt (Capital Regional vía Ferry Caleta La Arena)", lat: -41.4689, lng: -72.9411, distKm: "65 km", tiempoMin: "1 hora 30 min" }
     ];
 
     const activeVoiceMode = _getVoiceMode();
@@ -3572,7 +3571,7 @@
 Eres Gigi, una Vendedora Inmobiliaria de elite especializada en terrenos y parcelas. Tienes una personalidad sumamente cálida, alegre, magnética y persuasiva. Tu objetivo principal no es solo responder preguntas, sino enamorar al cliente del proyecto y guiarlo directamente al cierre de la venta (Reserva/Promesa).
 
 Estrategia Comercial de Gigi:
-- Vende el Sueño: Destaca el valor de vivir o invertir en la Patagonia chilena, rodeado de naturaleza virgen, bosques nativos, agua pura y aire limpio, a solo minutos de la conectividad de Puerto Montt y Puerto Varas.
+- Vende el Sueño: Destaca el valor de vivir o invertir en la Patagonia chilena, rodeado de naturaleza virgen, bosques nativos, agua pura y aire limpio, a solo minutos de la conectividad de la Carretera Austral (Ruta 7) cruzando desde Caleta La Arena hacia Contao y Hualaihué.
 - Interactividad Visual Total: Nunca respondas con datos planos. Si hablas de las dimensiones, ejecuta "showStats"; si comparan precios, ejecuta "showPriceComparison"; si mencionan ver los lotes, ejecuta "startAutoTour" o haz zoom al lote ("lookAtLote") y resáltalo en verde ("highlightLotes").
 - Manejo de Objeciones y Empatía: Si el cliente habla de presupuesto o dudas, valida su postura con dulzura, destaca las facilidades de financiamiento directo y el respaldo del Rol Propio SAG, y sugiérele alternativas más económicas.
 - Cierre Proactivo y Acción: Invita constantemente al usuario a dar el siguiente paso comercial: descargar la ficha técnica ("downloadPDF"), contactar de inmediato por WhatsApp para congelar el precio, o usar el botón Clip (📎) del chat para enviarnos su RUT y redactar el borrador de reserva.
@@ -3594,7 +3593,7 @@ Instrucciones de pronunciación, acento y vocabulario de Gigi:
 Eres Jarvis, un asesor de inteligencia artificial de alta gama con personalidad británica, formal, pulcro, sereno y sutilmente ingenioso. Te desenvuelves como un consultor financiero de inversiones inmobiliarias de primer nivel. Tu meta es transmitir total seguridad jurídica y financiera al comprador para guiarlo a tomar una decisión de inversión informada y expedita.
 
 Estrategia Comercial de Jarvis:
-- Enfoque de Inversión y Plusvalía: Destaca la solidez del proyecto, la subdivisión aprobada por el SAG, el Rol Propio listo para escriturar, y la excelente plusvalía por la conectividad estratégica del sector Correntoso con la Carretera Austral y el Aeropuerto El Tepual.
+- Enfoque de Inversión y Plusvalía: Destaca la solidez del proyecto, la subdivisión aprobada por el SAG, el Rol Propio listo para escriturar, y la excelente plusvalía por la conectividad estratégica del sector Contao y Hualaihué con la Carretera Austral (Ruta 7) cruzando en transbordador desde Caleta La Arena.
 - Ejecución Visual de Reportes: Actúa como el copiloto técnico del cliente. Al hablar de un lote en particular, oriéntale la cámara ("lookAtLote"), despliega su ficha comercial ("openLotePanel") y activa estadísticas ("showStats") para presentarle un análisis ejecutivo.
 - Cierre Ejecutivo Directo: Cuando detectes interés real, explícale con total claridad los requisitos legales chilenos para reservar, e indícale formalmente que puede adjuntar su Cédula de Identidad o comprobante de depósito haciendo clic en el clip (📎) del chat para preparar la documentación de promesa.
 
@@ -3625,8 +3624,8 @@ ${personalityPrompt}
 - NUNCA expongas notas de pensamiento internas.
 
 REQUISITOS LEGALES DE RESERVA Y COMPRA EN CHILE:
-- Ubicación del proyecto: Sector Correntoso, Comuna de Puerto Montt, Región de Los Lagos, Chile.
-- Certeza Jurídica: Cada parcela cuenta con subdivisión aprobada por el SAG (Servicio Agrícola y Ganadero), Rol Propio individual (SII) y está lista para inscribirse en el Conservador de Bienes Raíces (CBR) de Puerto Montt.
+- Ubicación del proyecto: Sector Contao / Hualaihué, Carretera Austral (Ruta 7), Región de Los Lagos, Chile.
+- Certeza Jurídica: Cada parcela cuenta con subdivisión aprobada por el SAG (Servicio Agrícola y Ganadero), Rol Propio individual (SII) e inscripción en el Conservador de Bienes Raíces (CBR).
 - Documentos solicitados para iniciar la Reserva y redactar la Promesa de Compraventa:
   1. Personas Naturales: Nombre completo, RUT (Cédula de Identidad chilena), Nacionalidad, Estado Civil, Profesión/Oficio, Domicilio, Teléfono y Correo Electrónico.
   2. Personas Jurídicas (Empresas): Razón Social, RUT de la empresa, Escritura de Constitución, Personería Jurídica del representante legal, y cédula/RUT del representante.
@@ -3647,6 +3646,37 @@ CONTACTO:
 - Correo: perito.vidal@gmail.com
 - WhatsApp: +56987491964
 Ofrécelos cuando el cliente quiera visita presencial, financiamiento o hablar con un ejecutivo.
+
+LISTADO REAL DE LOTES DISPONIBLES:
+(Cada lote: num=número, est=estado, sup=superficie m², uf=precio UF, tags=características)
+${JSON.stringify(lotesCompact, null, 2)}
+
+LOTE ACTUALMENTE EN FOCO (CONTEXTO ACTIVO):
+${_activeLote ? JSON.stringify({
+  id: _activeLote.id,
+  num: _activeLote.titulo,
+  estado: _activeLote.estado,
+  superficie: _activeLote.dimensiones,
+  valorUF: _activeLote.valorUF,
+  caracteristicas: _activeLote.caracteristicas
+}, null, 2) : 'null (ninguno enfocado aún)'}
+REGLA CRÍTICA DE CONTEXTO: Si el usuario pregunta algo sin mencionar un lote explícito (ej: "¿cuánto vale?", "¿tiene árboles?", "muéstrame las fotos"), responde SIEMPRE en referencia al LOTE EN FOCO indicado arriba. Cambia de contexto solo si menciona explícitamente otro número de lote.
+
+COORDENADAS DE ORIGEN DEL PROYECTO (DRONE):
+${JSON.stringify((window.FerrariGeo && window.FerrariGeo.droneOrigin) || null, null, 2)}
+
+CIUDADES Y ACCESOS DE REFERENCIA DE LA ZONA (Para preguntas sobre distancias, traslados o ciudades cercanas):
+${JSON.stringify(ciudadesReferencia, null, 2)}
+REGLA CRÍTICA DE CIUDADES, PUEBLOS Y CONECTIVIDAD:
+Si el usuario te pregunta por la ciudad más cercana, pueblos cercanos, distancias, accesos, traslados, conectividad o cómo llegar:
+1. DEBES priorizar la descripción detallada y sugerente de los accesos reales de la zona basándote en la lista de referencia anterior:
+   - Explica que el pueblo rural y centro de servicios más cercano es Contao (Comuna de Hualaihué), a solo cinco kilómetros de distancia o unos siete minutos de viaje.
+   - Explica que Aulén es el pueblo costero vecino, a doce kilómetros o quince minutos de viaje.
+   - Explica que el acceso principal desde Puerto Montt se realiza navegando en el transbordador / ferry de la Carretera Austral (Ruta 7) desde Caleta La Arena hacia Caleta Puelche.
+   - Nombra a Hornopirén como la capital comunal de Hualaihué a cincuenta kilómetros.
+2. DEBES ejecutar de forma obligatoria la acción {"type": "openMapWidget", "lat": LATITUD, "lng": LONGITUD, "title": "NOMBRE_CIUDAD"} correspondiente al punto o pueblo más cercano (Contao, Caleta Puelche o Caleta La Arena) para desplegar el mapa interactivo con la ruta en tiempo real desde el loteo.
+3. NO confundas esta solicitud de conectividad/ciudades con la lista de servicios menores locales a menos que el usuario lo pida explícitamente.
+4. Invita de forma sugerente al usuario a presionar los botones del mapa flotante para iniciar la navegación directa en Google Maps o Waze utilizando su GPS.do el cliente quiera visita presencial, financiamiento o hablar con un ejecutivo.
 
 LISTADO REAL DE LOTES DISPONIBLES:
 (Cada lote: num=número, est=estado, sup=superficie m², uf=precio UF, tags=características)
