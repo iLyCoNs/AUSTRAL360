@@ -357,15 +357,36 @@
 
     try {
       // 0) Resolver key AHORA (en el momento del request, no al init)
-      //    Orden: localStorage -> BrandConfig (de brand.json) -> KPK_CONFIG -> _apiKey guardada al init
+      //    Orden: localStorage -> BrandConfig (de brand.json en dock) -> KPK_CONFIG -> _apiKey guardada al init
       let brandKeys = null;
+      let brandProvider = null;
       try {
-        const brandStr = localStorage.getItem('ferrari360_brand');
-        if (brandStr) {
-          const parsed = JSON.parse(brandStr);
-          brandKeys = parsed.aiKeys || null;
+        if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+          const brandObj = window.FerrariBrandDock.getBrand();
+          brandKeys = brandObj.aiKeys || null;
+          brandProvider = brandObj.aiProvider || null;
+        }
+        if (!brandKeys) {
+          const brandStr = localStorage.getItem('ferrari360_brand');
+          if (brandStr) {
+            const parsed = JSON.parse(brandStr);
+            brandKeys = parsed.aiKeys || null;
+            if (!brandProvider) brandProvider = parsed.aiProvider || null;
+          }
         }
       } catch(e) {}
+
+      // Sincronizar el proveedor activo por si cambió dinámicamente en el backend
+      if (brandProvider && brandProvider !== _provider) {
+        _provider = brandProvider;
+        const models = {
+          gemini: 'gemini-2.0-flash',
+          groq: 'llama-3.1-8b-instant',
+          openrouter: 'google/gemma-4-26b-a4b-it:free',
+          lightning: 'google/gemini-3.5-flash'
+        };
+        _modelName = models[_provider] || models.openrouter;
+      }
 
       const cfg = window.KPK_CONFIG || {};
       let rawKey = localStorage.getItem(`ferrari_ai_key_${_provider}`)
@@ -921,9 +942,19 @@
       ? brandContact.waAlertsPhone 
       : waBase.ownerPhone;
       
-    const callMeBotApiKey = brandContact && brandContact.waAlertsKey 
+    let rawApiKey = brandContact && brandContact.waAlertsKey 
       ? brandContact.waAlertsKey 
       : waBase.callMeBotApiKey;
+
+    let callMeBotApiKey = rawApiKey;
+    if (rawApiKey && rawApiKey.startsWith('kpk-enc-')) {
+      try {
+        const rawBase = rawApiKey.substring(8);
+        callMeBotApiKey = atob(rawBase).split('').reverse().join('');
+      } catch (e) {
+        callMeBotApiKey = rawApiKey;
+      }
+    }
 
     if (!isEnabled || !ownerPhone || !callMeBotApiKey) {
       console.log('[Ferrari/Alerts] Alertas de WhatsApp desactivadas o incompletas en la configuración.');
