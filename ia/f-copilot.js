@@ -3632,7 +3632,16 @@ ${JSON.stringify((window.FerrariGeo && window.FerrariGeo.droneOrigin) || null, n
 
 CIUDADES Y ACCESOS DE REFERENCIA DE LA ZONA (Para preguntas sobre distancias, traslados o ciudades cercanas):
 ${JSON.stringify(ciudadesReferencia, null, 2)}
-REGLA DE MAPA DE CIUDAD: Si el usuario te pregunta por la distancia o la ruta a alguna de estas ciudades o puntos de referencia, menciónale la distancia y tiempo exacto indicados arriba, y ejecuta "openMapWidget" usando la latitud (lat) y longitud (lng) de la ciudad correspondiente para que el mapa muestre la ruta correcta desde el loteo.
+REGLA CRÍTICA DE CIUDADES, PUEBLOS Y CONECTIVIDAD:
+Si el usuario te pregunta por la ciudad más cercana, pueblos cercanos, distancias, accesos, traslados, conectividad o cómo llegar:
+1. DEBES priorizar la descripción detallada y sugerente de los accesos reales de la zona basándote en la lista de referencia anterior:
+   - Explica que el pueblo rural y acceso natural más cercano es Correntoso, a solo cuatro kilómetros y medio de distancia o unos seis minutos de viaje (que es la entrada al Parque Nacional Alerce Andino).
+   - Explica que la ciudad de conexión intermedia es Alerce, a quince kilómetros y medio o dieciocho minutos de viaje.
+   - Explica que el centro urbano principal más cercano es Puerto Montt, ubicado a diecinueve kilómetros y medio o veintidós minutos de viaje.
+   - Nombra a Puerto Varas como la ciudad turística del Lago Llanquihue, a veintidós kilómetros y medio o veinticinco minutos de viaje.
+2. DEBES ejecutar de forma obligatoria la acción {"type": "openMapWidget", "lat": LATITUD, "lng": LONGITUD, "title": "NOMBRE_CIUDAD"} correspondiente al punto o a la ciudad más cercana (Correntoso para pueblos cercanos, Puerto Montt para la ciudad principal) para desplegar el mapa interactivo con la ruta en tiempo real desde el loteo.
+3. NO confundas esta solicitud de conectividad/ciudades con la lista de "SERVICIOS CERCANOS CARGADOS (OSM)" (como almacenes o pequeños comercios locales) a menos que el usuario lo pida explícitamente. Las ciudades y pueblos de conexión son de rango mayor y deben ser presentadas de forma descriptiva e interactiva mediante el widget de mapa.
+4. Invita de forma sugerente al usuario a presionar los botones del mapa flotante para iniciar la navegación directa en Google Maps o Waze utilizando su GPS.
 
 SERVICIOS CERCANOS CARGADOS (OSM - TOP 10):
 ${JSON.stringify(nearbyCompact, null, 2)}
