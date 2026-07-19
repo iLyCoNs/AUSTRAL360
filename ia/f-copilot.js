@@ -1988,7 +1988,8 @@
     const key = _getElevenLabsKey();
     if (!key) return false;
     try {
-      const clean = text.replace(/<[^>]*>/g, '').substring(0, 800);
+      const clean = _cleanTextForTTS(text);
+      if (!clean) return false;
       const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI; // Gigi por defecto
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoice}`, {
         method: 'POST',
@@ -2074,11 +2075,31 @@
     return _edgeTTSModule;
   }
 
+  function _cleanTextForTTS(text) {
+    if (!text) return '';
+    let clean = text;
+    // Quitar etiquetas HTML
+    clean = clean.replace(/<[^>]*>/g, '');
+    // Quitar JSON remanente de acciones si lo hubiera
+    clean = clean.replace(/\{.*?\}/g, '');
+    // Quitar markdown (asteriscos de negrita, cursiva, guiones de lista, backticks)
+    clean = clean.replace(/\*\*+/g, '');
+    clean = clean.replace(/\*+/g, '');
+    clean = clean.replace(/`+/g, '');
+    clean = clean.replace(/^[-*+]\s+/gm, ''); // viñetas al inicio de línea
+    clean = clean.replace(/[#_*~[\]()]/g, ''); // caracteres markdown
+    // Quitar excesos de espacios en blanco
+    clean = clean.replace(/\s+/g, ' ').trim();
+    // Limitar longitud para evitar cortes abruptos y sobrecarga del TTS
+    return clean.substring(0, 1000);
+  }
+
   async function _speakEdgeTTS(text, forceVoice) {
     try {
       const mod = await _loadEdgeTTS();
       if (!mod || !mod.EdgeTTS) return false;
-      const clean = text.replace(/<[^>]*>/g, '').substring(0, 600);
+      const clean = _cleanTextForTTS(text);
+      if (!clean) return false;
       const tts = new mod.EdgeTTS();
       const chunks = [];
       // Voz: usar la forzada o leer el modo del selector
@@ -2160,7 +2181,8 @@
   function _speakWebSpeech(text) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const cleanText = text.replace(/<[^>]*>/g, '').replace(/\{.*\}/g, '');
+    const cleanText = _cleanTextForTTS(text);
+    if (!cleanText) return;
     _synthUtterance = new SpeechSynthesisUtterance(cleanText);
     _synthUtterance.lang = 'es-ES';
     const voices = window.speechSynthesis.getVoices();
@@ -2318,7 +2340,8 @@
     if (!decodedKey) return null;
 
     try {
-      const cleanPrompt = text.replace(/<[^>]*>/g, '').substring(0, 300);
+      const cleanPrompt = _cleanTextForTTS(text);
+      if (!cleanPrompt) return null;
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${decodedKey}`;
       const response = await fetch(url, {
         method: 'POST',
@@ -4149,10 +4172,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         popup.classList.add('kpk-mbp-minimal');
       } else {
         popup.classList.remove('kpk-mbp-minimal');
-        const inputRow = popup.querySelector('.kpk-mbp-input-row');
-        const controlsRow = popup.querySelector('.kpk-mbp-controls-row');
+        const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
+        const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
         if (inputRow && controlsRow) {
-          if (_isWaitingForName) {
+          if (_isWaitingForName || !_speechEnabled) {
             inputRow.style.display = 'flex';
             controlsRow.style.display = 'none';
           } else {
@@ -4292,6 +4315,25 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       inp.focus();
     });
 
+    const textInput = popup.querySelector('#kpk-mbp-text-input');
+    if (textInput) {
+      textInput.addEventListener('focus', () => {
+        if (_jarvisMode || _isListening || _speechEnabled) {
+          console.log('[Ferrari/IA] User focused input (switching to text mode). Disabling voice mode...');
+          _jarvisMode = false;
+          _shouldRestartMic = false;
+          _speechEnabled = false;
+          stopAISpeech();
+          _updateMuteUI(false);
+          if (_recognition) {
+            try { _recognition.stop(); } catch(e) {}
+          }
+          inputRow.style.display = 'flex';
+          controlsRow.style.display = 'none';
+        }
+      });
+    }
+
     const sendInputText = () => {
       const inp = popup.querySelector('#kpk-mbp-text-input');
       const query = inp.value.trim();
@@ -4300,8 +4342,13 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       _input.value = query;
       inp.value = '';
       
-      inputRow.style.display = 'none';
-      controlsRow.style.display = 'flex';
+      if (!_speechEnabled) {
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
+      } else {
+        inputRow.style.display = 'none';
+        controlsRow.style.display = 'flex';
+      }
 
       handleSend();
     };
