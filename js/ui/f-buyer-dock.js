@@ -482,22 +482,24 @@
       } catch (e) {}
     }
 
+    const pinTitle = pin.titulo || pin.nombre || 'Punto de Interés';
+
     // 3) Abrir mapa flotante con la ruta al pin (si tiene coordenadas)
     if (pin.lat != null && pin.lng != null) {
       if (window.FerrariUI && typeof window.FerrariUI.openMapWidget === 'function') {
-        window.FerrariUI.openMapWidget(pin.lat, pin.lng, pin.nombre || 'Punto de Interés');
+        window.FerrariUI.openMapWidget(pin.lat, pin.lng, pinTitle);
       }
     }
 
     // 4) Inyectar mensaje de Jarvis en el chatbot narrando la acción
-    if (pin.nombre) {
+    if (pin.titulo || pin.nombre) {
       const distKm = pin._routeDistM ? (pin._routeDistM / 1000).toFixed(1) + ' km' : (pin._distM ? (pin._distM / 1000).toFixed(1) + ' km aprox.' : '');
       const tiempoMin = pin._routeDurationS ? Math.round(pin._routeDurationS / 60) + ' min' : '';
       const infoTexto = (distKm && tiempoMin)
         ? `a ${distKm} — ${tiempoMin} en vehículo`
         : distKm ? `a ${distKm} del proyecto` : '';
 
-      const jarvisMsg = `He girado la cámara 360° hacia ${pin.nombre}${infoTexto ? ', ' + infoTexto : ''}. El mapa interactivo muestra la ruta de acceso con las opciones de navegación para Google Maps y Waze, señor.`;
+      const jarvisMsg = `He girado la cámara 360° hacia ${pinTitle}${infoTexto ? ', ' + infoTexto : ''}. El mapa interactivo muestra la ruta de acceso con las opciones de navegación para Google Maps y Waze, señor.`;
 
       if (window.FerrariUI && typeof window.FerrariUI.injectBotMessage === 'function') {
         window.FerrariUI.injectBotMessage(jarvisMsg);

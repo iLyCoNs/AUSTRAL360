@@ -2909,16 +2909,17 @@
     // 4.5) Buscar si el usuario mencionó un POI específico cargado en el dock
     try {
       const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
-      const pois = livePins.filter(p => p.tipo === 'poi' && p.nombre);
+      const pois = livePins.filter(p => p.tipo === 'poi' && (p.nombre || p.titulo));
       
       let specificPoi = null;
       for (const p of pois) {
-        const words = p.nombre.toLowerCase()
+        const poiName = p.nombre || p.titulo || '';
+        const words = poiName.toLowerCase()
           .replace(/escuela|rural|posta|local|comercial|minimercado|de|la|el|del|bajo/g, '')
           .trim().split(/\s+/);
         
         const hasKeywordMatch = words.some(w => w.length > 3 && clean.includes(w));
-        if (hasKeywordMatch || clean.includes(p.nombre.toLowerCase())) {
+        if (hasKeywordMatch || clean.includes(poiName.toLowerCase())) {
           specificPoi = p;
           break;
         }
@@ -2927,7 +2928,7 @@
       if (specificPoi) {
         const lat = specificPoi.lat;
         const lng = specificPoi.lng;
-        const mapTitle = specificPoi.nombre;
+        const mapTitle = specificPoi.nombre || specificPoi.titulo || 'Lugar Cercano';
         
         const distKm = specificPoi._routeDistM ? (specificPoi._routeDistM / 1000).toFixed(1) + ' km' : (specificPoi._distM ? (specificPoi._distM / 1000).toFixed(1) + ' km' : '');
         const tiempoMin = specificPoi._routeDurationS ? Math.round(specificPoi._routeDurationS / 60) + ' min' : '';
@@ -2943,14 +2944,14 @@
         const voiceMode = _getVoiceMode();
         const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
         const respText = isG
-          ? `¡Claro que sí! Te muestro la ruta hacia **${specificPoi.nombre}**, que se encuentra ${travelInfo} del loteo. He cargado el recorrido en tu pantalla 😊`
-          : `Entendido. Trazando ruta hacia **${specificPoi.nombre}**, ubicado ${travelInfo} del proyecto, señor.`;
+          ? `¡Claro que sí! Te muestro la ruta hacia **${mapTitle}**, que se encuentra ${travelInfo} del loteo. He cargado el recorrido en tu pantalla 😊`
+          : `Entendido. Trazando ruta hacia **${mapTitle}**, ubicado ${travelInfo} del proyecto, señor.`;
           
         return {
           text: respText,
           actions: [
             { type: 'filterNearby', category: filterCat },
-            { type: 'focusNearbyPOI', poiName: specificPoi.nombre },
+            { type: 'focusNearbyPOI', poiName: mapTitle },
             { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle }
           ]
         };
@@ -3056,9 +3057,13 @@
 
     for (const intent of INTENT_PATTERNS) {
       if (intent.re.test(clean)) {
-        // Coordenadas del dron como fallback seguro
-        let lat = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lat) || -41.875850;
-        let lng = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lng) || -72.748294;
+        // Coordenadas fijadas en el intent o droneOrigin como fallback
+        let lat = intent.lat;
+        let lng = intent.lng;
+        if (lat == null || lng == null) {
+          lat = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lat) || -41.875850;
+          lng = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lng) || -72.748294;
+        }
         let mapTitle = intent.mapTitle;
         let foundPoiName = intent.poiKey;
         let hasMatch = false;
@@ -3067,12 +3072,24 @@
         try {
           const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
           // Filtrar pins que corresponden a esta categoría o palabra clave
-          const filtered = livePins.filter(p =>
-            p.tipo === 'poi' && (
-              (p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)) ||
-              (p.categoria && p.categoria.toLowerCase().includes(intent.filter))
-            )
-          );
+          const filterGroupCats = {
+            salud: ['hospital', 'consultorio', 'posta', 'sapu', 'farmacia', 'asistencia'],
+            seguridad: ['comisaria', 'reten', 'bomberos'],
+            educacion: ['colegio'],
+            compras: ['supermercado', 'comercio', 'negocio'],
+            servicios: ['bencinera', 'otro']
+          };
+          const allowedCats = filterGroupCats[intent.filter] || [intent.filter];
+
+          const filtered = livePins.filter(p => {
+            if (p.tipo !== 'poi') return false;
+            const nameMatch = (
+              (p.titulo && p.titulo.toLowerCase().includes(intent.poiKey)) ||
+              (p.nombre && p.nombre.toLowerCase().includes(intent.poiKey))
+            );
+            const catMatch = allowedCats.includes(p.categoria);
+            return nameMatch || catMatch;
+          });
 
           if (filtered.length > 0) {
             // Ordenar por distancia real (la menor en metros)
@@ -3085,8 +3102,8 @@
             const closest = filtered[0];
             lat = closest.lat;
             lng = closest.lng;
-            mapTitle = closest.nombre;
-            foundPoiName = closest.nombre;
+            mapTitle = closest.nombre || closest.titulo || intent.mapTitle;
+            foundPoiName = closest.nombre || closest.titulo || intent.poiKey;
             hasMatch = true;
 
             // Formatear distancias y tiempos reales calculados
@@ -3100,7 +3117,8 @@
               const otros = filtered.slice(1, 4); // Tomar los siguientes 3
               const otrosText = otros.map(o => {
                 const d = o._routeDistM ? (o._routeDistM / 1000).toFixed(1) + ' km' : (o._distM ? (o._distM / 1000).toFixed(1) + ' km' : '');
-                return `**${o.nombre}** (a ${d})`;
+                const oName = o.nombre || o.titulo || '';
+                return `**${oName}** (a ${d})`;
               }).join(', ');
               listadoOtros = ` Además, en la zona contamos con: ${otrosText}.`;
             }
@@ -3112,16 +3130,18 @@
               ? '¡Con gusto! Déjame ayudarte.' 
               : 'Por supuesto, señor.';
 
+            const closestName = closest.nombre || closest.titulo || '';
+
             if (intent.filter === 'educacion') {
-              respuestaDinamica = `${prefix} El colegio más cercano es la **${closest.nombre}**, que se encuentra ${travelInfo} del loteo.${listadoOtros} He activado el filtro de colegios en el radar y trazado la ruta al más cercano en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El colegio más cercano es la **${closestName}**, que se encuentra ${travelInfo} del loteo.${listadoOtros} He activado el filtro de colegios en el radar y trazado la ruta al más cercano en el mapa flotante.`;
             } else if (intent.filter === 'salud') {
-              respuestaDinamica = `${prefix} La atención médica más cercana es la **${closest.nombre}**, ubicada ${travelInfo} del proyecto.${listadoOtros} He abierto el radar de salud y cargado la ruta en el mapa interactivo.`;
+              respuestaDinamica = `${prefix} La atención médica más cercana es la **${closestName}**, ubicada ${travelInfo} del proyecto.${listadoOtros} He abierto el radar de salud y cargado la ruta en el mapa interactivo.`;
             } else if (intent.filter === 'seguridad') {
-              respuestaDinamica = `${prefix} El punto de seguridad más cercano es el **${closest.nombre}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de seguridad y desplegado la ruta de acceso en el mapa.`;
+              respuestaDinamica = `${prefix} El punto de seguridad más cercano es el **${closestName}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de seguridad y desplegado la ruta de acceso en el mapa.`;
             } else if (intent.filter === 'compras') {
-              respuestaDinamica = `${prefix} El comercio más cercano es **${closest.nombre}**, que está ${travelInfo} del loteo.${listadoOtros} He activado el filtro de compras en el radar y cargado la ruta de acceso en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El comercio más cercano es **${closestName}**, que está ${travelInfo} del loteo.${listadoOtros} He activado el filtro de compras en el radar y cargado la ruta de acceso en el mapa flotante.`;
             } else if (intent.filter === 'servicios') {
-              respuestaDinamica = `${prefix} El servicio más cercano es **${closest.nombre}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de servicios y trazado la ruta de acceso en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El servicio más cercano es **${closestName}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de servicios y trazado la ruta de acceso en el mapa flotante.`;
             }
           }
         } catch(e) {
