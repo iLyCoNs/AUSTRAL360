@@ -145,6 +145,9 @@
           <button class="kpk-ai-attachment-clear" id="kpk-ai-attachment-clear" title="Quitar archivo">✕</button>
         </div>
 
+        <!-- Contenedor de Sugerencias Rápidas -->
+        <div class="kpk-ai-chips-container" id="kpk-ai-chips-container"></div>
+
         <div class="kpk-ai-input-zone">
           <div class="kpk-ai-input-wrap">
             <button class="kpk-ai-attach-btn" id="kpk-ai-attach" title="Adjuntar archivo o imagen">
@@ -227,6 +230,15 @@
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
+    // Sincronizar lote activo ante clicks manuales en el mapa
+    document.addEventListener('kpkLoteSelected', (e) => {
+      const lote = findLoteById(e.detail.loteId);
+      if (lote) {
+        _activeLote = lote;
+        _updateSuggestiveChips();
+      }
+    });
+
     // Inicializar modo de voz por defecto (ElevenLabs Gigi si hay key, de lo contrario Edge Dalia)
     const globalElKey = _getElevenLabsKey();
     const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'edge_dalia';
@@ -307,6 +319,7 @@
       window.visualViewport.addEventListener('scroll', adjustForKeyboard);
     }
 
+    _updateSuggestiveChips();
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
 
     // ── WELCOME TOUR: Jarvis saluda al usuario 4 segundos después de cargar
@@ -1039,6 +1052,7 @@
           }
         }, 600);
       }
+      _updateSuggestiveChips();
     }
   }
 
@@ -1293,6 +1307,7 @@
         lookAtLote(lote.id, 70);
         pulseSmartPin(lote.id);
         _activeLote = lote;
+        _updateSuggestiveChips();
 
         // Resaltar el lote actual
         clearHighlights();
@@ -1484,6 +1499,7 @@
     // Desde este momento, _activeLote es el contexto persistente para la IA.
     // Cualquier consulta sin lote explícito se referirá a este lote.
     _activeLote = lote;
+    _updateSuggestiveChips();
     console.log(`[Ferrari/IA] _activeLote → Lote ${lote.titulo} (${lote.id})`);
 
     // ── ADAPTACIÓN DE PLATAFORMA ──────────────────────────────────────────
@@ -2661,6 +2677,7 @@
         if (lote) {
           // Actualizar el lote en foco para contexto persistente de la IA
           _activeLote = lote;
+          _updateSuggestiveChips();
           const hfov = /(acercar|zoom|cerca|detalle)/.test(clean) ? 45 : 90;
           
           // Verificar si el usuario pidió explícitamente ver detalles, ficha, fotos, precios, o reservar/comprar
@@ -3784,6 +3801,43 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         widget.style.display = 'none';
       }, 300);
     }
+  }
+
+  // ─── CHIPS DE SUGERENCIA DINÁMICOS ───
+  function _updateSuggestiveChips() {
+    const container = document.getElementById('kpk-ai-chips-container');
+    if (!container) return;
+
+    let chips = [];
+    if (_activeLote) {
+      chips = [
+        { text: `📸 Fotos Lote ${_activeLote.titulo}`, query: `Ver fotos del Lote ${_activeLote.titulo}` },
+        { text: `📄 Ficha PDF`, query: `Descargar ficha PDF del Lote ${_activeLote.titulo}` },
+        { text: `📊 Simular Pago`, query: `Simular financiamiento Lote ${_activeLote.titulo}` },
+        { text: `📅 Agendar Visita`, query: `Quiero agendar una visita para el Lote ${_activeLote.titulo}` }
+      ];
+    } else {
+      chips = [
+        { text: `🏡 Lotes Disponibles`, query: `¿Cuáles están disponibles?` },
+        { text: `📈 Simular Pago`, query: `¿Tienen financiamiento directo?` },
+        { text: `🗺️ Ver en Mapa`, query: `¿Cómo llegar al proyecto y qué servicios hay cerca?` },
+        { text: `📅 Agendar Visita`, query: `Quiero coordinar una visita al terreno` }
+      ];
+    }
+
+    container.innerHTML = chips.map(c => `
+      <button class="kpk-suggest-chip" data-query="${c.query}">
+        ${c.text}
+      </button>
+    `).join('');
+
+    container.querySelectorAll('.kpk-suggest-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.getAttribute('data-query');
+        _input.value = query;
+        handleSend();
+      });
+    });
   }
 
   // Carga inicial

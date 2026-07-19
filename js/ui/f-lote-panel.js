@@ -75,6 +75,7 @@
     if (!line) return;
 
     _currentLoteId = id;
+    document.dispatchEvent(new CustomEvent('kpkLoteSelected', { detail: { loteId: id } }));
 
     // Cargar datos actuales
     _inNumero.value = line.titulo || '';
