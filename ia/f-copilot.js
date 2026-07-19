@@ -4157,7 +4157,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   // ─── CHIPS DE SUGERENCIA DINÁMICOS ───
   function _updateSuggestiveChips() {
     const container = document.getElementById('kpk-ai-chips-container');
-    if (!container) return;
+    const mobileContainer = document.getElementById('kpk-mbp-chips-row');
 
     let chips = [];
     if (_activeLote) {
@@ -4176,19 +4176,46 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       ];
     }
 
-    container.innerHTML = chips.map(c => `
-      <button class="kpk-suggest-chip" data-query="${c.query}">
-        ${c.text}
-      </button>
-    `).join('');
+    if (container) {
+      container.innerHTML = chips.map(c => `
+        <button class="kpk-suggest-chip" data-query="${c.query}">
+          ${c.text}
+        </button>
+      `).join('');
 
-    container.querySelectorAll('.kpk-suggest-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const query = btn.getAttribute('data-query');
-        _input.value = query;
-        handleSend();
+      container.querySelectorAll('.kpk-suggest-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const query = btn.getAttribute('data-query');
+          _input.value = query;
+          handleSend();
+        });
       });
-    });
+    }
+
+    if (mobileContainer) {
+      const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+      const isMinimal = popup && popup.classList.contains('kpk-mbp-minimal');
+      
+      if (popup && !isMinimal) {
+        mobileContainer.style.display = 'flex';
+        mobileContainer.innerHTML = chips.map(c => `
+          <button class="kpk-mbp-chip" data-query="${c.query}">
+            ${c.text}
+          </button>
+        `).join('');
+
+        mobileContainer.querySelectorAll('.kpk-mbp-chip').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const query = btn.getAttribute('data-query');
+            _input.value = query;
+            handleSend();
+          });
+        });
+      } else {
+        mobileContainer.style.display = 'none';
+      }
+    }
   }
 
   // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
@@ -4266,6 +4293,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       
       <div class="kpk-mbp-body">
         <div class="kpk-mbp-text" id="kpk-mbp-text">${text}</div>
+        <div class="kpk-mbp-chips-row" id="kpk-mbp-chips-row" style="display: none;"></div>
       </div>
       
       <div class="kpk-mbp-footer">
@@ -4478,6 +4506,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
           setTimeout(() => input.focus(), 100);
         }
       }
+      _updateSuggestiveChips();
     }
   }
 

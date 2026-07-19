@@ -1225,4 +1225,37 @@
   animation: micPulseGlow 1.2s infinite alternate;
 }
 
+.kpk-mbp-chips-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 8px 0;
+  width: 100%;
+  scrollbar-width: none;
+}
+.kpk-mbp-chips-row::-webkit-scrollbar {
+  display: none;
+}
+.kpk-mbp-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  outline: none;
+}
+.kpk-mbp-chip:hover, .kpk-mbp-chip:active {
+  background: rgba(0, 180, 255, 0.15);
+  border-color: rgba(0, 180, 255, 0.4);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
 
