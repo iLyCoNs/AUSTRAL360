@@ -2929,33 +2929,36 @@
       };
     }
     
-    // 2) Lote / Parcela específica (ej: "muéstrame la parcela 15", "acerca el lote 10", "haz zoom al 20", "mira el 8")
-    // Si contiene palabras de consulta compleja, ignorar para que lo responda la IA con su contexto
-    const esConsultaCompleja = /(pendiente|rio|arbol|agua|luz|precio|valor|uf|diferencia|tiene|vista|comparar|que|cual|como|cuanto|por|donde)/.test(clean);
-    if (!esConsultaCompleja) {
-      // Capturar lote/parcela/terreno y frases típicas de cámara/zoom
-      const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al)\s*(\d+)/);
-      if (loteMatch) {
-        const num = loteMatch[1];
-        const lote = findLoteById(num);
-        if (lote) {
-          // Actualizar el lote en foco para contexto persistente de la IA
-          _activeLote = lote;
-          _updateSuggestiveChips();
+    // 2) Lote / Parcela específica (ej: "muéstrame la parcela 15", "acerca el lote 10", "dónde está el lote 10", "haz zoom al 20")
+    const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al|nro|numero|nº|\b)\s*(\d{1,3})\b/i);
+    if (loteMatch) {
+      const num = loteMatch[1];
+      const lote = findLoteById(num);
+      if (lote) {
+        // Actualizar el lote en foco para contexto persistente de la IA
+        _activeLote = lote;
+        _updateSuggestiveChips();
+
+        const esPreguntaCompleja = /(pendiente|rio|arbol|agua|luz|diferencia|tiene|comparar|por\s+que)/.test(clean);
+        const pideFicha = /(ficha|tarjeta|detalle|precio|valor|abrir|reservar|comprar|foto|galeria|imagenes)/.test(clean);
+
+        if (!esPreguntaCompleja) {
           const hfov = /(acercar|zoom|cerca|detalle)/.test(clean) ? 45 : 90;
-          
-          // Verificar si el usuario pidió explícitamente ver detalles, ficha, fotos, precios, o reservar/comprar
-          const pideFicha = /(ficha|tarjeta|detalle|precio|valor|abrir|reservar|comprar|foto|galeria|imagenes)/.test(clean);
-          
-          const actions = [{ type: 'lookAtLote', loteId: lote.id, hfov: hfov }];
+          const actions = [
+            { type: 'lookAtLote', loteId: lote.id, hfov: hfov },
+            { type: 'highlightLotes', loteIds: [lote.id], color: 'rgba(0, 255, 128, 0.7)' }
+          ];
           if (pideFicha) {
             actions.push({ type: 'openLotePanel', loteId: lote.id });
           }
-          
-          const textResponse = pideFicha
-            ? `¡Perfecto! Nos estamos dirigiendo al Lote ${num} y abriendo su ficha técnica con las fotos oficiales en pantalla.`
-            : `¡Entendido! Enfocando la cámara directamente en el Lote ${num}.`;
-            
+
+          let textResponse = `¡Entendido! Enfocando la cámara 360° directamente en el Lote ${num}.`;
+          if (pideFicha) {
+            textResponse = `¡Perfecto! Nos estamos dirigiendo al Lote ${num} y abriendo su ficha técnica comercial en pantalla.`;
+          } else if (lote.valorUF) {
+            textResponse = `¡Entendido! Enfocando la cámara en el Lote ${num} (${lote.dimensiones || '5.000 m²'}, ${lote.valorUF} UF). ¿Deseas ver sus fotos o ficha completa?`;
+          }
+
           return {
             text: textResponse,
             actions: actions
