@@ -480,6 +480,14 @@
       const resultIdx = e.results.length - 1;
       const txt = e.results[resultIdx][0].transcript.trim();
       if (txt) {
+        // Mostrar feedback visual de transcripción en la burbuja móvil
+        const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        if (popup) {
+          const pText = popup.querySelector('#kpk-mbp-text');
+          if (pText) {
+            pText.innerHTML = `<span style="color: rgba(255, 255, 255, 0.65); font-style: italic; font-weight: 500;">Escuchado: "${txt}"</span>`;
+          }
+        }
         _input.value = txt;
         handleSend();
       }
