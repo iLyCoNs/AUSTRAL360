@@ -450,6 +450,8 @@
       _btnMic.classList.add('is-active');
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
       if (popupMic) popupMic.classList.add('is-active');
+      const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
+      if (popupMicInline) popupMicInline.classList.add('is-active');
 
       if (_jarvisMode) {
         _btnMic.style.color = '#39FF14'; // Verde neón para modo Jarvis
@@ -467,6 +469,8 @@
       _input.placeholder = "Pregunta algo aquí...";
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
       if (popupMic) popupMic.classList.remove('is-active');
+      const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
+      if (popupMicInline) popupMicInline.classList.remove('is-active');
       
       // Auto-reiniciar si estamos en modo Jarvis y no se ha detenido a propósito
       if (_jarvisMode && _shouldRestartMic) {
@@ -482,6 +486,8 @@
       console.warn('[Ferrari/IA] Error reconocimiento de voz:', e.error);
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
       if (popupMic) popupMic.classList.remove('is-active');
+      const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
+      if (popupMicInline) popupMicInline.classList.remove('is-active');
 
       if (e.error === 'aborted') return;
       if (e.error === 'no-speech' && _jarvisMode) return; // Ignorar silencio temporal en Jarvis
@@ -4162,6 +4168,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       <div class="kpk-mbp-footer">
         <div class="kpk-mbp-input-row" id="kpk-mbp-input-row" style="display: none;">
           <input type="text" id="kpk-mbp-text-input" placeholder="${_isWaitingForName ? 'Escribe tu nombre aquí...' : 'Pregunta algo aquí...'}" autocomplete="off">
+          <button id="kpk-mbp-mic-inline-btn" class="kpk-mbp-mic-inline-btn" title="Hablar">${micSvg}</button>
           <button id="kpk-mbp-send-btn">${sendSvg}</button>
         </div>
         
@@ -4173,8 +4180,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     `;
 
     const popupMicBtn = popup.querySelector('#kpk-mbp-mic-toggle');
+    const popupMicInlineBtn = popup.querySelector('#kpk-mbp-mic-inline-btn');
     if (_isListening) {
-      popupMicBtn.classList.add('is-active');
+      if (popupMicBtn) popupMicBtn.classList.add('is-active');
+      if (popupMicInlineBtn) popupMicInlineBtn.classList.add('is-active');
     }
 
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
@@ -4237,7 +4246,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (e.key === 'Enter') sendInputText();
     });
 
-    popupMicBtn.addEventListener('click', () => {
+    const toggleMic = () => {
       if (_isListening) {
         _jarvisMode = false;
         _shouldRestartMic = false;
@@ -4255,7 +4264,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
           } catch(e) {}
         }
       }
-    });
+    };
+
+    if (popupMicBtn) popupMicBtn.addEventListener('click', toggleMic);
+    if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', toggleMic);
 
     if (isMinimal) {
       popup.classList.add('kpk-mbp-minimal');

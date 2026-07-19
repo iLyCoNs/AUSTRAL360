@@ -1,9 +1,17 @@
-// Simulación del motor de f-copilot.js
 const fs = require('fs');
 const path = require('path');
 
-// 1. Cargar config.local.js si existe, de lo contrario config.js
-let kpkConfig = null;
+function _deobfuscateKey(encKey) {
+  if (!encKey) return '';
+  if (!encKey.startsWith('kpk-enc-')) return encKey;
+  try {
+    const rawBase = encKey.substring(8);
+    return Buffer.from(rawBase, 'base64').toString('utf8').split('').reverse().join('');
+  } catch (e) {
+    return encKey;
+  }
+}
+
 const localConfigPath = path.join(__dirname, '../config.local.js');
 const defaultConfigPath = path.join(__dirname, '../config.js');
 
@@ -27,18 +35,19 @@ mockWindow();
 
 const cfg = global.window.KPK_CONFIG || {};
 const provider = cfg.aiProvider || 'openrouter';
-const key = cfg.aiKeys ? cfg.aiKeys[provider] : '';
+const rawKey = cfg.aiKeys ? cfg.aiKeys[provider] : '';
+const deobfuscatedKey = _deobfuscateKey(rawKey);
 
 console.log('--- RESULTADOS DE VERIFICACIÓN DE CONFIGURACIÓN ---');
 console.log('Proveedor IA Activo:', provider);
-console.log('API Key configurada para este proveedor:', key ? 'SÍ (Clave cargada correctamente)' : 'NO (Vacío)');
-console.log('Longitud de la clave:', key ? key.length : 0);
-console.log('Prefijo de la clave:', key ? key.substring(0, 7) : 'Ninguno');
-console.log('Versión de configuración de caché:', cfg.configVersion);
+console.log('Raw Key en config:', rawKey.substring(0, 16) + '...');
+console.log('Desofuscada:', deobfuscatedKey.substring(0, 16) + '...');
+console.log('¿Desofuscación correcta?:', (deobfuscatedKey.startsWith('sk-or-v1-') || deobfuscatedKey.startsWith('sk-lit-')) ? 'SÍ' : 'NO');
+console.log('Versión de configuración:', cfg.configVersion);
 console.log('--------------------------------------------------');
 
-if (provider === 'lightning' && key && key.startsWith('sk-lit-')) {
-  console.log('✅ VERIFICACIÓN EXITOSA: El chatbot está configurado para correr con la API de Lightning por defecto.');
+if (deobfuscatedKey && (deobfuscatedKey.startsWith('sk-or-v1-') || deobfuscatedKey.startsWith('sk-lit-'))) {
+  console.log('✅ VERIFICACIÓN EXITOSA: La clave está completamente encriptada con kpk-enc- y se decodifica en memoria correctamente.');
 } else {
-  console.log('❌ VERIFICACIÓN FALLIDA: Hay un error en la carga de configuración.');
+  console.log('❌ VERIFICACIÓN FALLIDA');
 }

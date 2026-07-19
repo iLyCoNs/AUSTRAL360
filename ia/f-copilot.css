@@ -1205,4 +1205,24 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
+.kpk-mbp-mic-inline-btn {
+  background: transparent;
+  border: none;
+  color: #00B4FF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin-right: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.kpk-mbp-mic-inline-btn.is-active {
+  color: #FF2D8A !important;
+  animation: micPulseGlow 1.2s infinite alternate;
+}
+
 
