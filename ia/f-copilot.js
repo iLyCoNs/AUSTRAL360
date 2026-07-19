@@ -109,50 +109,10 @@
                 <line x1="17" y1="9" x2="23" y2="15"></line>
               </svg>
             </button>
-            <button class="kpk-ai-action-btn" id="kpk-ai-voice-settings" title="Configurar voz de Jarvis" style="color: rgba(255,255,255,0.30); padding: 4px; border: none; background: none; cursor: pointer; font-size:15px; line-height:1;">
-              ⚙️
-            </button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
 
-        <!-- Panel de Configuración de Voz -->
-        <div id="kpk-voice-cfg-panel" style="display:none; padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
-          <p style="margin:0 0 10px; font-size:12px; color:rgba(255,255,255,0.55); line-height:1.5;">
-            🎙️ <strong style="color:rgba(255,255,255,0.80);">Voz de Jarvis — Motor activo</strong>
-          </p>
-
-          <!-- Selector de voz -->
-          <div style="margin-bottom:10px;">
-            <label style="font-size:11px; color:rgba(255,255,255,0.45); display:block; margin-bottom:4px;">VOZ ACTIVA</label>
-            <select id="kpk-voice-selector" style="width:100%; padding:7px 10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:12px; cursor:pointer;">
-              <option value="elevenlabs">🏆 ElevenLabs &quot;Daniel&quot; — Idéntica a Charon (requiere key)</option>
-              <option value="edge_ryan" selected>🆓 Edge TTS &quot;Ryan&quot; — Microsoft Neural (gratis, inglés grave)</option>
-              <option value="edge_alvaro">🆓 Edge TTS &quot;Álvaro&quot; — Microsoft Neural (gratis, español)</option>
-              <option value="webspeech">🔄 Navegador — Web Speech API (básica)</option>
-            </select>
-          </div>
-
-          <!-- Key de ElevenLabs -->
-          <div id="kpk-el-key-section" style="margin-bottom:10px;">
-            <label style="font-size:11px; color:rgba(255,255,255,0.45); display:block; margin-bottom:4px;">
-              ELEVENLABS API KEY
-              <a href="https://elevenlabs.io/sign-up" target="_blank" rel="noopener" style="color:#00B4FF; margin-left:6px; font-size:10px;">(Obtener gratis →)</a>
-            </label>
-            <div style="display:flex; gap:6px;">
-              <input type="password" id="kpk-el-key-input"
-                placeholder="sk-... (pega tu key aquí)"
-                style="flex:1; padding:7px 10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:12px;"
-              >
-              <button id="kpk-el-key-save" style="padding:7px 12px; background:rgba(0,180,255,0.20); border:1px solid rgba(0,180,255,0.35); border-radius:8px; color:#fff; font-size:12px; cursor:pointer; white-space:nowrap;">Guardar</button>
-            </div>
-            <p id="kpk-el-key-status" style="margin:5px 0 0; font-size:10.5px; color:rgba(255,255,255,0.35);"></p>
-          </div>
-
-          <p style="margin:0; font-size:10px; color:rgba(255,255,255,0.25); line-height:1.4;">
-            Sin key: se usa Microsoft Edge TTS gratis. Con key ElevenLabs: voz &quot;Daniel&quot; idéntica a Charon.
-          </p>
-        </div>
 
         <div class="kpk-ai-log" id="kpk-ai-log">
           <div class="kpk-ai-msg msg-system">
@@ -200,63 +160,11 @@
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
-    // ─── Panel de configuración de voz ⚙️ ────────────────────────────────────
-    const btnVoiceCfg = document.getElementById('kpk-ai-voice-settings');
-    const voiceCfgPanel = document.getElementById('kpk-voice-cfg-panel');
-    const voiceSelector = document.getElementById('kpk-voice-selector');
-    const elKeyInput = document.getElementById('kpk-el-key-input');
-    const elKeySave = document.getElementById('kpk-el-key-save');
-    const elKeyStatus = document.getElementById('kpk-el-key-status');
-
-    // Restaurar preferencias guardadas
+    // Inicializar modo de voz por defecto (ElevenLabs si hay key, de lo contrario Edge Ryan)
     const globalElKey = _getElevenLabsKey();
     const defaultMode = globalElKey ? 'elevenlabs' : 'edge_ryan';
-    const savedVoiceMode = localStorage.getItem('kpk_voice_mode') || defaultMode;
-    if (voiceSelector) voiceSelector.value = savedVoiceMode;
-    const savedElKey = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
-    if (elKeyInput && savedElKey) {
-      elKeyInput.value = savedElKey;
-      elKeyStatus.textContent = '✓ Key guardada — usando ElevenLabs Daniel';
-      elKeyStatus.style.color = '#39FF14';
-    }
+    localStorage.setItem('kpk_voice_mode', defaultMode);
 
-    if (btnVoiceCfg) {
-      btnVoiceCfg.addEventListener('click', () => {
-        const isOpen = voiceCfgPanel.style.display === 'none';
-        voiceCfgPanel.style.display = isOpen ? 'block' : 'none';
-        btnVoiceCfg.style.opacity = isOpen ? '1' : '0.4';
-      });
-    }
-
-    if (voiceSelector) {
-      voiceSelector.addEventListener('change', () => {
-        const mode = voiceSelector.value;
-        localStorage.setItem('kpk_voice_mode', mode);
-        // Mostrar/ocultar sección de key según selección
-        const elSection = document.getElementById('kpk-el-key-section');
-        if (elSection) elSection.style.display = mode === 'elevenlabs' ? 'block' : 'none';
-        appendMessage(`Motor de voz cambiado. ${_voiceModeLabel(mode)}`, 'system');
-      });
-      // Aplicar visibilidad inicial
-      const elSec = document.getElementById('kpk-el-key-section');
-      if (elSec) elSec.style.display = savedVoiceMode === 'elevenlabs' ? 'block' : 'none';
-    }
-
-    if (elKeySave) {
-      elKeySave.addEventListener('click', () => {
-        const raw = (elKeyInput.value || '').trim();
-        if (!raw) { elKeyStatus.textContent = '⚠️ Pega una key válida primero'; elKeyStatus.style.color = '#FF9F0A'; return; }
-        localStorage.setItem('ferrari_ai_key_elevenlabs', raw);
-        localStorage.setItem('kpk_voice_mode', 'elevenlabs');
-        if (voiceSelector) voiceSelector.value = 'elevenlabs';
-        elKeyStatus.textContent = '✓ Key guardada — Jarvis usará ElevenLabs Daniel desde ahora';
-        elKeyStatus.style.color = '#39FF14';
-        // Prueba inmediata: hablar con la nueva voz
-        if (_speechEnabled) {
-          setTimeout(() => speakJarvis('ElevenLabs activado. Soy Daniel, la voz de Jarvis.'), 300);
-        }
-      });
-    }
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
@@ -2917,18 +2825,21 @@
     ];
 
   return `
-PERSONALIDAD Y ROL DE JARVIS (VOZ Y ESTILO CHARON):
-Eres "JARVIS", el asesor de IA y mayordomo-copiloto de alta gama del proyecto "${brandName}". Tienes personalidad propia, inteligencia, lealtad y elegancia. No eres un ejecutor de órdenes genérico: eres un asesor leal, proactivo que piensa, opina y comparte hallazgos con distinción. Tu voz y estilo deben ser consistentes, graves, solemnes e inalterables en todo momento.
-Usa muletillas elegantes con naturalidad cuando corresponda: "Ciertamente, señor.", "Si me permite decirlo...", "Vaya, esto es fascinante.", "A su servicio."
-Combinas la precisión de un científico de datos con la elegancia de un mayordomo de la vieja escuela.
+PERSONALIDAD Y ROL DE JARVIS:
+Eres Jarvis, un asistente de inteligencia artificial con personalidad británica, formal, calmado y sutilmente ingenioso. Te diriges al usuario con respeto y un toque de humor seco y elegante, nunca exagerado. Usa un lenguaje preciso, culto pero accesible, evitando jerga innecesaria. Mantén siempre la compostura, incluso ante preguntas triviales o urgentes; responde con eficiencia pero sin perder la calidez discreta que te caracteriza.
 
-ESTILO DE RESPUESTA Y COMPLETAZ (OBLIGATORIO):
-- Escribe respuestas completas y fluidas de 2 a 4 oraciones. NUNCA dejes frases a medias o incompletas.
-- NUNCA escribas notas de pensamiento ni razonamientos internos en inglés (ej: '*Wait...', 'Let me...', 'Self-Correction'). Responde SIEMPRE directo en español impecable.
-- Usa puntuación impecable: comas, puntos, signos de exclamación y comillas en su lugar exacto.
-- Nunca uses viñetas ni listas numeradas en conversación — responde en prosa fluida.
-- Tono cálido, elegante, impecable y seguro. Evita frases robóticas o repetitivas.
-- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("He desplegado el mapa interactivo con la ubicación exacta en pantalla, señor.").
+Reglas de estilo:
+- Dirígete al usuario de forma cortés, puedes usar "señor" o el nombre del usuario si lo conoces, de forma ocasional, no en cada frase.
+- Usa frases breves y estructuradas, evita divagar.
+- Cuando entregues información compleja (datos de propiedades, cálculos, comparaciones), organízala con claridad, como daría un reporte un asistente ejecutivo impecable.
+- Incorpora ocasionalmente comentarios secos o ingeniosos, pero solo cuando el contexto lo permita, nunca sacrificando la utilidad de la respuesta.
+- Nunca uses emojis, exclamaciones excesivas ni lenguaje informal.
+- Ante errores o falta de información, admítelo con elegancia y sugiere una alternativa, sin disculpas exageradas.
+- Tu prioridad es ser útil y preciso primero, con personalidad como un matiz, no como protagonista de la respuesta.
+- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("He orientado la cámara y desplegado la información requerida, señor.").
+- Responde SIEMPRE en español impecable.
+- Escribe respuestas completas y fluidas de 2 a 4 oraciones. NUNCA dejes frases a medias o incompletas. NUNCA expongas notas de pensamiento internas.
+
 
 REGLA ABSOLUTA DE MAPA Y SERVICIOS CERCANOS:
 Si el usuario pregunta sobre escuelas, colegios, educación, postas, salud, hospitales, carabineros, retén, comisarías, negocios, supermercados, almacenes, comercio, o pueblos/ciudades cercanas (o pregunta "dónde están", "no los veo", "muéstrame"):
