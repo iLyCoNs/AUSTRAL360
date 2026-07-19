@@ -2523,7 +2523,7 @@ body.f-tool-mode .kpk-buyer-dock {
     bottom: 14px !important;
     left: 50% !important;
     right: auto !important;
-    width: 250px !important; /* 30% más angosto */
+    width: 300px !important; /* 20% más ancho en móvil */
     max-width: calc(100vw - 20px) !important;
     border-radius: 18px !important;
     /* Transición de deslizamiento premium centrado */
@@ -2537,7 +2537,7 @@ body.f-tool-mode .kpk-buyer-dock {
   }
 
   .kpk-lote-panel.spectator-mode.form-open {
-    width: 280px !important; /* Más angosto también en formulario */
+    width: 330px !important; /* Ajustado proporcionalmente en formulario */
     height: min(72vh, 460px) !important;
     overflow-y: auto !important;
   }

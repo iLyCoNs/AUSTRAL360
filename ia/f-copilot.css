@@ -443,6 +443,18 @@
   transform: translateY(0);
 }
 
+.kpk-ai-action-btn.is-recording {
+  background: rgba(255, 45, 85, 0.35) !important;
+  color: #FF2D55 !important;
+  border-color: rgba(255, 45, 85, 0.70) !important;
+  box-shadow: 0 0 16px rgba(255, 45, 85, 0.60) !important;
+  animation: walkiePulse 0.8s infinite alternate !important;
+}
+@keyframes walkiePulse {
+  0% { transform: scale(1); box-shadow: 0 0 8px rgba(255, 45, 85, 0.4); }
+  100% { transform: scale(1.1); box-shadow: 0 0 20px rgba(255, 45, 85, 0.9); }
+}
+
 /* ─── Mobile ────────────────────────────────────────────────────────────────── */
 @media (max-width: 576px) {
   .kpk-ai-bubble {
@@ -457,8 +469,9 @@
     left: 50% !important;
     right: auto !important;
     bottom: 136px !important;
-    width: 260px !important; /* 30% más angosto */
-    height: min(62vh, 420px) !important;
+    width: 312px !important; /* 20% más ancho en móvil */
+    max-width: calc(100vw - 20px) !important;
+    height: min(62vh, 440px) !important;
     border-radius: 18px !important;
     transform: translateX(-50%) translateY(16px) scale(0.96) !important;
   }
@@ -468,8 +481,9 @@
   .kpk-ai-header  { padding: 12px 14px 10px; }
   .kpk-ai-log     { padding: 12px 14px; gap: 8px; }
   .kpk-ai-msg     { font-size: 12.5px; padding: 8px 11px; max-width: 88%; }
-  .kpk-ai-input-zone { padding: 8px 10px; }
+  .kpk-ai-input-zone { padding: 8px 10px; gap: 6px; }
   .kpk-ai-input   { font-size: 12.5px; }
+  #kpk-ai-mic     { display: flex !important; visibility: visible !important; opacity: 1 !important; }
 
   .kpk-map-widget {
     right: 10px; left: 10px;

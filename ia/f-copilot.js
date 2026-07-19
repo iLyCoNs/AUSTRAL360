@@ -288,30 +288,64 @@
       }
     };
 
-    _btnMic.addEventListener('click', () => {
-      if (_provider === 'gemini') {
-        if (_isListening) {
-          stopLiveWebSocket();
-          playFuturisticSound('click');
-        } else {
-          startLiveWebSocket();
-          playFuturisticSound('start');
-        }
-      } else {
-        if (_isListening) {
-          _jarvisMode = false;
-          _shouldRestartMic = false;
-          _recognition.stop();
-          playFuturisticSound('click');
-        } else {
-          _jarvisMode = true;
-          _shouldRestartMic = true;
-          _recognition.continuous = true;
+    let _isWalkiePushing = false;
+
+    function _startWalkie() {
+      if (_isWalkiePushing) return;
+      _isWalkiePushing = true;
+      _btnMic.classList.add('is-recording');
+      _input.placeholder = "🔴 Grabando mensaje Walkie-Talkie...";
+      playFuturisticSound('start');
+      if (_recognition && !_isListening) {
+        try {
+          _recognition.continuous = false;
           _recognition.start();
-          playFuturisticSound('start');
-        }
+        } catch(e) {}
       }
+    }
+
+    function _stopWalkie() {
+      if (!_isWalkiePushing) return;
+      _isWalkiePushing = false;
+      _btnMic.classList.remove('is-recording');
+      _input.placeholder = "Pregunta algo aquí...";
+      playFuturisticSound('click');
+      setTimeout(() => {
+        if (_recognition && _isListening) {
+          try { _recognition.stop(); } catch(e) {}
+        }
+      }, 350);
+    }
+
+    // Eventos Walkie-Talkie Push-to-Talk (Compatibles con Windows, Mac, iOS y Android)
+    _btnMic.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      _startWalkie();
     });
+
+    _btnMic.addEventListener('pointerup', (e) => {
+      e.preventDefault();
+      _stopWalkie();
+    });
+
+    _btnMic.addEventListener('pointercancel', () => {
+      _stopWalkie();
+    });
+
+    _btnMic.addEventListener('mouseleave', () => {
+      if (_isWalkiePushing) _stopWalkie();
+    });
+
+    // Respaldo de eventos táctiles para móviles
+    _btnMic.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      _startWalkie();
+    }, { passive: false });
+
+    _btnMic.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      _stopWalkie();
+    }, { passive: false });
   }
 
   // ─── CIRCUITO EN CASCADA 3-TIER (REDUNDANCIA AUTOMÁTICA INFALIBLE) ────────
