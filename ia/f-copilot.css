@@ -1156,4 +1156,28 @@
   }
 }
 
+/* Resplandor neón pulsante para el botón de silenciar/voz activa */
+.kpk-mute-glow {
+  animation: kpkMuteGlowPulse 1.8s infinite ease-in-out;
+  border-radius: 50% !important;
+  background: rgba(57, 255, 20, 0.15) !important;
+  border: 1px solid rgba(57, 255, 20, 0.4) !important;
+  box-shadow: 0 0 6px rgba(57, 255, 20, 0.3);
+}
+
+@keyframes kpkMuteGlowPulse {
+  0% {
+    box-shadow: 0 0 4px rgba(57, 255, 20, 0.3), 0 0 6px rgba(57, 255, 20, 0.1);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(57, 255, 20, 0.8), 0 0 22px rgba(57, 255, 20, 0.4);
+    transform: scale(1.18);
+  }
+  100% {
+    box-shadow: 0 0 4px rgba(57, 255, 20, 0.3), 0 0 6px rgba(57, 255, 20, 0.1);
+    transform: scale(1);
+  }
+}
+
 

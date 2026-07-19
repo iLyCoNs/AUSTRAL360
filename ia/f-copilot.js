@@ -102,6 +102,15 @@
     const assistantTitle = isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis';
 
     // Crear elementos de UI
+    const initialMuteClass = _speechEnabled ? 'kpk-mute-glow' : '';
+    const initialMuteColor = _speechEnabled ? '#39FF14' : 'rgba(255,255,255,0.25)';
+    const initialMuteIcon = _speechEnabled 
+      ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`
+      : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+         <line x1="23" y1="9" x2="17" y2="15"></line>
+         <line x1="17" y1="9" x2="23" y2="15"></line>`;
+
     const root = document.createElement('div');
     root.id = 'kpk-ai-root';
     root.innerHTML = `
@@ -122,11 +131,9 @@
             <span class="kpk-ai-header-name">${assistantTitle}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="kpk-ai-action-btn" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: rgba(255,255,255,0.25); padding: 4px; border: none; background: none; cursor: pointer;">
+            <button class="kpk-ai-action-btn ${initialMuteClass}" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: ${initialMuteColor}; padding: 4px; border: none; background: none; cursor: pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="kpk-voice-icon">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <line x1="23" y1="9" x2="17" y2="15"></line>
-                <line x1="17" y1="9" x2="23" y2="15"></line>
+                ${initialMuteIcon}
               </svg>
             </button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
@@ -268,6 +275,7 @@
           if (window.speechSynthesis) window.speechSynthesis.cancel();
           if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
           btnVoice.style.color = 'rgba(255,255,255,0.25)';
+          btnVoice.classList.remove('kpk-mute-glow');
           voiceIcon.innerHTML = `
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <line x1="23" y1="9" x2="17" y2="15"></line>
@@ -275,6 +283,7 @@
           `;
         } else {
           btnVoice.style.color = '#39FF14';
+          btnVoice.classList.add('kpk-mute-glow');
           voiceIcon.innerHTML = `
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -1932,7 +1941,7 @@
   //  Nivel 3: Web Speech API del navegador (fallback universal)
   // ══════════════════════════════════════════════════════════════════════════
 
-  let _speechEnabled = false;
+  let _speechEnabled = true;
   let _synthUtterance = null;
   let _edgeTTSModule = null;      // módulo cargado dinámicamente
   let _edgeTTSLoading = false;
@@ -4109,6 +4118,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const speakerMutedSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
 
     const muteIcon = _speechEnabled ? speakerOnSvg : speakerMutedSvg;
+    const mbpMuteClass = _speechEnabled ? 'kpk-mute-glow' : '';
 
     popup.innerHTML = `
       <div class="kpk-mbp-header">
@@ -4117,7 +4127,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
           <span class="kpk-mbp-name">${name}</span>
         </div>
         <div class="kpk-mbp-actions">
-          <button class="kpk-mbp-btn" id="kpk-mbp-mute-btn" title="Silenciar / Activar Voz">${muteIcon}</button>
+          <button class="kpk-mbp-btn ${mbpMuteClass}" id="kpk-mbp-mute-btn" title="Silenciar / Activar Voz">${muteIcon}</button>
           <button class="kpk-mbp-btn" id="kpk-mbp-close-btn" title="Cerrar">✕</button>
         </div>
       </div>
@@ -4158,11 +4168,19 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
         muteBtn.innerHTML = speakerMutedSvg;
-        if (desktopVoiceBtn) desktopVoiceBtn.style.color = 'rgba(255,255,255,0.25)';
+        muteBtn.classList.remove('kpk-mute-glow');
+        if (desktopVoiceBtn) {
+          desktopVoiceBtn.style.color = 'rgba(255,255,255,0.25)';
+          desktopVoiceBtn.classList.remove('kpk-mute-glow');
+        }
         setAISpeaking(false);
       } else {
         muteBtn.innerHTML = speakerOnSvg;
-        if (desktopVoiceBtn) desktopVoiceBtn.style.color = '#39FF14';
+        muteBtn.classList.add('kpk-mute-glow');
+        if (desktopVoiceBtn) {
+          desktopVoiceBtn.style.color = '#39FF14';
+          desktopVoiceBtn.classList.add('kpk-mute-glow');
+        }
         _loadEdgeTTS();
       }
     });
