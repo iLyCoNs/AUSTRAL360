@@ -165,9 +165,9 @@
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
-    // Inicializar modo de voz por defecto (ElevenLabs si hay key, de lo contrario Edge Ryan)
+    // Inicializar modo de voz por defecto (ElevenLabs Gigi si hay key, de lo contrario Edge Dalia)
     const globalElKey = _getElevenLabsKey();
-    const defaultMode = globalElKey ? 'elevenlabs' : 'edge_ryan';
+    const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'edge_dalia';
     localStorage.setItem('kpk_voice_mode', defaultMode);
 
 
@@ -176,15 +176,9 @@
     if (btnVoice && voiceIcon) {
       // Mostrar qué motor de voz está activo en el tooltip
       function _updateVoiceTooltip() {
-        if (!_speechEnabled) { btnVoice.title = 'Activar voz de Jarvis'; return; }
-        const hasEL = !!_getElevenLabsKey();
-        if (hasEL) {
-          btnVoice.title = '🎙️ Voz activa: ElevenLabs "Daniel" (premium)';
-        } else if (_edgeTTSModule) {
-          btnVoice.title = '🎙️ Voz activa: Microsoft Edge Neural "Álvaro"';
-        } else {
-          btnVoice.title = '🎙️ Voz activa: Síntesis de navegador (Edge TTS cargando...)';
-        }
+        if (!_speechEnabled) { btnVoice.title = 'Activar voz'; return; }
+        const activeMode = _getVoiceMode();
+        btnVoice.title = `🎙️ Voz activa: ${_voiceModeLabel(activeMode)}`;
       }
 
       btnVoice.addEventListener('click', () => {
