@@ -3028,8 +3028,8 @@
     // 3) Contacto general / Reservas básicas (si no coincide con preguntas más detalladas)
     if (/^(¿?contacto\??|¿?como\s+contacto\??|¿?whatsapp\??|¿?telefono\??|¿?correo\??|¿?email\??|¿?como\s+reservar\??|¿?reserva\??|¿?reservar\??)$/.test(clean)) {
       return {
-        text: "Para coordinar visitas, realizar cotizaciones formales o reservas, puedes contactar al propietario directamente al correo perito.vidal@gmail.com o vía WhatsApp al +56987491964. He abierto el panel de contacto para ti.",
-        actions: [{ type: 'openNearbyTab' }]
+        text: "Para coordinar visitas, realizar cotizaciones formales o reservas, puedes contactar al propietario directamente al correo perito.vidal@gmail.com o vía WhatsApp al +56987491964.",
+        actions: []
       };
     }
 
@@ -3317,10 +3317,10 @@
       }
     }
 
-    // 6) Pregunta ambigua sobre cercanía sin categoría específica
-    if (/(que\s+hay|hay\s+cerca|servicios|cerca|alrededor|vecindad|entorno|infraestructura|equipamiento|ver\s+mapa|muestrame|donde\s+est|que\s+se\s+ve)/.test(clean)) {
+    // 6) Pregunta ambigua sobre cercanía sin categoría específica (NUNCA si menciona lote, parcela, acercar o ver)
+    if (!/(lote|parcela|terreno|acercar|zoom|ver|mirar)/.test(clean) && /(que\s+hay\s+cerca|servicios\s+cercanos|lugares\s+cercanos|equipamiento\s+cercano|infraestructura\s+cercana)/.test(clean)) {
       return {
-        text: 'Con mucho gusto. He activado el radar de servicios cercanos en el plano. Puede explorar por categorías: Salud, Seguridad, Educación, Compras y Servicios. ¿Sobre cuál desea que me enfoque, señor?',
+        text: 'Con mucho gusto. He activado el radar de servicios cercanos en el plano. Puedes explorar por categorías: Salud, Seguridad, Educación, Compras y Servicios.',
         actions: [
           { type: 'openNearbyTab' }
         ]
@@ -3636,11 +3636,9 @@ REQUISITOS LEGALES DE RESERVA Y COMPRA EN CHILE:
 
 Directriz de Reserva: Cuando un cliente muestre interés firme en reservar o comprar, explícale brevemente la certeza jurídica (SAG, Rol propio), indícale los documentos requeridos en Chile (Nombre, RUT, etc.), y sugiérele proactivamente subir su carnet o comprobante mediante el botón Clip (📎) del chat para agilizar el trámite.
 
-REGLA ABSOLUTA DE MAPA Y SERVICIOS CERCANOS:
-Si el usuario pregunta sobre escuelas, colegios, educación, postas, salud, hospitales, carabineros, retén, comisarías, negocios, supermercados, almacenes, comercio, o pueblos/ciudades cercanas (o pregunta "dónde están", "no los veo", "muéstrame"):
-1. DEBES INCLUIR SIEMPRE en tus "actions" la acción {"type": "openMapWidget", "lat": -41.3934, "lng": -72.9056, "title": "Servicios y Puntos de Interés"} usando las coordenadas exactas de la lista.
-2. DEBES INCLUIR SIEMPRE {"type": "openNearbyTab"} para mostrar el radar en el plano.
-3. Infórmale al usuario que has desplegado la ventana flotante del mapa con la ruta y los botones de navegación directa para Google Maps y Waze.
+REGLA STRICTA DE HERRAMIENTA CERCANOS Y LOTES:
+- NUNCA abras la herramienta de Cercanos ("openNearbyTab" o "openMapWidget") cuando el usuario pida ver, acercar o enfocar un lote (ejemplo: "acerca el lote 10", "muéstrame el lote 5", "ver el lote 12"). Ante cualquier petición sobre un lote específico, ejecuta SIEMPRE la acción {"type": "lookAtLote", "loteId": "ID", "hfov": 50}.
+- SOLO ejecuta la herramienta de Cercanos ("openNearbyTab" o "openMapWidget") si el usuario pregunta EXPLICITAMENTE sobre escuelas, colegios, postas, hospitales, carabineros, comisarías, almacenes o la ciudad más cercana. En cualquier otro caso, responde sobre el lote o menciona los servicios cercanos conversacionalmente sin abrir widgets automáticamente.
 
 GUÍA COMERCIAL:
 Actúa como asesor proactivo: sugiere hacer zoom a lotes de interés, mostrar fichas con fotos y precios, buscar servicios cercanos o enviar una solicitud de contacto directo. Hazlo de forma natural dentro de la conversación, no como lista de opciones.
