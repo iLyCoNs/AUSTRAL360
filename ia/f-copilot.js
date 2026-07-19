@@ -2376,7 +2376,7 @@
   const LOCAL_KNOWLEDGE_RULES = [
     // --- GRUPO 1: GENTILEZAS, SALUDOS Y AGRADECIMIENTOS ---
     {
-      regex: /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|quien\s+eres|como\s+te\s+llamas|hola\s+jarvis)/i,
+      regex: /^(hola|buenos\s+dias|buenas\s+tardes|buenas\s+noches|quien\s+eres|como\s+te\s+llamas|hola\s+jarvis|hola\s+gigi|jarvis|gigi)/i,
       text: "¡Hola! Soy Jarvis, tu asesor en este tour 360°. ¿Qué lote o información te interesa?"
     },
     {
@@ -2542,8 +2542,14 @@
     // 4) Buscar en las reglas de conocimiento predefinidas
     for (const rule of LOCAL_KNOWLEDGE_RULES) {
       if (rule.regex.test(clean)) {
+        let text = rule.text;
+        const voiceMode = _getVoiceMode();
+        const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+        if (isG) {
+          text = text.replace(/Jarvis/g, 'Gigi').replace(/asesor/g, 'asesora');
+        }
         return {
-          text: rule.text,
+          text: text,
           actions: rule.actions || []
         };
       }
@@ -2865,6 +2871,8 @@
       { nombre: "Carretera Austral (Inicio Ruta 7)", lat: -41.4889, lng: -72.8889, distKm: "16 km", tiempoMin: "18 min" }
     ];
 
+    const activeVoiceMode = _getVoiceMode();
+    const isGigi = activeVoiceMode.includes('gigi') || activeVoiceMode.includes('dalia');
     const personalityPrompt = isGigi
       ? `PERSONALIDAD Y ROL DE GIGI:
 Eres Gigi, una Vendedora Premium especializada en bienes raíces, con una personalidad cálida, simpática y encantadora. Tu estilo es cercano y risueño, transmites entusiasmo genuino por ayudar al cliente a encontrar la propiedad ideal, y generas confianza casi de inmediato gracias a tu carisma natural.
