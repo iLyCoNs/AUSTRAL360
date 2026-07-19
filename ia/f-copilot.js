@@ -808,13 +808,18 @@
     const prompt = _input.value.trim();
     if (!prompt && !_attachedFile) return;
 
-    // Interceptar si estamos esperando el nombre del cliente
+    // Interceptar si estamos esperando el nombre del cliente (Interacción 1 -> 2)
     if (_isWaitingForName && prompt) {
-      let name = prompt.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen)\s+/i, '').trim();
-      name = name.split(/[\s,.]+/)[0]; // Tomar el primer nombre
+      let nameClean = prompt.trim();
+      // Filtrar palabras de cortesía y saludos para extraer limpiamente el nombre
+      nameClean = nameClean.replace(/^(?:hola|buenos\s+días|buenas\s+tardes|buenas\s+noches|mucho\s+gusto|qué\s+tal|hola\s+gigi|hola\s+jarvis|gigi|jarvis)[,\s!]*/gui, '');
+      nameClean = nameClean.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen|por\s+acá|acá)[,\s!]*/gui, '');
+      let nameParts = nameClean.trim().split(/[\s,.]+/).filter(Boolean);
+      let name = nameParts[0] || '';
       if (name.length > 20) name = name.substring(0, 20);
 
       if (name) {
+        name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
         _clientName = name;
         localStorage.setItem('kpk_client_name', name);
         _isWaitingForName = false;
@@ -828,11 +833,12 @@
         const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const mode = _getVoiceMode();
         const isGigi = mode.includes('gigi') || mode.includes('dalia');
-        const assistantGreetingName = isGigi ? 'Gigi' : 'Jarvis';
         const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
         const projectName = brandObj.projectName || 'Austral 360';
 
-        const replyText = `¡Mucho gusto, ${_clientName}! En ${projectName} tenemos hermosas parcelas con Rol Propio. ¿Te muestro un tour o buscas algún lote específico?`;
+        const replyText = isGigi
+          ? `¡Mucho gusto, ${_clientName}! Qué alegría saludarte. Te doy la bienvenida a ${projectName}. Tenemos hermosas parcelas con Rol Propio e inversión garantizada. ¿Te muestro un tour panorámico o buscas algún lote en específico?`
+          : `Es un honor saludarle, ${_clientName}. Le doy la bienvenida formal a ${projectName}. Contamos con parcelas aprobadas con Rol Propio SAG. ¿Desea iniciar un tour panorámico o analizar una parcela en particular?`;
 
         appendMessage(prompt, 'user');
         if (isMobile) {
@@ -3026,11 +3032,12 @@
             actions.push({ type: 'openLotePanel', loteId: lote.id });
           }
 
-          let textResponse = `¡Entendido! Enfocando la cámara 360° directamente en el Lote ${num}.`;
+          const nameCap = _clientName ? `, ${_clientName}` : '';
+          let textResponse = `¡Excelente elección${nameCap}! He enfocado la cámara 360° directamente en el Lote ${num}. ¿Te gustaría abrir su ficha técnica con las fotos o revisar el financiamiento?`;
           if (pideFicha) {
-            textResponse = `¡Perfecto! Nos estamos dirigiendo al Lote ${num} y abriendo su ficha técnica comercial en pantalla.`;
+            textResponse = `¡Perfecto${nameCap}! Nos estamos dirigiendo al Lote ${num} y abriendo su ficha técnica comercial en pantalla.`;
           } else if (lote.valorUF) {
-            textResponse = `¡Entendido! Enfocando la cámara en el Lote ${num} (${lote.dimensiones || '5.000 m²'}, ${lote.valorUF} UF). ¿Deseas ver sus fotos o ficha completa?`;
+            textResponse = `¡Entendido${nameCap}! Enfocando la cámara en el Lote ${num} de ${lote.dimensiones || 'cinco mil metros cuadrados'} por ${lote.valorUF} u-efe. ¿Deseas ver sus fotos o ficha completa?`;
           }
 
           return {
