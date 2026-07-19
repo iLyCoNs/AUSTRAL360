@@ -10,6 +10,17 @@
   let _apiKey = '';
   let _modelName = '';
 
+  function _deobfuscateKey(encKey) {
+    if (!encKey || typeof encKey !== 'string') return '';
+    if (!encKey.startsWith('kpk-enc-')) return encKey;
+    try {
+      const rawBase = encKey.substring(8);
+      return atob(rawBase).split('').reverse().join('');
+    } catch (e) {
+      return encKey;
+    }
+  }
+
   let _panel = null;
   let _bubble = null;
   let _log = null;
