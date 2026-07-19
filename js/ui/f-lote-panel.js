@@ -396,7 +396,8 @@
       superficie: fd.get('superficie') || '—',
       valor_uf: fd.get('valor_uf') || '—',
       _subject: fd.get('_subject'),
-      _template: 'table',
+      _template: 'box',
+      _autoresponse: `¡Hola, ${fd.get('name')}!\n\nHemos recibido con éxito su solicitud en la plataforma virtual del proyecto "${fd.get('proyecto')}".\n\nDetalles del requerimiento:\n- Terreno: ${fd.get('lote')}\n- Solicitud: ${tipo === 'reserva' ? 'Solicitud de reserva' : 'Consulta general'}\n- Estado del lote: ${fd.get('estado') || '—'}\n\nUn asesor comercial de nuestro equipo se contactará con usted a la brevedad posible para entregarle todos los detalles.\n\nAtentamente,\nEquipo de Ventas Inmobiliarias`,
       _captcha: 'false',
       _replyto: fd.get('email')
     };
