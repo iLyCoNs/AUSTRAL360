@@ -2584,18 +2584,19 @@ body.f-tool-mode .kpk-buyer-dock {
 
   /* --- Reposicionamiento del HUD de coordenadas en móvil (evita solapamiento con docks) --- */
   #kpk-hud-layer {
-    bottom: 74px !important;
+    bottom: 110px !important;
     left: 12px !important;
     padding: 0 !important;
   }
   .hud-chip {
-    padding: 4px 10px !important;
-    font-size: 10px !important;
+    padding: 3px 6px !important;
+    font-size: 8.5px !important;
+    gap: 6px !important;
     background: rgba(10, 10, 15, 0.60) !important;
     backdrop-filter: blur(12px) saturate(140%) !important;
     -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    border-radius: 6px !important;
+    border-radius: 5px !important;
   }
 }
 
