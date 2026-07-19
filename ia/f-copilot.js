@@ -221,6 +221,31 @@
     }
 
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
+
+    // ── WELCOME TOUR: Jarvis saluda al usuario 4 segundos después de cargar
+    const sessionKey = 'kpk_jarvis_welcomed_' + new Date().toDateString();
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey, '1');
+      setTimeout(() => {
+        const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
+          ? window.FerrariBrandDock.getBrand() : {};
+        const projectName = brand.projectName || 'Austral 360';
+        const totalLotes = (window.allDrawnLines || []).filter(l => l.tipo === 'lote-libre' || l.tipo === 'lote-organico').length;
+        const disponibles = (window.allDrawnLines || []).filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && (l.estado === 'disponible' || !l.estado)).length;
+        const welcomeText = totalLotes > 0
+          ? `¡Bienvenido al tour 360° de ${projectName}! Soy Jarvis, su guía virtual. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
+          : `¡Bienvenido al tour 360° de ${projectName}! Soy Jarvis, su guía virtual. Estoy aquí para acompañarle en toda la experiencia. ¿En qué puedo ayudarle, señor?`;
+
+        // Mostrar burbuja con pulso de atención
+        if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
+        // Abrir panel y entregar el saludo
+        if (!_panel.classList.contains('is-open')) togglePanel();
+        appendMessage(welcomeText, 'system');
+        speakJarvis(welcomeText);
+        _hasGreeted = true;
+        setTimeout(() => _bubble && _bubble.classList.remove('kpk-bubble-pulse'), 3000);
+      }, 4200);
+    }
   }
 
   let _hasGreeted = false;
@@ -915,6 +940,27 @@
           case 'closeMapWidget':
             closeMapWidget();
             break;
+          case 'openWeatherWidget':
+            openWeatherWidget();
+            break;
+          case 'openGallery':
+            openGalleryForLote(act.loteId || null);
+            break;
+          case 'startAutoTour':
+            startAutoTour();
+            break;
+          case 'stopAutoTour':
+            stopAutoTour();
+            break;
+          case 'showStats':
+            showStatsWidget();
+            break;
+          case 'showPriceComparison':
+            showPriceWidget();
+            break;
+          case 'highlightAvailable':
+            highlightAvailableLotes();
+            break;
           default:
             console.warn('[Ferrari/IA] Acción no soportada:', act.type);
         }
@@ -961,6 +1007,246 @@
       }
     }
   }
+
+  // ─── WEATHER WIDGET ───────────────────────────────────────────────────────
+  function openWeatherWidget() {
+    let widget = document.getElementById('kpk-weather-widget');
+    if (!widget) {
+      // Si el widget no existe, disparar refresh para que f-weather.js lo cree
+      if (window.FerrariWeather && typeof window.FerrariWeather.refresh === 'function') {
+        window.FerrariWeather.refresh();
+      }
+      widget = document.getElementById('kpk-weather-widget');
+    }
+    if (widget) {
+      widget.style.display = '';
+      widget.classList.add('kpk-widget-jarvis-highlight');
+      setTimeout(() => widget && widget.classList.remove('kpk-widget-jarvis-highlight'), 2000);
+    }
+  }
+
+  // ─── GALERÍA DE FOTOS DEL LOTE ────────────────────────────────────────────
+  function openGalleryForLote(loteId) {
+    const lote = loteId ? findLoteById(loteId) : _activeLote;
+    if (!lote) {
+      appendMessage('Ciertamente, señor. Para abrir la galería primero seleccione un lote específico.', 'system');
+      return;
+    }
+    const fotos = Array.isArray(lote.fotos) ? lote.fotos.filter(f => f && f.src) : [];
+    if (!fotos.length) {
+      appendMessage(`Si me permite, el Lote ${lote.titulo} aún no tiene fotos cargadas en el sistema. Puede añadirlas desde el panel de administración.`, 'system');
+      return;
+    }
+    if (window.FerrariGallery && typeof window.FerrariGallery.open === 'function') {
+      window.FerrariGallery.open({ title: `Lote ${lote.titulo}`, fotos, startIndex: 0 });
+    }
+  }
+
+  // ─── AUTO TOUR CINEMATOGRÁFICO ────────────────────────────────────────────
+  let _autoTourActive = false;
+  let _autoTourTimers = [];
+
+  function stopAutoTour() {
+    _autoTourActive = false;
+    _autoTourTimers.forEach(t => clearTimeout(t));
+    _autoTourTimers = [];
+    // Cerrar widgets de tour si existen
+    const tw = document.getElementById('kpk-tour-overlay');
+    if (tw) tw.remove();
+  }
+
+  function startAutoTour() {
+    stopAutoTour(); // cancelar cualquier tour previo
+    _autoTourActive = true;
+
+    const lotes = (window.allDrawnLines || [])
+      .filter(l => l.tipo === 'lote-libre' || l.tipo === 'lote-organico');
+
+    if (!lotes.length) {
+      appendMessage('No hay lotes configurados en el plano para realizar el tour, señor.', 'system');
+      return;
+    }
+
+    // Crear overlay de tour con progress
+    let tourOverlay = document.createElement('div');
+    tourOverlay.id = 'kpk-tour-overlay';
+    tourOverlay.className = 'kpk-tour-overlay';
+    tourOverlay.innerHTML = `
+      <div class="kpk-tour-bar">
+        <span class="kpk-tour-label">🎬 Tour Automático</span>
+        <div class="kpk-tour-progress-wrap">
+          <div class="kpk-tour-progress-fill" id="kpk-tour-fill"></div>
+        </div>
+        <span class="kpk-tour-counter" id="kpk-tour-counter">0 / ${lotes.length}</span>
+        <button class="kpk-tour-stop" id="kpk-tour-stop">✕ Detener</button>
+      </div>
+    `;
+    document.body.appendChild(tourOverlay);
+    tourOverlay.querySelector('#kpk-tour-stop').addEventListener('click', () => {
+      stopAutoTour();
+      appendMessage('Tour detenido. ¿Hay algún lote específico que desea explorar, señor?', 'system');
+    });
+
+    const DELAY_PER_LOTE = 4000; // 4 segundos por lote
+    const totalMs = lotes.length * DELAY_PER_LOTE;
+
+    lotes.forEach((lote, i) => {
+      const t = setTimeout(() => {
+        if (!_autoTourActive) return;
+
+        // Actualizar UI del tour
+        const fill = document.getElementById('kpk-tour-fill');
+        const counter = document.getElementById('kpk-tour-counter');
+        if (fill) fill.style.width = `${((i + 1) / lotes.length) * 100}%`;
+        if (counter) counter.textContent = `${i + 1} / ${lotes.length}`;
+
+        // Girar cámara al lote
+        lookAtLote(lote.id, 70);
+        pulseSmartPin(lote.id);
+        _activeLote = lote;
+
+        // Resaltar el lote actual
+        clearHighlights();
+        highlightLotes([lote.id], 'rgba(57, 255, 20, 0.55)');
+
+        // Mensaje en el chat para el primer y último lote
+        if (i === 0) {
+          appendMessage(`Tour iniciado. Recorriendo ${lotes.length} lotes. Lote ${lote.titulo} — ${lote.estado || 'disponible'}.`, 'system');
+        } else if (i === lotes.length - 1) {
+          const finT = setTimeout(() => {
+            if (!_autoTourActive) return;
+            stopAutoTour();
+            clearHighlights();
+            appendMessage(`Tour completado, señor. Hemos recorrido los ${lotes.length} lotes del proyecto. ¿Alguno le llamó la atención? Puedo abrir su ficha, mostrar sus fotos o calcular la ruta de acceso.`, 'system');
+            speakJarvis(`Tour completado. Hemos recorrido los ${lotes.length} lotes. ¿Alguno le llamó la atención?`);
+          }, DELAY_PER_LOTE - 500);
+          _autoTourTimers.push(finT);
+        }
+      }, i * DELAY_PER_LOTE);
+      _autoTourTimers.push(t);
+    });
+  }
+
+  // ─── WIDGET DE ESTADÍSTICAS DEL PROYECTO ─────────────────────────────────
+  function showStatsWidget() {
+    const existing = document.getElementById('kpk-stats-widget');
+    if (existing) { existing.remove(); return; } // toggle
+
+    const lotes = (window.allDrawnLines || [])
+      .filter(l => l.tipo === 'lote-libre' || l.tipo === 'lote-organico');
+
+    const total = lotes.length;
+    const disponibles = lotes.filter(l => l.estado === 'disponible' || !l.estado).length;
+    const vendidos = lotes.filter(l => l.estado === 'vendido').length;
+    const reservados = lotes.filter(l => l.estado === 'reservado').length;
+    const conPrecio = lotes.filter(l => l.valorUF && !isNaN(parseFloat(l.valorUF)));
+    const precios = conPrecio.map(l => parseFloat(l.valorUF)).sort((a, b) => a - b);
+    const precioMin = precios.length ? precios[0].toFixed(0) : '–';
+    const precioMax = precios.length ? precios[precios.length - 1].toFixed(0) : '–';
+    const superficies = lotes.filter(l => l.dimensiones).map(l => parseFloat(l.dimensiones)).filter(v => !isNaN(v));
+    const supProm = superficies.length ? (superficies.reduce((a, b) => a + b, 0) / superficies.length).toFixed(0) : '–';
+
+    const widget = document.createElement('div');
+    widget.id = 'kpk-stats-widget';
+    widget.className = 'kpk-stats-widget kpk-float-widget';
+    widget.innerHTML = `
+      <div class="kpk-fw-header">
+        <span class="kpk-fw-title">📊 Estadísticas del Proyecto</span>
+        <button class="kpk-fw-close" onclick="this.closest('#kpk-stats-widget').remove()">×</button>
+      </div>
+      <div class="kpk-stats-grid">
+        <div class="kpk-stat-card kpk-stat-total">
+          <span class="kpk-stat-val">${total}</span>
+          <span class="kpk-stat-lbl">Lotes Totales</span>
+        </div>
+        <div class="kpk-stat-card kpk-stat-disp">
+          <span class="kpk-stat-val">${disponibles}</span>
+          <span class="kpk-stat-lbl">Disponibles</span>
+        </div>
+        <div class="kpk-stat-card kpk-stat-vend">
+          <span class="kpk-stat-val">${vendidos}</span>
+          <span class="kpk-stat-lbl">Vendidos</span>
+        </div>
+        <div class="kpk-stat-card kpk-stat-res">
+          <span class="kpk-stat-val">${reservados}</span>
+          <span class="kpk-stat-lbl">Reservados</span>
+        </div>
+      </div>
+      <div class="kpk-stats-info">
+        <div class="kpk-si-row"><span>Precio mínimo</span><strong>${precioMin} UF</strong></div>
+        <div class="kpk-si-row"><span>Precio máximo</span><strong>${precioMax} UF</strong></div>
+        <div class="kpk-si-row"><span>Superficie promedio</span><strong>${supProm} m²</strong></div>
+      </div>
+      <button class="kpk-stats-cta" onclick="
+        if(window.FerrariUI && window.FerrariUI.injectBotMessage)
+          window.FerrariUI.injectBotMessage('¿Cuáles están disponibles?');
+        this.closest('#kpk-stats-widget').remove();
+      ">Ver lotes disponibles →</button>
+    `;
+    document.body.appendChild(widget);
+    // Auto-cerrar en 18 segundos
+    setTimeout(() => widget.isConnected && widget.remove(), 18000);
+  }
+
+  // ─── WIDGET DE COMPARACIÓN DE PRECIOS ────────────────────────────────────
+  function showPriceWidget() {
+    const existing = document.getElementById('kpk-price-widget');
+    if (existing) { existing.remove(); return; }
+
+    const lotes = (window.allDrawnLines || [])
+      .filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && l.valorUF)
+      .sort((a, b) => parseFloat(a.valorUF || 0) - parseFloat(b.valorUF || 0))
+      .slice(0, 8); // Top 8
+
+    if (!lotes.length) {
+      appendMessage('No hay lotes con precio configurado para comparar, señor.', 'system');
+      return;
+    }
+
+    const rows = lotes.map(l => {
+      const estado = l.estado || 'disponible';
+      const estadoClass = estado === 'disponible' ? 'kpk-pc-disp' : estado === 'vendido' ? 'kpk-pc-vend' : 'kpk-pc-res';
+      return `<div class="kpk-pc-row ${estadoClass}" data-lote-id="${l.id}" onclick="
+        if(window.FerrariUI&&window.FerrariUI.openLotePanel) window.FerrariUI.openLotePanel('${l.id}');
+        document.getElementById('kpk-price-widget')&&document.getElementById('kpk-price-widget').remove();
+      ">
+        <span class="kpk-pc-num">Lote ${l.titulo}</span>
+        <span class="kpk-pc-uf">${parseFloat(l.valorUF).toFixed(0)} UF</span>
+        <span class="kpk-pc-sup">${l.dimensiones || '–'} m²</span>
+        <span class="kpk-pc-est">${estado}</span>
+      </div>`;
+    }).join('');
+
+    const widget = document.createElement('div');
+    widget.id = 'kpk-price-widget';
+    widget.className = 'kpk-price-widget kpk-float-widget';
+    widget.innerHTML = `
+      <div class="kpk-fw-header">
+        <span class="kpk-fw-title">💰 Comparador de Precios</span>
+        <button class="kpk-fw-close" onclick="this.closest('#kpk-price-widget').remove()">×</button>
+      </div>
+      <div class="kpk-pc-head">
+        <span>Lote</span><span>Precio</span><span>Superficie</span><span>Estado</span>
+      </div>
+      <div class="kpk-pc-list">${rows}</div>
+      <p class="kpk-pc-hint">Toca una fila para abrir la ficha del lote</p>
+    `;
+    document.body.appendChild(widget);
+    setTimeout(() => widget.isConnected && widget.remove(), 20000);
+  }
+
+  // ─── RESALTAR LOTES DISPONIBLES ───────────────────────────────────────────
+  function highlightAvailableLotes() {
+    const disponibles = (window.allDrawnLines || [])
+      .filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico')
+        && (l.estado === 'disponible' || !l.estado))
+      .map(l => l.id);
+    clearHighlights();
+    if (disponibles.length) highlightLotes(disponibles, 'rgba(57, 255, 20, 0.50)');
+    return disponibles.length;
+  }
+
+
 
   function lookAtLote(loteId, hfov = 90) {
     const lote = findLoteById(loteId);
@@ -1284,6 +1570,13 @@
   window.FerrariUI.closeMapWidget = closeMapWidget;
   window.FerrariUI.sendWhatsAppAlert = sendWhatsAppAlert;
   window.FerrariUI.focusNearbyPOI = focusNearbyPOI;
+  window.FerrariUI.startAutoTour = startAutoTour;
+  window.FerrariUI.stopAutoTour = stopAutoTour;
+  window.FerrariUI.showStatsWidget = showStatsWidget;
+  window.FerrariUI.showPriceWidget = showPriceWidget;
+  window.FerrariUI.highlightAvailableLotes = highlightAvailableLotes;
+  window.FerrariUI.openWeatherWidget = openWeatherWidget;
+  window.FerrariUI.openGalleryForLote = openGalleryForLote;
 
   // injectBotMessage: inserta un mensaje de Jarvis en el historial del chatbot sin llamar a la IA
   window.FerrariUI.injectBotMessage = function(text) {
@@ -2081,7 +2374,63 @@
         ]
       };
     }
-    
+
+    // 7) CLIMA — "qué tiempo hace", "temperatura", "lluvia", "viento", "frío", "calor"
+    if (/(clima|tiempo|temperatura|lluvia|viento|frio|calor|sol|nublado|niebla|neblina|precipitacion|humedad|que\s+dia\s+hace|como\s+esta\s+el\s+dia|va\s+a\s+llover|chubascos|torment|nieve|despejado)/.test(clean)) {
+      return {
+        text: 'Ciertamente. He desplegado el widget meteorológico con las condiciones actuales en tiempo real obtenidas de Open-Meteo para las coordenadas exactas del proyecto, señor.',
+        actions: [{ type: 'openWeatherWidget' }]
+      };
+    }
+
+    // 8) FOTOS / GALERÍA — "muéstrame fotos", "ver imágenes", "galería", "cómo se ve el lote"
+    if (/(foto|galeria|imagen|ver\s+fotos|ver\s+imagenes|como\s+se\s+ve|que\s+aspecto|visual|ver\s+el\s+interior|interiores|exterior)/.test(clean)) {
+      return {
+        text: 'Con gusto. He abierto la galería de fotos del lote actualmente en foco, señor.',
+        actions: [{ type: 'openGallery' }]
+      };
+    }
+
+    // 9) TOUR AUTOMÁTICO — "haz el tour", "recorre los lotes", "muéstrame todo", "paseo"
+    if (/(tour|recorre|recorrer|paseo|muestra\s+todo|enseñame\s+todo|de\s+un\s+vistazo|dar\s+una\s+vuelta|visitar\s+todo|ver\s+todo|arrancar|empezar\s+la\s+visita|iniciar\s+tour|cinematic)/.test(clean)) {
+      return {
+        text: 'Comenzando el tour cinematográfico, señor. Recorreré cada lote del proyecto con la cámara 360° en secuencia. Puede detenerlo en cualquier momento.',
+        actions: [{ type: 'startAutoTour' }]
+      };
+    }
+
+    // 10) ESTADÍSTICAS — "cuántos lotes hay", "resumen", "estadísticas", "cuántos disponibles"
+    if (/(cuantos\s+lotes|resumen|estadistica|estadistica|total\s+de\s+lotes|cuantos\s+quedan|cuantos\s+hay|informe|reporte|panorama\s+general|estado\s+del\s+proyecto|dime\s+todo)/.test(clean)) {
+      return {
+        text: 'A su servicio. He desplegado el resumen estadístico del proyecto con totales, disponibilidad y rango de precios.',
+        actions: [{ type: 'showStats' }]
+      };
+    }
+
+    // 11) COMPARACIÓN DE PRECIOS — "cuál es el más barato", "compara precios", "precio mínimo"
+    if (/(mas\s+barato|mas\s+economico|menor\s+precio|precio\s+minimo|compara|comparar|cuanto\s+cuesta|rango\s+de\s+precios|lista\s+de\s+precios|todos\s+los\s+precios|ordenar\s+por\s+precio)/.test(clean)) {
+      return {
+        text: 'Ciertamente. He desplegado el comparador de precios ordenado de menor a mayor. Puede tocar cualquier fila para abrir la ficha del lote, señor.',
+        actions: [{ type: 'showPriceComparison' }]
+      };
+    }
+
+    // 12) LOTES DISPONIBLES — "cuáles están disponibles", "qué puedo comprar", "muéstrame los disponibles"
+    if (/(disponible|cuales\s+puedo|que\s+puedo\s+comprar|que\s+esta\s+libre|que\s+se\s+puede|a\s+la\s+venta|en\s+venta|sin\s+reservar|resalta\s+disponibles)/.test(clean)) {
+      return {
+        text: 'Inmediatamente, señor. He resaltado en verde todos los lotes disponibles en el plano 360° para que los identifique de un vistazo.',
+        actions: [{ type: 'highlightAvailable' }]
+      };
+    }
+
+    // 13) CONTACTO / WHATSAPP — variaciones naturales
+    if (/(hablar\s+con\s+alguien|quiero\s+hablar|contactar|llamar|comunicarme|ejecutivo|vendedor|asesor\s+humano|persona\s+real|quiero\s+que\s+me\s+llamen|correo|email|escribir)/.test(clean)) {
+      return {
+        text: 'Por supuesto. Puede comunicarse directamente al correo perito.vidal@gmail.com o al WhatsApp +56 9 8749 1964. ¿Desea que le abra el formulario de contacto ahora, señor?',
+        actions: []
+      };
+    }
+
     return null;
   }
 
@@ -2309,12 +2658,21 @@ ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "clearHighlights"}: Quita resaltados del plano.
 - {"type": "submitLead", "name": "Nombre", "email": "correo", "phone": "fono", "loteId": "ID", "notes": ""}: Envía solicitud de reserva con datos del cliente.
 - {"type": "openNearbyTab"}: Abre pestaña Cercanos mostrando el radar de POIs en el dock.
-- {"type": "filterNearby", "category": "salud|educacion|seguridad|compras|servicios"}: Abre dock Cercanos y activa el filtro de la categoría indicada. ÚSALA cuando el usuario pregunte por cualquier tipo de servicio cercano (médico, colegio, carabineros, almacén, gasolinera, etc.).
-- {"type": "focusNearbyPOI", "poiName": "nombre parcial del POI"}: Rota la cámara 360° hacia ese POI, muestra su pin en el visor WebGL y abre el mapa flotante con su ruta. ÚSALA junto con filterNearby cuando el usuario pregunte por un servicio específico.
-- {"type": "openMapWidget", "lat": -41.87585, "lng": -72.748294, "title": "Nombre"}: Abre mapa flotante con ruta y botones Google Maps / Waze. Úsala para CUALQUIER servicio cercano o ciudad de referencia.
+- {"type": "filterNearby", "category": "salud|educacion|seguridad|compras|servicios"}: Abre dock Cercanos y activa el filtro de la categoría indicada.
+- {"type": "focusNearbyPOI", "poiName": "nombre parcial del POI"}: Rota la cámara 360° hacia ese POI y abre el mapa flotante con su ruta.
+- {"type": "openMapWidget", "lat": -41.87585, "lng": -72.748294, "title": "Nombre"}: Abre mapa flotante con ruta y botones Google Maps / Waze.
 - {"type": "closeMapWidget"}: Cierra el mapa flotante.
+- {"type": "openWeatherWidget"}: Muestra el widget meteorológico con clima en tiempo real del proyecto. ÚSALA cuando pregunten por el clima, temperatura, lluvia, viento o condiciones del día.
+- {"type": "openGallery", "loteId": "ID_opcional"}: Abre la galería de fotos del lote en foco (o del lote indicado). ÚSALA cuando pidan fotos, imágenes o galería.
+- {"type": "startAutoTour"}: Inicia el tour cinematográfico automático que recorre todos los lotes con la cámara 360°. ÚSALA cuando pidan un tour, paseo, recorrido o ver todo.
+- {"type": "stopAutoTour"}: Detiene el tour automático.
+- {"type": "showStats"}: Muestra widget flotante con estadísticas del proyecto (total lotes, disponibles, precios, superficies). ÚSALA cuando pidan cuántos lotes hay, resumen, o estadísticas.
+- {"type": "showPriceComparison"}: Muestra tabla comparativa de precios ordenada de menor a mayor. ÚSALA cuando pidan comparar precios, el más barato, o lista de precios.
+- {"type": "highlightAvailable"}: Resalta todos los lotes disponibles en verde en el plano 360°. ÚSALA cuando pregunten cuáles están disponibles o a la venta.
 
-REGLA COMBINADA OBLIGATORIA: Cuando el usuario pregunta por servicios cercanos (escuela, posta, carabineros, comercio, etc.), SIEMPRE combina: filterNearby + focusNearbyPOI + openMapWidget en el mismo array de actions. NUNCA respondas sólo con texto sin ejecutar las tres acciones.
+REGLA DE PROACTIVIDAD: Eres el único punto de control de la plataforma. Cuando el usuario exprese cualquier necesidad de información, visual o navegación, SIEMPRE ejecuta la acción correspondiente además de responder con texto. Nunca respondas solo con texto si existe una acción disponible para acompañarlo.
+
+REGLA COMBINADA OBLIGATORIA: Servicios cercanos (escuela, posta, carabineros, etc.) → combinar siempre: filterNearby + focusNearbyPOI + openMapWidget.
 
 FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 {
