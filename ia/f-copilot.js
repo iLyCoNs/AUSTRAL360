@@ -1605,12 +1605,18 @@
     }
 
     // Formatear mensaje premium
-    const textMsg = `🔔 *Nueva Consulta en KPrano Killer*\n\n` +
+    const brandName = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') 
+      ? window.FerrariBrandDock.getBrand().projectName || 'Austral 360' 
+      : 'Austral 360';
+
+    const textMsg = `🔔 *NUEVO PROSPECTO REGISTRADO*\n\n` +
+      `🌐 *Proyecto:* ${brandName}\n` +
       `👤 *Cliente:* ${name || 'Anónimo'}\n` +
       `📞 *Teléfono:* ${phone || '—'}\n` +
       `✉️ *Email:* ${email || '—'}\n` +
-      `🏡 *Lote:* Lote ${loteId || 'General'}\n` +
-      `💬 *Detalle:* ${message || 'Interesado en reserva directa.'}`;
+      `🏡 *Terreno:* Lote ${loteId || 'General'}\n` +
+      `💬 *Consulta:* ${message || 'Solicitud de contacto inmediata.'}\n\n` +
+      `⚡ _Enviado desde el Asistente Copiloto Virtual_`;
 
     const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(ownerPhone)}&text=${encodeURIComponent(textMsg)}&apikey=${encodeURIComponent(callMeBotApiKey)}`;
 

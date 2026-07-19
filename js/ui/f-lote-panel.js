@@ -307,8 +307,25 @@
       _specBtnWsp.addEventListener('click', () => {
         const c = _getContact();
         const waPhone = c.whatsapp || c.platformWhatsapp || '';
+        const line = window.FerrariState.getLine(_currentLoteId);
+        const proyecto = _getProjectName();
         const titulo = _specTitle.textContent || 'un lote';
-        const msg = `Hola, me interesa obtener más información sobre el ${titulo} (${_getProjectName()}).`;
+        
+        let infoLote = '';
+        if (line) {
+          const dims = line.dimensiones ? `\n📐 Superficie: ${line.dimensiones} m²` : '';
+          const valor = line.valorUF ? `\n💵 Precio: ${line.valorUF} UF` : '';
+          let clpText = '';
+          if (line.valorUF) {
+            const clp = Math.round(parseFloat(line.valorUF) * _ufValue);
+            clpText = ` (~ ${_formatCLP(clp)} CLP)`;
+          }
+          infoLote = `${dims}${valor}${clpText}`;
+        }
+        
+        const msg = `¡Hola! 👋 Me interesa obtener más información sobre el *${titulo}* del proyecto *${proyecto}*.` +
+                    (infoLote ? `\n\n*Detalles del terreno:*${infoLote}` : '') +
+                    `\n\nQuedo atento(a) a sus comentarios. 😊`;
         let url = null;
         if (window.FerrariBrandDock && window.FerrariBrandDock.whatsappUrl) {
           url = window.FerrariBrandDock.whatsappUrl(waPhone, msg);
