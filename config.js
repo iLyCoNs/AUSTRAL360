@@ -9,10 +9,10 @@
 (function() {
   window.KPK_CONFIG = {
     // Incrementa este número si cambias la configuración general para obligar al borrado de caché
-    configVersion: 5,
+    configVersion: 6,
 
-    // Proveedor predeterminado para todos los clientes (Gemini 3.5 Flash vía Lightning)
-    aiProvider: 'lightning',
+    // Proveedor predeterminado para todos los clientes (OpenRouter con soporte CORS en navegadores)
+    aiProvider: 'openrouter',
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {

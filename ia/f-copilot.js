@@ -64,7 +64,7 @@
     const models = {
       gemini: 'gemini-2.0-flash',
       groq: 'llama-3.1-8b-instant',
-      openrouter: 'google/gemma-4-26b-a4b-it:free',
+      openrouter: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
       lightning: 'google/gemini-3.5-flash'
     };
     _modelName = models[_provider] || models.openrouter;
@@ -643,7 +643,62 @@
       }
 
     } catch (e) {
-      console.error('[Ferrari/IA] Error procesando consulta:', e);
+      console.error('[Ferrari/IA] Error procesando consulta con proveedor ' + _provider + ':', e);
+
+      // --- REINTENTO AUTOMÁTICO VÍA OPENROUTER (FALLBACK DE EMERGENCIA PARA CORS / RED) ---
+      if (_provider !== 'openrouter' || e.message.includes('Failed to fetch') || e.message.includes('429')) {
+        console.warn('[Ferrari/IA] Intentando fallback automático vía OpenRouter...');
+        try {
+          const cfg = window.KPK_CONFIG || {};
+          const fallbackRawKey = (cfg.aiKeys && cfg.aiKeys.openrouter) || '';
+          let fallbackKey = fallbackRawKey;
+          if (fallbackRawKey && fallbackRawKey.startsWith('kpk-enc-')) {
+            fallbackKey = atob(fallbackRawKey.substring(8)).split('').reverse().join('');
+          }
+          
+          if (fallbackKey) {
+            const fallbackBody = {
+              model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+              messages: [
+                { role: 'system', content: context },
+                ...apiHistory.map(h => ({ role: h.role, content: h.text }))
+              ],
+              temperature: 0.3,
+              max_tokens: 400
+            };
+            
+            const fbRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${fallbackKey}`,
+                'HTTP-Referer': window.location.origin || 'https://ilycons.github.io',
+                'X-Title': 'Austral 360 Copilot'
+              },
+              body: JSON.stringify(fallbackBody)
+            });
+            
+            if (fbRes.ok) {
+              const fbJson = await fbRes.json();
+              const fbText = fbJson.choices?.[0]?.message?.content;
+              if (fbText) {
+                const fbData = JSON.parse(fbText);
+                typingIndicator.remove();
+                appendMessage(fbData.text, 'system');
+                playFuturisticSound('success');
+                speakJarvis(fbData.text);
+                if (Array.isArray(fbData.actions)) executeActions(fbData.actions);
+                _chatHistory.push({ role: 'user', text: prompt });
+                _chatHistory.push({ role: 'assistant', text: fbText });
+                return;
+              }
+            }
+          }
+        } catch (fbErr) {
+          console.error('[Ferrari/IA] Fallback automático también falló:', fbErr);
+        }
+      }
+
       typingIndicator.remove();
 
       let friendlyError = 'Lo siento, tuve un problema conectando con el servicio de IA.';
