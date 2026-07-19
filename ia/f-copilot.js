@@ -2140,6 +2140,12 @@
     clean = clean.replace(/<[^>]*>/g, '');
     // Quitar JSON remanente de acciones si lo hubiera
     clean = clean.replace(/\{.*?\}/g, '');
+    // Reemplazar abreviaciones y símbolos para modulación por voz perfecta
+    clean = clean.replace(/\bkm\b/gi, 'kilómetros');
+    clean = clean.replace(/\bm²\b/gi, 'metros cuadrados');
+    clean = clean.replace(/\bUF\b/g, 'U Efe');
+    clean = clean.replace(/\bSAG\b/g, 'Ese A Ge');
+    clean = clean.replace(/\$/g, 'pesos ');
     // Quitar markdown (asteriscos de negrita, cursiva, guiones de lista, backticks)
     clean = clean.replace(/\*\*+/g, '');
     clean = clean.replace(/\*+/g, '');
@@ -4565,6 +4571,14 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
             }, 1500);
           }
         }
+      }
+    }
+    const mobilePopup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (mobilePopup) {
+      if (status) {
+        mobilePopup.classList.add('is-speaking');
+      } else {
+        mobilePopup.classList.remove('is-speaking');
       }
     }
   }
