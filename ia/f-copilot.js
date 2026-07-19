@@ -2699,6 +2699,59 @@
         };
       }
     }
+
+    // 4.5) Buscar si el usuario mencionó un POI específico cargado en el dock
+    try {
+      const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
+      const pois = livePins.filter(p => p.tipo === 'poi' && p.nombre);
+      
+      let specificPoi = null;
+      for (const p of pois) {
+        const words = p.nombre.toLowerCase()
+          .replace(/escuela|rural|posta|local|comercial|minimercado|de|la|el|del|bajo/g, '')
+          .trim().split(/\s+/);
+        
+        const hasKeywordMatch = words.some(w => w.length > 3 && clean.includes(w));
+        if (hasKeywordMatch || clean.includes(p.nombre.toLowerCase())) {
+          specificPoi = p;
+          break;
+        }
+      }
+      
+      if (specificPoi) {
+        const lat = specificPoi.lat;
+        const lng = specificPoi.lng;
+        const mapTitle = specificPoi.nombre;
+        
+        const distKm = specificPoi._routeDistM ? (specificPoi._routeDistM / 1000).toFixed(1) + ' km' : (specificPoi._distM ? (specificPoi._distM / 1000).toFixed(1) + ' km' : '');
+        const tiempoMin = specificPoi._routeDurationS ? Math.round(specificPoi._routeDurationS / 60) + ' min' : '';
+        const travelInfo = (distKm && tiempoMin) ? `a **${distKm}** (**${tiempoMin}** en coche)` : distKm ? `a **${distKm}**` : '';
+        
+        let filterCat = 'all';
+        const catLower = (specificPoi.categoria || '').toLowerCase();
+        if (/colegio|escuela|liceo/i.test(catLower)) filterCat = 'educacion';
+        else if (/hospital|clinica|posta|farmacia/i.test(catLower)) filterCat = 'salud';
+        else if (/carabinero|reten|policia/i.test(catLower)) filterCat = 'seguridad';
+        else if (/supermercado|almacen|negocio|tienda|minimercado/i.test(catLower)) filterCat = 'compras';
+        
+        const voiceMode = _getVoiceMode();
+        const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+        const respText = isG
+          ? `¡Claro que sí! Te muestro la ruta hacia **${specificPoi.nombre}**, que se encuentra ${travelInfo} del loteo. He cargado el recorrido en tu pantalla 😊`
+          : `Entendido. Trazando ruta hacia **${specificPoi.nombre}**, ubicado ${travelInfo} del proyecto, señor.`;
+          
+        return {
+          text: respText,
+          actions: [
+            { type: 'filterNearby', category: filterCat },
+            { type: 'focusNearbyPOI', poiName: specificPoi.nombre },
+            { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle }
+          ]
+        };
+      }
+    } catch(e) {
+      console.warn('[Ferrari/IA] Error en matcher de POI específico:', e);
+    }
     
     // 5) INTENT ENGINE — Enrutamiento por intención natural del usuario para servicios cercanos
     // Categorías de intención agrupadas por sinónimos naturales
@@ -2795,6 +2848,17 @@
             const tiempoMin = closest._routeDurationS ? Math.round(closest._routeDurationS / 60) + ' min' : '';
             const travelInfo = (distKm && tiempoMin) ? `a **${distKm}** (**${tiempoMin}** en auto)` : distKm ? `a **${distKm}**` : '';
 
+            // Obtener el listado de todos los demás lugares cercanos del mismo tipo (ej: colegios 2 y 3) para dar sugerencias completas
+            let listadoOtros = '';
+            if (filtered.length > 1) {
+              const otros = filtered.slice(1, 4); // Tomar los siguientes 3
+              const otrosText = otros.map(o => {
+                const d = o._routeDistM ? (o._routeDistM / 1000).toFixed(1) + ' km' : (o._distM ? (o._distM / 1000).toFixed(1) + ' km' : '');
+                return `**${o.nombre}** (a ${d})`;
+              }).join(', ');
+              listadoOtros = ` Además, en la zona contamos con: ${otrosText}.`;
+            }
+
             // Adaptar respuesta de Gigi o Jarvis según el género configurado
             const voiceMode = _getVoiceMode();
             const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
@@ -2803,15 +2867,15 @@
               : 'Por supuesto, señor.';
 
             if (intent.filter === 'educacion') {
-              respuestaDinamica = `${prefix} El colegio más cercano es la **${closest.nombre}**, que se encuentra ${travelInfo} del loteo. He activado el filtro de colegios en el radar y trazado la ruta exacta en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El colegio más cercano es la **${closest.nombre}**, que se encuentra ${travelInfo} del loteo.${listadoOtros} He activado el filtro de colegios en el radar y trazado la ruta al más cercano en el mapa flotante.`;
             } else if (intent.filter === 'salud') {
-              respuestaDinamica = `${prefix} La atención médica más cercana es la **${closest.nombre}**, ubicada ${travelInfo} del proyecto. He abierto el radar de salud y cargado la ruta en el mapa interactivo.`;
+              respuestaDinamica = `${prefix} La atención médica más cercana es la **${closest.nombre}**, ubicada ${travelInfo} del proyecto.${listadoOtros} He abierto el radar de salud y cargado la ruta en el mapa interactivo.`;
             } else if (intent.filter === 'seguridad') {
-              respuestaDinamica = `${prefix} El punto de seguridad más cercano es el **${closest.nombre}**, ubicado ${travelInfo} del proyecto. He activado el filtro de seguridad y desplegado la ruta de acceso en el mapa.`;
+              respuestaDinamica = `${prefix} El punto de seguridad más cercano es el **${closest.nombre}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de seguridad y desplegado la ruta de acceso en el mapa.`;
             } else if (intent.filter === 'compras') {
-              respuestaDinamica = `${prefix} El comercio más cercano es **${closest.nombre}**, que está ${travelInfo} del loteo. He activado el filtro de compras en el radar y cargado la ruta de acceso en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El comercio más cercano es **${closest.nombre}**, que está ${travelInfo} del loteo.${listadoOtros} He activado el filtro de compras en el radar y cargado la ruta de acceso en el mapa flotante.`;
             } else if (intent.filter === 'servicios') {
-              respuestaDinamica = `${prefix} El servicio más cercano es **${closest.nombre}**, ubicado ${travelInfo} del proyecto. He activado el filtro de servicios y trazado la ruta de acceso en el mapa flotante.`;
+              respuestaDinamica = `${prefix} El servicio más cercano es **${closest.nombre}**, ubicado ${travelInfo} del proyecto.${listadoOtros} He activado el filtro de servicios y trazado la ruta de acceso en el mapa flotante.`;
             }
           }
         } catch(e) {
