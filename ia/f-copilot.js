@@ -380,20 +380,20 @@
         const assistantGreetingName = isGigi ? 'Gigi, su asesora virtual' : 'Jarvis, su guía virtual';
         
         let welcomeText = "";
+        const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
         if (isMobile) {
           if (_clientName) {
-            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantGreetingName}. ¿Prefieres realizar el tour completo o explorar algún lote?`;
+            welcomeText = `¡Hola, ${_clientName}! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Te muestro un tour o buscas algún lote en específico?`;
           } else {
-            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantGreetingName}. Te sugiero usar el micrófono (🎙️) para hablar conmigo sin tapar el plano 360°. Para empezar, ¿cómo te gustaría que te llame?`;
+            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
             _isWaitingForName = true;
           }
         } else {
           if (_clientName) {
-            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Hacemos el tour completo o prefieres ver alguno en específico?`;
+            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantShortName}. ¿Hacemos el tour o buscas un lote en específico?`;
           } else {
-            welcomeText = totalLotes > 0
-              ? `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
-              : `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Estoy aquí para acompañarle en toda la experiencia, señor.`;
+            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+            _isWaitingForName = true;
           }
         }
 
@@ -818,8 +818,10 @@
         const mode = _getVoiceMode();
         const isGigi = mode.includes('gigi') || mode.includes('dalia');
         const assistantGreetingName = isGigi ? 'Gigi' : 'Jarvis';
+        const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
+        const projectName = brandObj.projectName || 'Austral 360';
 
-        const replyText = `¡Excelente, ${_clientName}! Qué lindo nombre. Un gusto conocerte. Te comento que aquí en Austral 360 contamos con hermosas parcelas de agrado con Rol Propio listas para escriturar. ¿Te gustaría que iniciemos un tour guiado por el plano 360° o prefieres preguntarme sobre algún lote de tu interés?`;
+        const replyText = `¡Mucho gusto, ${_clientName}! En ${projectName} tenemos hermosas parcelas con Rol Propio. ¿Te muestro un tour o buscas algún lote específico?`;
 
         appendMessage(prompt, 'user');
         if (isMobile) {
