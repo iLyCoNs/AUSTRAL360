@@ -604,10 +604,17 @@
     }
 
     let cleaned = rawText.trim();
-    // 1) Eliminar bloques de código markdown ```json ... ```
+
+    // 1) Limpiar prefijos basura previos al bloque JSON (ej. "Answering... ```json")
+    const jsonStartIndex = cleaned.indexOf('{');
+    if (jsonStartIndex !== -1) {
+      cleaned = cleaned.substring(jsonStartIndex);
+    }
+
+    // 2) Eliminar bloques de código markdown ```json ... ```
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-    // 2) Intentar parseo directo
+    // 3) Intentar parseo directo
     try {
       const parsed = JSON.parse(cleaned);
       if (parsed && typeof parsed.text === 'string') {
@@ -617,20 +624,35 @@
         return { text: JSON.stringify(parsed), actions: parsed.actions || [] };
       }
     } catch (e1) {
-      // 3) Si falla, buscar la estructura {"text": "..."} dentro del texto usando Regex
+      // 4) Si falla, buscar la estructura {"text": "..."} dentro del texto usando Regex (incluso si está incompleto)
       const jsonMatch = cleaned.match(/"text"\s*:\s*"([\s\S]*?)"/);
+      let textContent = '';
       if (jsonMatch && jsonMatch[1]) {
-        return { text: jsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n') };
+        textContent = jsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+      } else {
+        // Fallback agresivo: limpiar llaves y comillas
+        textContent = cleaned
+          .replace(/^[{\s]*"text"\s*:\s*"?/, '')
+          .replace(/["}\s]*$/, '')
+          .replace(/\\"/g, '"')
+          .replace(/\\n/g, '\n');
       }
 
-      // 4) Si no hay JSON válido pero hay texto libre, usar el texto libre limpiando llaves sueltas
-      const fallbackText = cleaned
-        .replace(/^[{\s]*"text"\s*:\s*"?/, '')
-        .replace(/["}\s]*$/, '')
-        .replace(/\\"/g, '"')
-        .replace(/\\n/g, '\n');
+      // Evitar que el texto final quede con pedazos de llaves JSON si la respuesta fue muy corrupta
+      if (textContent.startsWith('{"text":')) {
+        textContent = textContent.replace(/^[{\s]*"text"\s*:\s*"?/, '').replace(/["}\s]*$/, '');
+      }
 
-      return { text: fallbackText || rawText };
+      // Buscar si alcanzaron a venir acciones
+      const actions = [];
+      try {
+        const actionMatches = cleaned.matchAll(/"type"\s*:\s*"([^"]+)"/g);
+        for (const act of actionMatches) {
+          if (act[1]) actions.push({ type: act[1] });
+        }
+      } catch(e) {}
+
+      return { text: textContent || rawText, actions: actions };
     }
 
     return { text: rawText };
