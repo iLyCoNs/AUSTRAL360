@@ -461,19 +461,47 @@
   function _focusPin(id) {
     const pin = window.FerrariGeo && window.FerrariGeo.getPin(id);
     if (!pin) return;
-    // Solo este cercano aparece en la foto
+
+    // 1) Mostrar solo este pin en el visor 360°
     _setNearbyOnPhoto(true, id);
+
+    // 2) Girar la cámara suavemente hacia el pin con animación
     const viewer = window.Ferrari && window.Ferrari.viewer;
-    if (viewer && typeof viewer.setYaw === 'function') {
+    if (viewer) {
       try {
-        viewer.setYaw(pin.yaw);
-        if (typeof viewer.setPitch === 'function') {
-          viewer.setPitch(Math.max(-20, Math.min(10, pin.pitch)));
+        const targetPitch = pin.pitch != null ? Math.max(-20, Math.min(12, pin.pitch)) : 0;
+        if (typeof viewer.lookAt === 'function') {
+          // lookAt(pitch, yaw, hfov, transitionDuration)
+          viewer.lookAt(targetPitch, pin.yaw, 75, 1000);
+        } else if (typeof viewer.setYaw === 'function') {
+          viewer.setYaw(pin.yaw);
+          if (typeof viewer.setPitch === 'function') {
+            viewer.setPitch(targetPitch);
+          }
         }
       } catch (e) {}
     }
-    if (window.FerrariGeoEditor && window.FerrariGeoEditor.openInfo) {
-      window.FerrariGeoEditor.openInfo(id);
+
+    // 3) Abrir mapa flotante con la ruta al pin (si tiene coordenadas)
+    if (pin.lat != null && pin.lng != null) {
+      if (window.FerrariUI && typeof window.FerrariUI.openMapWidget === 'function') {
+        window.FerrariUI.openMapWidget(pin.lat, pin.lng, pin.nombre || 'Punto de Interés');
+      }
+    }
+
+    // 4) Inyectar mensaje de Jarvis en el chatbot narrando la acción
+    if (pin.nombre) {
+      const distKm = pin._routeDistM ? (pin._routeDistM / 1000).toFixed(1) + ' km' : (pin._distM ? (pin._distM / 1000).toFixed(1) + ' km aprox.' : '');
+      const tiempoMin = pin._routeDurationS ? Math.round(pin._routeDurationS / 60) + ' min' : '';
+      const infoTexto = (distKm && tiempoMin)
+        ? `a ${distKm} — ${tiempoMin} en vehículo`
+        : distKm ? `a ${distKm} del proyecto` : '';
+
+      const jarvisMsg = `He girado la cámara 360° hacia ${pin.nombre}${infoTexto ? ', ' + infoTexto : ''}. El mapa interactivo muestra la ruta de acceso con las opciones de navegación para Google Maps y Waze, señor.`;
+
+      if (window.FerrariUI && typeof window.FerrariUI.injectBotMessage === 'function') {
+        window.FerrariUI.injectBotMessage(jarvisMsg);
+      }
     }
   }
 

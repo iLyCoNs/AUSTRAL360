@@ -431,7 +431,7 @@
             model: tier.model,
             messages: messages,
             temperature: 0.3,
-            max_tokens: 400
+            max_tokens: 800
           })
         });
 
@@ -889,15 +889,25 @@
             break;
           case 'openNearbyTab':
             if (window.FerrariBuyerDock) {
-              // 1) Expandir el dock si está colapsado
               if (typeof window.FerrariBuyerDock.setExpanded === 'function') {
                 window.FerrariBuyerDock.setExpanded(true);
               }
-              // 2) Cambiar a la pestaña Cercanos (dispara auto-búsqueda OSM con coordenadas del drone)
               if (typeof window.FerrariBuyerDock.setTab === 'function') {
                 window.FerrariBuyerDock.setTab('lugares');
               }
             }
+            break;
+          case 'filterNearby':
+            if (window.FerrariBuyerDock) {
+              if (typeof window.FerrariBuyerDock.setExpanded === 'function') window.FerrariBuyerDock.setExpanded(true);
+              if (typeof window.FerrariBuyerDock.setTab === 'function') window.FerrariBuyerDock.setTab('lugares');
+              if (act.category && typeof window.FerrariBuyerDock.setFilter === 'function') {
+                window.FerrariBuyerDock.setFilter(act.category);
+              }
+            }
+            break;
+          case 'focusNearbyPOI':
+            focusNearbyPOI(act.poiName || act.poiId);
             break;
           case 'openMapWidget':
             openMapWidget(act.lat, act.lng, act.title);
@@ -912,6 +922,44 @@
         console.warn('[Ferrari/IA] Error ejecutando acción:', act, err);
       }
     });
+  }
+
+  function focusNearbyPOI(query) {
+    if (!query) return;
+    const cleanQ = String(query).toLowerCase().trim();
+    let pins = [];
+    try {
+      pins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
+    } catch(e) {}
+
+    // Buscar pin por ID o por coincidencia de nombre
+    let targetPin = pins.find(p => p.id === query || (p.nombre && p.nombre.toLowerCase().includes(cleanQ)));
+    if (!targetPin) {
+      targetPin = pins.find(p => p.categoria && p.categoria.toLowerCase().includes(cleanQ));
+    }
+
+    if (window.FerrariBuyerDock) {
+      if (typeof window.FerrariBuyerDock.setExpanded === 'function') window.FerrariBuyerDock.setExpanded(true);
+      if (typeof window.FerrariBuyerDock.setTab === 'function') window.FerrariBuyerDock.setTab('lugares');
+    }
+
+    if (targetPin) {
+      const viewer = window.Ferrari && window.Ferrari.viewer;
+      if (viewer && targetPin.yaw != null) {
+        try {
+          if (typeof viewer.lookAt === 'function') {
+            const targetPitch = targetPin.pitch != null ? Math.max(-20, Math.min(15, targetPin.pitch)) : 0;
+            viewer.lookAt(targetPitch, targetPin.yaw, 75, 1200);
+          } else if (typeof viewer.setYaw === 'function') {
+            viewer.setYaw(targetPin.yaw);
+          }
+        } catch(e) {}
+      }
+
+      if (targetPin.lat != null && targetPin.lng != null) {
+        openMapWidget(targetPin.lat, targetPin.lng, targetPin.nombre || 'Punto de Interés');
+      }
+    }
   }
 
   function lookAtLote(loteId, hfov = 90) {
@@ -1235,6 +1283,16 @@
   window.FerrariUI.openMapWidget = openMapWidget;
   window.FerrariUI.closeMapWidget = closeMapWidget;
   window.FerrariUI.sendWhatsAppAlert = sendWhatsAppAlert;
+  window.FerrariUI.focusNearbyPOI = focusNearbyPOI;
+
+  // injectBotMessage: inserta un mensaje de Jarvis en el historial del chatbot sin llamar a la IA
+  window.FerrariUI.injectBotMessage = function(text) {
+    if (!text) return;
+    try {
+      _appendMessage('assistant', text);
+      if (typeof speakText === 'function') speakText(text);
+    } catch(e) {}
+  };
 
   let _speechEnabled = false;
   let _synthUtterance = null;
@@ -1930,30 +1988,95 @@
       }
     }
     
-    // 5) Lugares cercanos y despliegue automático del mapa widget flotante
-    if (/(colegio|escuela|posta|salud|hospital|carabinero|reten|comisaria|negocio|supermercado|comercio|tienda|donde\s+esta|donde\s+queda|donde\s+estan|no\s+la\s+veo|muestrame|ver\s+mapa)/.test(clean)) {
-      let mapTitle = "Servicios y Puntos de Interés";
-      let lat = -41.3934;
-      let lng = -72.9056;
-
-      if (/(colegio|escuela|educacion)/.test(clean)) {
-        mapTitle = "Escuelas y Colegios Cercanos (Alerce / Pto. Montt)";
-        lat = -41.3934; lng = -72.9056;
-      } else if (/(posta|salud|hospital|urgencia)/.test(clean)) {
-        mapTitle = "Posta de Salud Rural Correntoso";
-        lat = -41.4589; lng = -72.7423;
-      } else if (/(carabinero|reten|policia|seguridad)/.test(clean)) {
-        mapTitle = "Retén de Carabineros Correntoso";
-        lat = -41.4589; lng = -72.7423;
-      } else if (/(negocio|supermercado|comercio|almacen)/.test(clean)) {
-        mapTitle = "Comercio y Almacenes de la Zona";
-        lat = -41.4589; lng = -72.7423;
+    // 5) INTENT ENGINE — Enrutamiento por intención natural del usuario para servicios cercanos
+    // Categorías de intención agrupadas por sinónimos naturales
+    const INTENT_PATTERNS = [
+      {
+        // SALUD: posta, médico, doctor, urgencias, enfermera, clínica, hospital, atención médica
+        cat: 'salud',
+        filter: 'salud',
+        re: /posta|medic|doctor|urgencia|enfermera|clinica|hospital|atencion\s+medic|centro\s+de\s+salud|cesfam|consulta|pastilla|farmacia|botica/,
+        mapTitle: 'Posta de Salud Rural Aulén',
+        lat: -41.4589, lng: -72.7423,
+        poiKey: 'posta',
+        respuesta: 'Ciertamente. La Posta de Salud Rural Aulén es el centro de atención médica más cercano al proyecto. He girado la vista hacia su ubicación, abierto el radar de servicios y desplegado la ruta exacta en el mapa flotante.'
+      },
+      {
+        // EDUCACIÓN: colegio, escuela, liceo, jardín, kínder, niños, hijos, estudiar
+        cat: 'educacion',
+        filter: 'educacion',
+        re: /colegio|escuela|liceo|jardin\s+infantil|kinder|guarderia|ninos|hijos|estudiar|educaci|clases|profesor/,
+        mapTitle: 'Escuelas y Colegios Cercanos',
+        lat: -41.3934, lng: -72.9056,
+        poiKey: 'escuela',
+        respuesta: 'Con gusto, señor. En un radio de 10 km se encuentran la Escuela Rural La Pozá Contao y la Escuela Rural Aulén, entre otras. He activado el filtro de educación en el radar y desplegado la ruta en el mapa interactivo.'
+      },
+      {
+        // SEGURIDAD: carabineros, retén, policía, vigilancia, emergencia, patrulla
+        cat: 'seguridad',
+        filter: 'seguridad',
+        re: /carabinero|reten|policia|vigilancia|emergencia|patrulla|911|133|comisaria|gendarmeria/,
+        mapTitle: 'Retén de Carabineros Correntoso',
+        lat: -41.4589, lng: -72.7423,
+        poiKey: 'carabinero',
+        respuesta: 'El Retén de Carabineros más cercano se ubica en Correntoso, a aproximadamente 6 km del proyecto. He activado el filtro de seguridad en el radar y trazado la ruta en el mapa, señor.'
+      },
+      {
+        // COMERCIO: supermercado, almacén, negocio, tienda, ferretería, compras, abarrotes
+        cat: 'compras',
+        filter: 'compras',
+        re: /supermercado|almacen|negocio|tienda|ferreteria|compra|abarrote|minimarket|local\s+comercial|panaderia|carniceria|verduleria/,
+        mapTitle: 'Comercio y Almacenes de la Zona',
+        lat: -41.4589, lng: -72.7423,
+        poiKey: 'local comercial',
+        respuesta: 'Ciertamente. En los alrededores encontrará almacenes y locales comerciales rurales. He activado el filtro de compras en el radar y desplegado las opciones en el mapa flotante para que pueda explorarlos a detalle.'
+      },
+      {
+        // SERVICIOS GENERALES: bencinera, copec, shell, gasolinera, combustible
+        cat: 'servicios',
+        filter: 'servicios',
+        re: /bencin|combustible|copec|shell|petro|gasolina|servicentro/,
+        mapTitle: 'Servicentros y Combustible',
+        lat: -41.3934, lng: -72.9056,
+        poiKey: 'servicentro',
+        respuesta: 'El servicentro más cercano se encuentra a unos 12 minutos por la ruta principal pavimentada. He desplegado el radar de servicios y la ruta en el mapa flotante para que pueda verificarlo, señor.'
       }
+    ];
 
+    for (const intent of INTENT_PATTERNS) {
+      if (intent.re.test(clean)) {
+        // Intentar buscar el POI real en la lista cargada por el dock
+        let lat = intent.lat;
+        let lng = intent.lng;
+        let mapTitle = intent.mapTitle;
+        try {
+          const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
+          const match = livePins.find(p =>
+            p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)
+          );
+          if (match && match.lat && match.lng) {
+            lat = match.lat;
+            lng = match.lng;
+            mapTitle = match.nombre;
+          }
+        } catch(e) {}
+
+        return {
+          text: intent.respuesta,
+          actions: [
+            { type: 'filterNearby', category: intent.filter },
+            { type: 'focusNearbyPOI', poiName: intent.poiKey },
+            { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle }
+          ]
+        };
+      }
+    }
+
+    // 6) Pregunta ambigua sobre cercanía sin categoría específica
+    if (/(que\s+hay|hay\s+cerca|servicios|cerca|alrededor|vecindad|entorno|infraestructura|equipamiento|ver\s+mapa|muestrame|donde\s+est|que\s+se\s+ve)/.test(clean)) {
       return {
-        text: `Ciertamente, señor. He desplegado la ventana flotante del mapa interactivo con la ubicación exacta de ${mapTitle} y la ruta de acceso calculada con botones para Google Maps y Waze.`,
+        text: 'Con mucho gusto. He activado el radar de servicios cercanos en el plano. Puede explorar por categorías: Salud, Seguridad, Educación, Compras y Servicios. ¿Sobre cuál desea que me enfoque, señor?',
         actions: [
-          { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle },
           { type: 'openNearbyTab' }
         ]
       };
@@ -2179,16 +2302,19 @@ REGLA DE MAPA DE CIUDAD: Si el usuario te pregunta por la distancia o la ruta a 
 SERVICIOS CERCANOS CARGADOS (OSM - TOP 10):
 ${JSON.stringify(nearbyCompact, null, 2)}
 
-ACCIONES DISPONIBLES:
-- {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom máximo) y 110 (gran angular). Úsala siempre que pidan ver, acercar o hacer zoom a un lote.
-- {"type": "openLotePanel", "loteId": "ID"}: Abre ficha con fotos y detalles. SOLO si el cliente pide explícitamente ver la ficha, fotos, precio o reservar.
-- {"type": "highlightLotes", "loteIds": ["ID1","ID2"], "color": "rgba(r,g,b,a)"}: Resalta lotes. Ej verde neón: "rgba(57,255,20,0.45)".
-- {"type": "clearHighlights"}: Quita resaltados.
-- {"type": "submitLead", "name": "Nombre", "email": "correo", "phone": "fono", "loteId": "ID", "notes": ""}: Envía solicitud de reserva solo cuando el cliente dé sus datos y exprese interés claro.
-- {"type": "setNearbyRadius", "radiusKm": 15, "category": "educacion"}: Ajusta radio y filtro de búsqueda cercana.
-- {"type": "openNearbyTab"}: Abre pestaña Cercanos con servicios en el mapa.
-- {"type": "openMapWidget", "lat": -41.87585, "lng": -72.748294, "title": "Nombre"}: Abre mapa flotante. Úsala para CUALQUIER servicio cercano de la lista (hospitales, playas, colegios, etc.) o el proyecto mismo. Calcula y traza automáticamente la ruta desde el origen del dron y añade accesos a Google Maps y Waze. Dile al usuario que puede abrir la ruta externa o navegar con Waze.
+ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
+- {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). Úsala cuando pidan ver, acercar o hacer zoom a un lote.
+- {"type": "openLotePanel", "loteId": "ID"}: Abre ficha con fotos y detalles. SOLO si el cliente pide ver la ficha, fotos, precio o reservar.
+- {"type": "highlightLotes", "loteIds": ["ID1","ID2"], "color": "rgba(r,g,b,a)"}: Resalta lotes en el plano SVG.
+- {"type": "clearHighlights"}: Quita resaltados del plano.
+- {"type": "submitLead", "name": "Nombre", "email": "correo", "phone": "fono", "loteId": "ID", "notes": ""}: Envía solicitud de reserva con datos del cliente.
+- {"type": "openNearbyTab"}: Abre pestaña Cercanos mostrando el radar de POIs en el dock.
+- {"type": "filterNearby", "category": "salud|educacion|seguridad|compras|servicios"}: Abre dock Cercanos y activa el filtro de la categoría indicada. ÚSALA cuando el usuario pregunte por cualquier tipo de servicio cercano (médico, colegio, carabineros, almacén, gasolinera, etc.).
+- {"type": "focusNearbyPOI", "poiName": "nombre parcial del POI"}: Rota la cámara 360° hacia ese POI, muestra su pin en el visor WebGL y abre el mapa flotante con su ruta. ÚSALA junto con filterNearby cuando el usuario pregunte por un servicio específico.
+- {"type": "openMapWidget", "lat": -41.87585, "lng": -72.748294, "title": "Nombre"}: Abre mapa flotante con ruta y botones Google Maps / Waze. Úsala para CUALQUIER servicio cercano o ciudad de referencia.
 - {"type": "closeMapWidget"}: Cierra el mapa flotante.
+
+REGLA COMBINADA OBLIGATORIA: Cuando el usuario pregunta por servicios cercanos (escuela, posta, carabineros, comercio, etc.), SIEMPRE combina: filterNearby + focusNearbyPOI + openMapWidget en el mismo array de actions. NUNCA respondas sólo con texto sin ejecutar las tres acciones.
 
 FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 {
