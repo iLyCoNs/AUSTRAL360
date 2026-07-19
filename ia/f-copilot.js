@@ -49,10 +49,36 @@
   let _isAISpeaking = false;
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
+  let _audioUnlocked = false;
+
+  function _unlockMobileAudio() {
+    if (_audioUnlocked) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!_activeAudioCtx) {
+          _activeAudioCtx = new AudioCtx();
+        }
+        if (_activeAudioCtx.state === 'suspended') {
+          _activeAudioCtx.resume();
+        }
+        const buffer = _activeAudioCtx.createBuffer(1, 1, 22050);
+        const source = _activeAudioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(_activeAudioCtx.destination);
+        source.start(0);
+        _audioUnlocked = true;
+        console.log('[Ferrari/IA] 🔊 Audio móvil desbloqueado exitosamente.');
+      }
+    } catch(e) {}
+  }
 
   // Inicializar UI al cargar la página
   function init() {
     if (document.getElementById('kpk-ai-root')) return;
+
+    window.addEventListener('touchstart', _unlockMobileAudio, { passive: true });
+    window.addEventListener('click', _unlockMobileAudio, { passive: true });
 
     // Cargar config de IA desde la marca o localStorage
     let remoteProvider = null;
@@ -781,6 +807,9 @@
         _clientName = name;
         localStorage.setItem('kpk_client_name', name);
         _isWaitingForName = false;
+        _speechEnabled = true;
+        _jarvisMode = true;
+        _shouldRestartMic = true;
 
         _input.value = '';
         _attachedFile = null;
@@ -794,11 +823,12 @@
 
         appendMessage(prompt, 'user');
         if (isMobile) {
-          showMobileBubblePopup(replyText, false);
+          showMobileBubblePopup(replyText, true);
         } else {
           appendMessage(replyText, 'system');
         }
 
+        _unlockMobileAudio();
         speakJarvis(replyText);
         playFuturisticSound('success');
         _updateSuggestiveChips();
@@ -2252,6 +2282,7 @@
     }
 
     if (!_speechEnabled) return;
+    _unlockMobileAudio();
     if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
 
     const mode = _getVoiceMode();
