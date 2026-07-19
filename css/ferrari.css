@@ -1452,45 +1452,60 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
 }
 
 .kpk-spectator-footer {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
 }
 
 .kpk-spec-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 44px;
+  gap: 6px;
+  height: 40px;
   border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 650;
   cursor: pointer;
   transition: all 0.2s var(--ease-out-expo);
 }
 
 .kpk-spec-btn--foto {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 .kpk-spec-btn--foto:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.kpk-spec-btn--pdf {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.kpk-spec-btn--pdf:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.24);
   transform: translateY(-1px);
 }
 
 .kpk-spec-btn--wsp {
+  grid-column: span 2;
   background: linear-gradient(135deg, #25D366, #1EBE55);
   color: white;
-  box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+  box-shadow: 0 4px 10px rgba(37, 211, 102, 0.22);
 }
 .kpk-spec-btn--wsp:hover {
-  box-shadow: 0 6px 14px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 6px 14px rgba(37, 211, 102, 0.3);
   transform: translateY(-1px);
 }
 .kpk-spec-btn--wsp:active {
