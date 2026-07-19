@@ -161,10 +161,25 @@
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
     if (btnVoice && voiceIcon) {
+      // Mostrar qué motor de voz está activo en el tooltip
+      function _updateVoiceTooltip() {
+        if (!_speechEnabled) { btnVoice.title = 'Activar voz de Jarvis'; return; }
+        const hasEL = !!_getElevenLabsKey();
+        if (hasEL) {
+          btnVoice.title = '🎙️ Voz activa: ElevenLabs "Daniel" (premium)';
+        } else if (_edgeTTSModule) {
+          btnVoice.title = '🎙️ Voz activa: Microsoft Edge Neural "Álvaro"';
+        } else {
+          btnVoice.title = '🎙️ Voz activa: Síntesis de navegador (Edge TTS cargando...)';
+        }
+      }
+
       btnVoice.addEventListener('click', () => {
         _speechEnabled = !_speechEnabled;
         if (!_speechEnabled) {
-          window.speechSynthesis.cancel();
+          // Detener todo audio activo
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+          if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
           btnVoice.style.color = 'rgba(255,255,255,0.25)';
           voiceIcon.innerHTML = `
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -178,7 +193,10 @@
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
           `;
           playFuturisticSound('click');
+          // Pre-cargar Edge TTS en segundo plano para reducir latencia de la primera respuesta
+          _loadEdgeTTS().then(_updateVoiceTooltip);
         }
+        _updateVoiceTooltip();
       });
     }
 
@@ -1587,11 +1605,212 @@
     } catch(e) {}
   };
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MOTOR DE VOZ JARVIS — CASCADA 3 NIVELES
+  //
+  //  Nivel 1: ElevenLabs "Daniel" (clave configurada en admin → voz idéntica a Charon)
+  //  Nivel 2: Microsoft Edge TTS Neural "es-ES-AlvaroNeural" (gratis, sin key)
+  //  Nivel 3: Web Speech API del navegador (fallback universal)
+  // ══════════════════════════════════════════════════════════════════════════
+
   let _speechEnabled = false;
   let _synthUtterance = null;
+  let _edgeTTSModule = null;      // módulo cargado dinámicamente
+  let _edgeTTSLoading = false;
+  let _activeJarvisAudio = null;  // HTMLAudioElement activo
 
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.getVoices();
+  // Inicializar voces del navegador
+  if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+
+  // ─── Nivel 1: ElevenLabs TTS ───────────────────────────────────────────────
+  // Voice IDs disponibles (graves / autoritarias):
+  //   Daniel (brit. gravity): onwK4e9ZLuTAKqWW03F9  ← preferida (más parecida a Charon)
+  //   Clyde  (war veteran):   2EiwWnXFnvU5JabPnv8n
+  //   Adam   (deep power):    pNInz6obpgDQGcFmaJgB
+  const ELEVENLABS_VOICE_ID = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — British, deep, authoritative
+
+  function _getElevenLabsKey() {
+    const cfg = window.KPK_CONFIG || {};
+    let key = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
+    if (!key && window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+      const brand = window.FerrariBrandDock.getBrand();
+      key = (brand.aiKeys && brand.aiKeys.elevenlabs) || '';
+    }
+    if (!key) key = (cfg.aiKeys && cfg.aiKeys.elevenlabs) || '';
+    return _deobfuscateKey(key);
+  }
+
+  async function _speakElevenLabs(text) {
+    const key = _getElevenLabsKey();
+    if (!key) return false;
+    try {
+      const clean = text.replace(/<[^>]*>/g, '').substring(0, 800);
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': key,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg'
+        },
+        body: JSON.stringify({
+          text: clean,
+          model_id: 'eleven_flash_v2_5',  // Baja latencia, multilingüe
+          voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true }
+        })
+      });
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      return _playAudioBlob(blob, text);
+    } catch(e) {
+      console.warn('[Jarvis/Voz] ElevenLabs falló:', e.message);
+      return false;
+    }
+  }
+
+  // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
+  // Voces masculinas disponibles en español / inglés para Jarvis:
+  //   es-ES-AlvaroNeural   → grave, neutro, perfecto para Jarvis en español
+  //   es-CL-LorenzoNeural  → acento chileno (si disponible)
+  //   en-GB-RyanNeural     → brit. grave (si el usuario prefiere inglés)
+  const EDGE_TTS_VOICE_ES = 'es-ES-AlvaroNeural';
+  const EDGE_TTS_VOICE_EN = 'en-GB-RyanNeural';
+
+  async function _loadEdgeTTS() {
+    if (_edgeTTSModule) return _edgeTTSModule;
+    if (_edgeTTSLoading) {
+      // Esperar hasta que cargue
+      await new Promise(resolve => {
+        const check = setInterval(() => {
+          if (!_edgeTTSLoading) { clearInterval(check); resolve(); }
+        }, 100);
+      });
+      return _edgeTTSModule;
+    }
+    _edgeTTSLoading = true;
+    try {
+      // Importar dinámicamente desde esm.sh (no requiere bundler)
+      const mod = await import('https://esm.sh/@andresaya/edge-tts@latest');
+      _edgeTTSModule = mod;
+      console.log('[Jarvis/Voz] ✓ Edge TTS Neural cargado (es-ES-AlvaroNeural)');
+    } catch(e) {
+      console.warn('[Jarvis/Voz] Edge TTS no disponible:', e.message);
+      _edgeTTSModule = null;
+    }
+    _edgeTTSLoading = false;
+    return _edgeTTSModule;
+  }
+
+  async function _speakEdgeTTS(text) {
+    try {
+      const mod = await _loadEdgeTTS();
+      if (!mod || !mod.EdgeTTS) return false;
+      const clean = text.replace(/<[^>]*>/g, '').substring(0, 600);
+      const tts = new mod.EdgeTTS();
+      const chunks = [];
+      // Detectar idioma del texto para elegir la voz correcta
+      const isSpanish = /[áéíóúñü¿¡]/i.test(clean) || /\b(el|la|los|las|un|una|señor|hola|gracias|lote|proyecto)\b/i.test(clean);
+      const voice = isSpanish ? EDGE_TTS_VOICE_ES : EDGE_TTS_VOICE_EN;
+      for await (const chunk of tts.synthesizeStream(clean, voice)) {
+        chunks.push(chunk);
+      }
+      if (!chunks.length) return false;
+      const blob = new Blob(chunks, { type: 'audio/mpeg' });
+      return _playAudioBlob(blob, text);
+    } catch(e) {
+      console.warn('[Jarvis/Voz] Edge TTS falló:', e.message);
+      return false;
+    }
+  }
+
+  // ─── Utilidad: reproducir un Blob de audio ─────────────────────────────────
+  function _playAudioBlob(blob, fallbackText) {
+    return new Promise(resolve => {
+      try {
+        if (_activeJarvisAudio) {
+          _activeJarvisAudio.pause();
+          _activeJarvisAudio.src = '';
+        }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        _activeJarvisAudio = audio;
+        // Pausar micrófono mientras habla Jarvis
+        _shouldRestartMic = false;
+        if (_recognition && _isListening) try { _recognition.stop(); } catch(e) {}
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          _activeJarvisAudio = null;
+          if (_jarvisMode) {
+            _shouldRestartMic = true;
+            setTimeout(() => {
+              if (_jarvisMode && !_isListening && !_bubble.classList.contains('is-loading')) {
+                try { _recognition.start(); } catch(e) {}
+              }
+            }, 300);
+          }
+          resolve(true);
+        };
+        audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+        audio.play().catch(() => resolve(false));
+      } catch(e) { resolve(false); }
+    });
+  }
+
+  // ─── Nivel 3: Web Speech API (fallback) ────────────────────────────────────
+  function _speakWebSpeech(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/<[^>]*>/g, '').replace(/\{.*\}/g, '');
+    _synthUtterance = new SpeechSynthesisUtterance(cleanText);
+    _synthUtterance.lang = 'es-ES';
+    const voices = window.speechSynthesis.getVoices();
+    // Preferir voz masculina en español
+    const jarvisVoice =
+      voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
+      voices.find(v => v.lang.startsWith('es') && !v.name.includes('Sabina') && !v.name.includes('Monica') && !v.name.includes('Elvira')) ||
+      voices.find(v => v.lang.startsWith('es'));
+    if (jarvisVoice) _synthUtterance.voice = jarvisVoice;
+    _synthUtterance.rate = 1.0;
+    _synthUtterance.pitch = 0.88; // Tono grave de Jarvis
+    _synthUtterance.onstart = () => {
+      _shouldRestartMic = false;
+      if (_recognition && _isListening) try { _recognition.stop(); } catch(e) {}
+    };
+    _synthUtterance.onend = () => {
+      if (_jarvisMode) {
+        _shouldRestartMic = true;
+        setTimeout(() => {
+          if (_jarvisMode && !_isListening && !_bubble.classList.contains('is-loading')) {
+            try { _recognition.start(); } catch(e) {}
+          }
+        }, 300);
+      }
+    };
+    _synthUtterance.onerror = _synthUtterance.onend;
+    window.speechSynthesis.speak(_synthUtterance);
+  }
+
+  // ─── speakJarvis: entrada principal, ejecuta la cascada ────────────────────
+  async function speakJarvis(text) {
+    if (!_speechEnabled || !text) return;
+
+    // Detener cualquier audio activo
+    if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+
+    // Tier 1: ElevenLabs (voz más cercana a Charon, requiere key)
+    if (_getElevenLabsKey()) {
+      const ok = await _speakElevenLabs(text);
+      if (ok) return;
+    }
+
+    // Tier 2: Microsoft Edge TTS Neural (gratis, sin key, voz premium)
+    try {
+      const ok = await _speakEdgeTTS(text);
+      if (ok) return;
+    } catch(e) {}
+
+    // Tier 3: Web Speech API del navegador
+    _speakWebSpeech(text);
   }
 
   function playFuturisticSound(type) {
@@ -1643,58 +1862,6 @@
         osc.stop(ctx.currentTime + 0.04);
       }
     } catch(e) {}
-  }
-
-  function speakJarvis(text) {
-    if (!('speechSynthesis' in window) || !_speechEnabled) return;
-    
-    window.speechSynthesis.cancel();
-    
-    const cleanText = text.replace(/<[^>]*>/g, '').replace(/\{.*\}/g, '');
-    _synthUtterance = new SpeechSynthesisUtterance(cleanText);
-    _synthUtterance.lang = 'es-ES';
-    
-    // Asignar mejor voz masculina o natural en español según el SO (Windows, Mac, Android, iOS)
-    const voices = window.speechSynthesis.getVoices();
-    const jarvisVoice = voices.find(v => v.lang.startsWith('es') && (v.name.includes('Google') || v.name.includes('Pablo') || v.name.includes('Raul') || v.name.includes('Jorge') || v.name.includes('Diego'))) ||
-                        voices.find(v => v.lang.startsWith('es') && !v.name.includes('Sabina') && !v.name.includes('Monica')) ||
-                        voices.find(v => v.lang.startsWith('es'));
-                        
-    if (jarvisVoice) _synthUtterance.voice = jarvisVoice;
-    
-    _synthUtterance.rate = 1.02;
-    _synthUtterance.pitch = 0.92; // Tono masculino elegante y grave de Jarvis
-    
-    _synthUtterance.onstart = () => {
-      _shouldRestartMic = false;
-      if (_recognition && _isListening) {
-        try { _recognition.stop(); } catch(e) {}
-      }
-    };
-    
-    _synthUtterance.onend = () => {
-      if (_jarvisMode) {
-        _shouldRestartMic = true;
-        setTimeout(() => {
-          if (_jarvisMode && !_isListening && !_bubble.classList.contains('is-loading')) {
-            try { _recognition.start(); } catch(e) {}
-          }
-        }, 300);
-      }
-    };
-    
-    _synthUtterance.onerror = () => {
-      if (_jarvisMode) {
-        _shouldRestartMic = true;
-        setTimeout(() => {
-          if (_jarvisMode && !_isListening && !_bubble.classList.contains('is-loading')) {
-            try { _recognition.start(); } catch(e) {}
-          }
-        }, 300);
-      }
-    };
-
-    window.speechSynthesis.speak(_synthUtterance);
   }
 
   async function fetchCharonAudio(text) {
