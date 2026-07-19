@@ -50,6 +50,7 @@
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
   let _audioUnlocked = false;
+  let _primedAudio = null;
 
   function _unlockMobileAudio() {
     if (_audioUnlocked) return;
@@ -67,8 +68,13 @@
         source.buffer = buffer;
         source.connect(_activeAudioCtx.destination);
         source.start(0);
-        _audioUnlocked = true;
-        console.log('[Ferrari/IA] 🔊 Audio móvil desbloqueado exitosamente.');
+      }
+      if (!_primedAudio) {
+        _primedAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+        _primedAudio.play().then(() => {
+          _audioUnlocked = true;
+          console.log('[Ferrari/IA] 🔊 Audio HTML5 y AudioContext desbloqueados exitosamente.');
+        }).catch(() => {});
       }
     } catch(e) {}
   }
@@ -79,6 +85,11 @@
 
     window.addEventListener('touchstart', _unlockMobileAudio, { passive: true });
     window.addEventListener('click', _unlockMobileAudio, { passive: true });
+
+    // Precargar módulo de Edge TTS en segundo plano para eliminar latencia del primer habla
+    setTimeout(() => {
+      _loadEdgeTTS().catch(() => {});
+    }, 400);
 
     // Cargar config de IA desde la marca o localStorage
     let remoteProvider = null;
@@ -2291,49 +2302,34 @@
 
     if (!_speechEnabled) return;
     _unlockMobileAudio();
-    if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
+    if (_activeJarvisAudio) {
+      try { _activeJarvisAudio.pause(); } catch(e) {}
+      _activeJarvisAudio = null;
+    }
 
     const mode = _getVoiceMode();
+    const hasElevenKey = !!_getElevenLabsKey();
 
-    // ─── TIER 1: ElevenLabs (Gigi o Daniel)
-    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs' || mode === 'elevenlabs_daniel') {
+    // ─── TIER 1: ElevenLabs (solo si hay clave API real configurada)
+    if (hasElevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) return;
-
-      // Fallback si falla ElevenLabs
-      console.warn('[Jarvis/Voz] ElevenLabs falló, cayendo a Edge TTS Dalia/Ryan');
-      if (mode === 'elevenlabs_daniel') {
-        await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
-      } else {
-        await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA);
-      }
-      return;
     }
 
-    // ─── TIER 2: Edge TTS Neural (gratis)
-    if (mode === 'edge_dalia') {
-      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA);
-      if (ok) return;
-      _speakWebSpeech(text);
-      return;
+    // ─── TIER 2: Edge TTS Neural (gratis, instantáneo y pre-cargado)
+    let edgeVoice = EDGE_TTS_VOICE_DALIA;
+    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') {
+      edgeVoice = EDGE_TTS_VOICE_RYAN;
+    } else if (mode === 'edge_alvaro') {
+      edgeVoice = EDGE_TTS_VOICE_ES;
     }
 
-    if (mode === 'edge_ryan') {
-      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
-      if (ok) return;
-      _speakWebSpeech(text);
-      return;
-    }
+    const okEdge = await _speakEdgeTTS(text, edgeVoice);
+    if (okEdge) return;
 
-    if (mode === 'edge_alvaro') {
-      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_ES);
-      if (ok) return;
-      _speakWebSpeech(text);
-      return;
-    }
-
-    // ─── TIER 3: Web Speech API (fallback)
+    // ─── TIER 3: Web Speech API (fallback universal inmediato)
+    console.warn('[Ferrari/IA] Cayendo a WebSpeech API como respaldo de voz.');
     _speakWebSpeech(text);
   }
 
