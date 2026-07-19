@@ -16,7 +16,7 @@
   let _inNumero, _inEstado, _inDimensiones, _inUF, _lblCLP;
 
   // Referencias DOM (Espectador)
-  let _specCloseBtn, _specPillEstado, _specTitle, _specValArea, _specValUF, _specValCLP, _specBtnFoto, _specBtnWsp;
+  let _specCloseBtn, _specPillEstado, _specTitle, _specValArea, _specValUF, _specValCLP, _specBtnFoto, _specBtnWsp, _specBtnPdf;
   let _specBtnContact, _specForm, _specFormNote, _specSubmitTxt;
   let _formOpen = false;
 
@@ -269,6 +269,7 @@
     _specValCLP = document.getElementById('spec-val-clp');
     _specBtnFoto = document.getElementById('spec-btn-foto');
     _specBtnWsp = document.getElementById('spec-btn-wsp');
+    _specBtnPdf = document.getElementById('spec-btn-pdf');
     _specBtnContact = document.getElementById('spec-btn-contact');
     _specForm = document.getElementById('spec-contact-form');
     _specFormNote = document.getElementById('spec-form-note');
@@ -319,6 +320,9 @@
         window.open(url, '_blank', 'noopener');
       });
     }
+    if (_specBtnPdf) {
+      _specBtnPdf.addEventListener('click', _downloadLotePDF);
+    }
 
     if (_specBtnContact) {
       _specBtnContact.addEventListener('click', () => _setFormOpen(!_formOpen));
@@ -355,6 +359,7 @@
     // Exponer API global asegurando que FerrariUI existe
     window.FerrariUI = window.FerrariUI || {};
     window.FerrariUI.openLotePanel = openLotePanel;
+    window.FerrariUI.getCurrentLoteId = () => _currentLoteId;
 
     // Obtener UF de forma asíncrona al arrancar
     _fetchUF();
@@ -440,6 +445,179 @@
     } finally {
       if (btn) btn.disabled = false;
       if (_specSubmitTxt) _specSubmitTxt.textContent = 'Enviar solicitud';
+    }
+  }
+
+  async function _downloadLotePDF() {
+    const line = window.FerrariState.getLine(_currentLoteId);
+    if (!line) return;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const proyecto = _getProjectName();
+    const titulo = line.titulo || `Lote ${_currentLoteId}`;
+    const estado = (line.estado || 'disponible').toUpperCase();
+    const dimensiones = line.dimensiones ? `${line.dimensiones} m²` : 'No especificada';
+    const valorUF = line.valorUF ? `${line.valorUF} UF` : 'No especificado';
+    const clpVal = line.valorUF ? Math.round(parseFloat(line.valorUF) * _ufValue) : 0;
+    const valorCLP = clpVal ? _formatCLP(clpVal) : 'No especificado';
+    const caracteristicas = line.caracteristicas || 'Sin características adicionales registradas.';
+    
+    const contact = _getContact();
+    const wsp = contact.whatsapp || 'No especificado';
+    const email = contact.formEmail || 'No especificado';
+
+    // ─── COLORES Y ESTILOS ───
+    const primaryColor = [0, 180, 255]; 
+    const darkColor = [17, 17, 23];
+    const lightBg = [245, 247, 250];
+    const grayText = [110, 110, 115];
+
+    // Fondo General
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, 210, 297, 'F');
+
+    // Margen decorativo superior (Barra de color)
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, 210, 6, 'F');
+
+    // ─── ENCABEZADO ───
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(proyecto.toUpperCase(), 15, 22);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("FICHA DE PROPIEDAD DIGITAL — AUSTRAL 360", 15, 27);
+
+    // Línea divisoria
+    doc.setDrawColor(230, 230, 235);
+    doc.setLineWidth(0.4);
+    doc.line(15, 30, 195, 30);
+
+    // ─── TÍTULO DEL LOTE ───
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(titulo, 15, 43);
+
+    // Pill de Estado
+    let statusBg = [52, 199, 89]; // verde
+    if (estado === 'VENDIDO') statusBg = [255, 59, 48]; // rojo
+    if (estado === 'RESERVADO') statusBg = [255, 149, 0]; // naranja
+
+    doc.setFillColor(statusBg[0], statusBg[1], statusBg[2]);
+    doc.roundedRect(155, 34, 40, 10, 2, 2, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(estado, 175, 40, { align: "center" });
+
+    // ─── DATOS TÉCNICOS (TABLA DE ESPECIFICACIONES) ───
+    doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+    doc.roundedRect(15, 52, 180, 52, 3, 3, 'F');
+
+    // Columna 1
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Superficie del Terreno", 25, 63);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(dimensiones, 25, 71);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Valor en UF", 25, 86);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(valorUF, 25, 94);
+
+    // Columna 2
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Valor Estimado CLP", 115, 63);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text(valorCLP, 115, 71);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Ubicación del Loteo", 115, 86);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text("Sector Alerce Andino", 115, 93);
+
+    // ─── CUALIDADES / CARACTERÍSTICAS ───
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text("Cualidades & Características del Terreno", 15, 118);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    
+    // Auto-wrapping de texto para la descripción
+    const splitDesc = doc.splitTextToSize(caracteristicas, 175);
+    doc.text(splitDesc, 15, 126);
+
+    // ─── SECCIÓN DE CONTACTO ───
+    const contactY = 210;
+    doc.setDrawColor(230, 230, 235);
+    doc.line(15, contactY - 10, 195, contactY - 10);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text("¿Interesado en agendar una visita o reservar?", 15, contactY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Comuníquese de inmediato con nuestros ejecutivos para coordinar los detalles.", 15, contactY + 6);
+
+    // Caja de contacto
+    doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+    doc.roundedRect(15, contactY + 12, 180, 28, 2, 2, 'F');
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text("WhatsApp de Ventas:", 25, contactY + 22);
+    doc.text("Correo Electrónico:", 25, contactY + 32);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(wsp, 70, contactY + 22);
+    doc.text(email, 70, contactY + 32);
+
+    // ─── PIE DE PÁGINA ───
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(grayText[0], grayText[1], grayText[2]);
+    doc.text("Ficha generada digitalmente de forma dinámica. Precios calculados en base al valor actual de la UF.", 15, 275);
+    doc.text("Visite la plataforma para ver el recorrido 360° en tiempo real.", 15, 280);
+
+    // Guardar
+    doc.save(`Ficha_${proyecto.replace(/\s+/g, '_')}_${titulo.replace(/\s+/g, '_')}.pdf`);
+    
+    if (window.FerrariUI && window.FerrariUI.showToast) {
+      window.FerrariUI.showToast('✓ Ficha PDF descargada', 'success');
     }
   }
 

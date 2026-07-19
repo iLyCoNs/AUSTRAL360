@@ -1010,6 +1010,17 @@
           case 'highlightAvailable':
             highlightAvailableLotes();
             break;
+          case 'downloadPDF':
+            const currentLote = window.FerrariUI && typeof window.FerrariUI.getCurrentLoteId === 'function' ? window.FerrariUI.getCurrentLoteId() : null;
+            const targetLoteId = act.loteId || (_activeLote && _activeLote.id) || currentLote;
+            if (targetLoteId) {
+              if (typeof openLotePanel === 'function') openLotePanel(targetLoteId);
+              setTimeout(() => {
+                const pdfBtn = document.getElementById('spec-btn-pdf');
+                if (pdfBtn) pdfBtn.click();
+              }, 650);
+            }
+            break;
           default:
             console.warn('[Ferrari/IA] Acción no soportada:', act.type);
         }
@@ -2948,6 +2959,8 @@ ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "showStats"}: Muestra widget flotante con estadísticas del proyecto (total lotes, disponibles, precios, superficies). ÚSALA cuando pidan cuántos lotes hay, resumen, o estadísticas.
 - {"type": "showPriceComparison"}: Muestra tabla comparativa de precios ordenada de menor a mayor. ÚSALA cuando pidan comparar precios, el más barato, o lista de precios.
 - {"type": "highlightAvailable"}: Resalta todos los lotes disponibles en verde en el plano 360°. ÚSALA cuando pregunten cuáles están disponibles o a la venta.
+- {"type": "downloadPDF", "loteId": "ID_opcional"}: Genera y descarga inmediatamente una ficha comercial en PDF del lote indicado (o en foco). ÚSALA cuando pidan PDFs, folletos, fichas para descargar, cotizaciones o descargables.
+
 
 REGLA DE PROACTIVIDAD: Eres el único punto de control de la plataforma. Cuando el usuario exprese cualquier necesidad de información, visual o navegación, SIEMPRE ejecuta la acción correspondiente además de responder con texto. Nunca respondas solo con texto si existe una acción disponible para acompañarlo.
 
