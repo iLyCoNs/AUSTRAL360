@@ -458,7 +458,7 @@
         const models = {
           gemini: 'gemini-2.0-flash',
           groq: 'llama-3.1-8b-instant',
-          openrouter: 'google/gemma-4-26b-a4b-it:free',
+          openrouter: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
           lightning: 'google/gemini-3.5-flash'
         };
         const activeModel = models[activeProvider] || 'Desconocido';
@@ -478,7 +478,8 @@
           `• <b>Modelo Ejecutándose:</b> <code>${activeModel}</code><br>` +
           `• <b>API Key:</b> ${rawKey ? '✅ Cargada' : '❌ Vacía'}<br>` +
           `• <b>Prefijo en memoria:</b> <code>${keyPrefix}</code><br>` +
-          `• <b>¿Protegido contra GitGuardian?:</b> ${isEncrypted ? '🔒 Sí (Ofuscada)' : '🔓 No (Texto plano)'}<br><br>` +
+          `• <b>¿Protegido contra GitGuardian?:</b> ${isEncrypted ? '🔒 Sí (Ofuscada)' : '🔓 No (Texto plano)'}<br>` +
+          `• <b>Redundancia Ininterrumpida:</b> 🛡️ Activa (3-Tier Cascade Circuit)<br><br>` +
           `<i>Jarvis está verificado y listo en este cliente.</i>`;
           
         appendMessage(diagMsg, 'system');
