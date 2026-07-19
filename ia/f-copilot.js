@@ -1266,6 +1266,9 @@
           case 'openFinanceWidget':
             openFinanceWidget(act.loteId || null);
             break;
+          case 'openUrlInNewTab':
+            window.open(act.url, '_blank', 'noopener');
+            break;
           default:
             console.warn('[Ferrari/IA] Acción no soportada:', act.type);
         }
@@ -2811,6 +2814,67 @@
             actions: actions
           };
         }
+      }
+    }
+
+    // 2.5) Compartir información de un lote específico por WhatsApp a un número dictado por el cliente
+    if (/(compartir|enviar|envia|manda|mandar|pasale|pásale|pasar|envíame|enviame)/i.test(clean) && /(whatsapp|celular|teléfono|telefono|numero|número)/i.test(clean)) {
+      const phoneClean = clean.replace(/[^0-9+]/g, '');
+      const phoneMatch = phoneClean.match(/\+?\d{8,15}/);
+      
+      if (phoneMatch) {
+        let phone = phoneMatch[0];
+        if (phone.length === 9 && phone.startsWith('9')) {
+          phone = '56' + phone;
+        } else if (phone.length === 8) {
+          phone = '569' + phone;
+        }
+
+        let targetLote = _activeLote;
+        const loteMatch = clean.match(/(?:lote|parcela|terreno)\s*(\d+)/i);
+        if (loteMatch) {
+          const num = loteMatch[1];
+          const found = findLoteById(num);
+          if (found) targetLote = found;
+        }
+
+        if (!targetLote) {
+          return {
+            text: "Por supuesto. ¿De qué lote en específico le gustaría que comparta la información? Indíqueme el número de lote y abriré el enlace de inmediato, señor.",
+            actions: []
+          };
+        }
+
+        const valUF = parseFloat(targetLote.valorUF || 0);
+        const ufValue = (window.FerrariUI && typeof window.FerrariUI.getUFValue === 'function') 
+          ? window.FerrariUI.getUFValue() 
+          : 38000;
+        const valCLP = Math.round(valUF * ufValue);
+        
+        const fmtCLP = (val) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val);
+
+        const shareMsg = `¡Hola! 👋 Te comparto la información de la parcela:\n\n` +
+                         `*Terreno:* Lote ${targetLote.titulo || targetLote.id}\n` +
+                         `*Superficie:* ${targetLote.dimensiones || '---'} m²\n` +
+                         `*Precio:* ${valUF} UF (~ ${fmtCLP(valCLP)})\n` +
+                         `*Características:* ${targetLote.caracteristicas || 'Rol propio, bosque nativo y excelente conectividad.'}\n` +
+                         `*Ubicación:* Correntoso, Región de Los Lagos\n\n` +
+                         `Puedes ver el plano interactivo 360° aquí: https://ilycons.github.io/AUSTRAL360/`;
+
+        const wspUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(shareMsg)}`;
+        
+        const voiceMode = _getVoiceMode();
+        const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+        const replyText = isG
+          ? `¡Listo! He preparado el mensaje detallado del Lote ${targetLote.titulo || targetLote.id} y acabo de abrir WhatsApp para enviárselo directamente al número ${phone}. ¡Ojalá sea de utilidad! 😊`
+          : `Entendido. He preparado el informe de especificaciones para el Lote ${targetLote.titulo || targetLote.id} y he abierto la pestaña de redirección de WhatsApp al número dictado (${phone}), señor.`;
+
+        return {
+          text: replyText,
+          actions: [
+            { type: 'openUrlInNewTab', url: wspUrl }
+          ]
+        };
       }
     }
 
