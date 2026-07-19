@@ -816,7 +816,7 @@
   background: none;
   border: none;
   padding: 8px;
-  color: rgba(255, 255, 255, 0.45);
+  color: #00B4FF; /* Azul brillante por defecto para que sea muy visible */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -824,10 +824,13 @@
   transition: all 0.2s;
   flex-shrink: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.85;
 }
 .kpk-ai-attach-btn:hover {
   color: #00B4FF;
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 1;
+  background: rgba(0, 180, 255, 0.12);
+  filter: drop-shadow(0 0 4px rgba(0, 180, 255, 0.5));
 }
 .kpk-ai-attach-btn:active {
   transform: scale(0.92);
