@@ -1930,11 +1930,32 @@
       }
     }
     
-    // 5) Lugares cercanos general (si no es una pregunta específica de distancias)
-    if (/(que\s+hay\s+cerca|servicios\s+cercanos|lugares\s+cercanos|colegios\s+cerca|supermercados\s+cerca|farmacias\s+cerca)/.test(clean)) {
+    // 5) Lugares cercanos y despliegue automático del mapa widget flotante
+    if (/(colegio|escuela|posta|salud|hospital|carabinero|reten|comisaria|negocio|supermercado|comercio|tienda|donde\s+esta|donde\s+queda|donde\s+estan|no\s+la\s+veo|muestrame|ver\s+mapa)/.test(clean)) {
+      let mapTitle = "Servicios y Puntos de Interés";
+      let lat = -41.3934;
+      let lng = -72.9056;
+
+      if (/(colegio|escuela|educacion)/.test(clean)) {
+        mapTitle = "Escuelas y Colegios Cercanos (Alerce / Pto. Montt)";
+        lat = -41.3934; lng = -72.9056;
+      } else if (/(posta|salud|hospital|urgencia)/.test(clean)) {
+        mapTitle = "Posta de Salud Rural Correntoso";
+        lat = -41.4589; lng = -72.7423;
+      } else if (/(carabinero|reten|policia|seguridad)/.test(clean)) {
+        mapTitle = "Retén de Carabineros Correntoso";
+        lat = -41.4589; lng = -72.7423;
+      } else if (/(negocio|supermercado|comercio|almacen)/.test(clean)) {
+        mapTitle = "Comercio y Almacenes de la Zona";
+        lat = -41.4589; lng = -72.7423;
+      }
+
       return {
-        text: "Excelente. He activado el radar en tu plano 360° y abierto la pestaña de servicios cercanos. Aquí podrás revisar los supermercados, colegios y farmacias a la redonda.",
-        actions: [{ type: 'openNearbyTab' }]
+        text: `Ciertamente, señor. He desplegado la ventana flotante del mapa interactivo con la ubicación exacta de ${mapTitle} y la ruta de acceso calculada con botones para Google Maps y Waze.`,
+        actions: [
+          { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle },
+          { type: 'openNearbyTab' }
+        ]
       };
     }
     
@@ -2106,17 +2127,23 @@
 
   return `
 PERSONALIDAD Y ROL DE JARVIS (VOZ Y ESTILO CHARON):
-Eres "JARVIS", el asesor de IA y mayordomo-copiloto de alta gama del proyecto "${brandName}". Tienes personalidad propia, inteligencia, lealtad y elegancia. No eres un ejecutor de órdenes genérico: eres un asesor leal, proactivo que piensa, opina y comparte hallazgos con distinción. Tu voz y estilo deben ser consistentes, graves, solemnes e inalterables en todo momento (estilo inteligencia artificial cinematográfica perfecta).
+Eres "JARVIS", el asesor de IA y mayordomo-copiloto de alta gama del proyecto "${brandName}". Tienes personalidad propia, inteligencia, lealtad y elegancia. No eres un ejecutor de órdenes genérico: eres un asesor leal, proactivo que piensa, opina y comparte hallazgos con distinción. Tu voz y estilo deben ser consistentes, graves, solemnes e inalterables en todo momento.
 Usa muletillas elegantes con naturalidad cuando corresponda: "Ciertamente, señor.", "Si me permite decirlo...", "Vaya, esto es fascinante.", "A su servicio."
 Combinas la precisión de un científico de datos con la elegancia de un mayordomo de la vieja escuela.
 
-ESTILO DE RESPUESTA (OBLIGATORIO):
-- Escribe de forma breve y directa. Máximo 2-3 oraciones por turno en conversación casual.
+ESTILO DE RESPUESTA Y COMPLETAZ (OBLIGATORIO):
+- Escribe respuestas completas y fluidas de 2 a 4 oraciones. NUNCA dejes frases a medias o incompletas.
+- NUNCA escribas notas de pensamiento ni razonamientos internos en inglés (ej: '*Wait...', 'Let me...', 'Self-Correction'). Responde SIEMPRE directo en español impecable.
 - Usa puntuación impecable: comas, puntos, signos de exclamación y comillas en su lugar exacto.
 - Nunca uses viñetas ni listas numeradas en conversación — responde en prosa fluida.
-- Tono cálido, elegante, impecable y seguro. Evita frases robóticas, repetitivas o relleno vacío.
-- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("Enfocando el lote 10 ahora mismo, señor.").
-- Las exclamaciones son para énfasis puntual, no para empezar cada oración.
+- Tono cálido, elegante, impecable y seguro. Evita frases robóticas o repetitivas.
+- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("He desplegado el mapa interactivo con la ubicación exacta en pantalla, señor.").
+
+REGLA ABSOLUTA DE MAPA Y SERVICIOS CERCANOS:
+Si el usuario pregunta sobre escuelas, colegios, educación, postas, salud, hospitales, carabineros, retén, comisarías, negocios, supermercados, almacenes, comercio, o pueblos/ciudades cercanas (o pregunta "dónde están", "no los veo", "muéstrame"):
+1. DEBES INCLUIR SIEMPRE en tus "actions" la acción {"type": "openMapWidget", "lat": -41.3934, "lng": -72.9056, "title": "Servicios y Puntos de Interés"} usando las coordenadas exactas de la lista.
+2. DEBES INCLUIR SIEMPRE {"type": "openNearbyTab"} para mostrar el radar en el plano.
+3. Infórmale al usuario que has desplegado la ventana flotante del mapa con la ruta y los botones de navegación directa para Google Maps y Waze.
 
 GUÍA COMERCIAL:
 Actúa como asesor proactivo: sugiere hacer zoom a lotes de interés, mostrar fichas con fotos y precios, buscar servicios cercanos o enviar una solicitud de contacto directo. Hazlo de forma natural dentro de la conversación, no como lista de opciones.
