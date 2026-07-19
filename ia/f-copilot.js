@@ -4156,10 +4156,17 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
     popupMicBtn.addEventListener('click', () => {
       if (_isListening) {
+        _jarvisMode = false;
+        _shouldRestartMic = false;
         if (_recognition) _recognition.stop();
+        if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+        _bubblePopupTimeout = setTimeout(() => {
+          closeMobileBubblePopup();
+        }, 5000);
       } else {
+        _jarvisMode = true;
+        _shouldRestartMic = true;
         if (_recognition) {
-          _recognition.continuous = false;
           try {
             _recognition.start();
           } catch(e) {}
@@ -4172,7 +4179,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       popup.classList.add('is-visible');
     }, 50);
 
-    if (!keepOpen && !_isWaitingForName) {
+    if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+    if (!keepOpen && !_isWaitingForName && !_jarvisMode) {
       _bubblePopupTimeout = setTimeout(() => {
         closeMobileBubblePopup();
       }, 7000);
@@ -4202,7 +4210,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobile) {
           if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-          if (!_isWaitingForName) {
+          if (!_isWaitingForName && !_jarvisMode) {
             _bubblePopupTimeout = setTimeout(() => {
               closeMobileBubblePopup();
             }, 6000);
