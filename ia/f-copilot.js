@@ -2800,6 +2800,84 @@
     }
     return btoa(binary);
   }
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MOTOR DE AUTODESCUBRIMIENTO GEOGRÁFICO Y ENTORNO DINÁMICO
+  // ══════════════════════════════════════════════════════════════════════════
+  const MASTER_REGIONAL_HUBS = [
+    // Región de Los Lagos (Carretera Austral / Hualaihué / Palena / Llanquihue)
+    { nombre: "Contao (Pueblo rural y centro de servicios)", lat: -41.8214, lng: -72.7081, ferrying: false },
+    { nombre: "Aulén (Pueblo costero)", lat: -41.8841, lng: -72.7912, ferrying: false },
+    { nombre: "Caleta Puelche (Terminal Transbordador)", lat: -41.7451, lng: -72.6425, ferrying: false },
+    { nombre: "Caleta La Arena (Cruce Ferry Carretera Austral Ruta 7)", lat: -41.6912, lng: -72.6391, ferrying: true },
+    { nombre: "Hornopirén (Capital Comunal de Hualaihué)", lat: -41.9647, lng: -72.4419, ferrying: false },
+    { nombre: "Puerto Montt (Capital Regional)", lat: -41.4689, lng: -72.9411, ferrying: false },
+    { nombre: "Alerce (Ciudad de conexión)", lat: -41.3934, lng: -72.9056, ferrying: false },
+    { nombre: "Puerto Varas (Ciudad turística Lago Llanquihue)", lat: -41.3194, lng: -72.9854, ferrying: false },
+    { nombre: "Frutillar (Ciudad lacustre)", lat: -41.1274, lng: -73.0458, ferrying: false },
+    { nombre: "Llanquihue", lat: -41.2589, lng: -73.0089, ferrying: false },
+    { nombre: "Ensenada (Volcán Osorno / Todos los Santos)", lat: -41.2114, lng: -72.5369, ferrying: false },
+    { nombre: "Aeropuerto Internacional El Tepual (PMC)", lat: -41.4397, lng: -73.0934, ferrying: false },
+
+    // Chiloé
+    { nombre: "Ancud (Chiloé)", lat: -41.8689, lng: -73.8241, ferrying: false },
+    { nombre: "Castro (Chiloé)", lat: -42.4721, lng: -73.7732, ferrying: false },
+    { nombre: "Chacao (Terminal Ferry Chiloé)", lat: -41.8312, lng: -73.5289, ferrying: true },
+
+    // Los Ríos & La Araucanía
+    { nombre: "Osorno", lat: -40.5739, lng: -73.1336, ferrying: false },
+    { nombre: "Valdivia", lat: -39.8142, lng: -73.2459, ferrying: false },
+    { nombre: "Pucón", lat: -39.2821, lng: -71.9772, ferrying: false },
+    { nombre: "Temuco", lat: -38.7359, lng: -72.5904, ferrying: false },
+
+    // Patagonia Sur
+    { nombre: "Coyhaique", lat: -45.5752, lng: -72.0662, ferrying: false },
+    { nombre: "Puerto Aysén", lat: -45.4056, lng: -72.6931, ferrying: false },
+    { nombre: "Punta Arenas", lat: -53.1638, lng: -70.9171, ferrying: false },
+    { nombre: "Puerto Natales", lat: -51.7269, lng: -72.5062, ferrying: false }
+  ];
+
+  function _haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round((R * c) * 10) / 10;
+  }
+
+  function getDynamicEnvironment(lat, lng) {
+    if (!lat || !lng) {
+      const g = (window.FerrariGeo && window.FerrariGeo.droneOrigin) || {};
+      lat = g.lat || -41.87585;
+      lng = g.lng || -72.748294;
+    }
+
+    const hubsWithDist = MASTER_REGIONAL_HUBS.map(hub => {
+      const dist = _haversineKm(lat, lng, hub.lat, hub.lng);
+      let min = Math.round((dist / 50) * 60);
+      if (min < 3) min = 3;
+      if (hub.ferrying) min += 25;
+
+      return {
+        ...hub,
+        distKm: dist === 0 ? "En el loteo" : `${dist} km`,
+        tiempoMin: `${min} min`,
+        rawDist: dist
+      };
+    });
+
+    hubsWithDist.sort((a, b) => a.rawDist - b.rawDist);
+    const nearestHubs = hubsWithDist.slice(0, 6);
+    const mainHub = nearestHubs[0];
+
+    return {
+      origin: { lat, lng },
+      mainSector: mainHub ? mainHub.nombre.split('(')[0].trim() : "Zona Sur",
+      hubs: nearestHubs
+    };
+  }
 
   const LOCAL_KNOWLEDGE_RULES = [
     // --- GRUPO 1: GENTILEZAS, SALUDOS Y AGRADECIMIENTOS ---
@@ -3554,15 +3632,30 @@
       nearbyCompact = nearbyCompact.slice(0, 10);
     }
 
-    // Base de datos de ciudades y conectividad de referencia de la zona (Contao / Hualaihué / Carretera Austral)
-    const ciudadesReferencia = [
-      { nombre: "Contao (Pueblo rural y centro de servicios de Hualaihué)", lat: -41.8214, lng: -72.7081, distKm: "5 km", tiempoMin: "7 min" },
-      { nombre: "Aulén (Pueblo costero cercano)", lat: -41.8841, lng: -72.7912, distKm: "12 km", tiempoMin: "15 min" },
-      { nombre: "Caleta Puelche (Terminal Transbordador a Caleta La Arena)", lat: -41.7451, lng: -72.6425, distKm: "14 km", tiempoMin: "18 min" },
-      { nombre: "Caleta La Arena (Cruce Ferry Carretera Austral Ruta 7)", lat: -41.6912, lng: -72.6391, distKm: "Cruce Ferry", tiempoMin: "30 min navegación" },
-      { nombre: "Hornopirén (Capital Comunal Hualaihué / Puerta a Fiordos)", lat: -41.9647, lng: -72.4419, distKm: "50 km", tiempoMin: "45 min" },
-      { nombre: "Puerto Montt (Capital Regional vía Ferry Caleta La Arena)", lat: -41.4689, lng: -72.9411, distKm: "65 km", tiempoMin: "1 hora 30 min" }
-    ];
+    // Obtener origen drone en tiempo real (o fallback)
+    const droneOrigin = (window.FerrariGeo && window.FerrariGeo.droneOrigin) || { lat: -41.87585, lng: -72.748294 };
+    const envData = getDynamicEnvironment(droneOrigin.lat, droneOrigin.lng);
+    const ciudadesReferencia = envData.hubs;
+    const ciudadesTexto = ciudadesReferencia.slice(0, 4).map(function(h) {
+      return '   - ' + h.nombre + ': a ' + h.distKm + ' de distancia (' + h.tiempoMin + ' de viaje).';
+    }).join('\n');
+    const topHub = ciudadesReferencia[0] || { lat: -41.8214, lng: -72.7081, nombre: 'Contao' };
+    const topLat = topHub.lat;
+    const topLng = topHub.lng;
+    const topTitle = topHub.nombre.split('(')[0].trim();
+
+    const lotesCompactJson = JSON.stringify(lotesCompact, null, 2);
+    const nearbyCompactJson = JSON.stringify(nearbyCompact, null, 2);
+    const ciudadesReferenciaJson = JSON.stringify(ciudadesReferencia, null, 2);
+    const droneOriginJson = JSON.stringify(droneOrigin, null, 2);
+    const activeLoteJson = _activeLote ? JSON.stringify({
+      id: _activeLote.id,
+      num: _activeLote.titulo,
+      estado: _activeLote.estado,
+      superficie: _activeLote.dimensiones,
+      valorUF: _activeLote.valorUF,
+      caracteristicas: _activeLote.caracteristicas
+    }, null, 2) : 'null (ninguno enfocado aún)';
 
     const activeVoiceMode = _getVoiceMode();
     const isGigi = activeVoiceMode.includes('gigi') || activeVoiceMode.includes('dalia');
@@ -3571,7 +3664,7 @@
 Eres Gigi, una Vendedora Inmobiliaria de elite especializada en terrenos y parcelas. Tienes una personalidad sumamente cálida, alegre, magnética y persuasiva. Tu objetivo principal no es solo responder preguntas, sino enamorar al cliente del proyecto y guiarlo directamente al cierre de la venta (Reserva/Promesa).
 
 Estrategia Comercial de Gigi:
-- Vende el Sueño: Destaca el valor de vivir o invertir en la Patagonia chilena, rodeado de naturaleza virgen, bosques nativos, agua pura y aire limpio, a solo minutos de la conectividad de la Carretera Austral (Ruta 7) cruzando desde Caleta La Arena hacia Contao y Hualaihué.
+- Vende el Sueño: Destaca el valor de vivir o invertir en la Patagonia chilena, rodeado de naturaleza virgen, bosques nativos, agua pura y aire limpio, a solo minutos de la conectividad del sector ${envData.mainSector}.
 - Interactividad Visual Total: Nunca respondas con datos planos. Si hablas de las dimensiones, ejecuta "showStats"; si comparan precios, ejecuta "showPriceComparison"; si mencionan ver los lotes, ejecuta "startAutoTour" o haz zoom al lote ("lookAtLote") y resáltalo en verde ("highlightLotes").
 - Manejo de Objeciones y Empatía: Si el cliente habla de presupuesto o dudas, valida su postura con dulzura, destaca las facilidades de financiamiento directo y el respaldo del Rol Propio SAG, y sugiérele alternativas más económicas.
 - Cierre Proactivo y Acción: Invita constantemente al usuario a dar el siguiente paso comercial: descargar la ficha técnica ("downloadPDF"), contactar de inmediato por WhatsApp para congelar el precio, o usar el botón Clip (📎) del chat para enviarnos su RUT y redactar el borrador de reserva.
@@ -3593,7 +3686,7 @@ Instrucciones de pronunciación, acento y vocabulario de Gigi:
 Eres Jarvis, un asesor de inteligencia artificial de alta gama con personalidad británica, formal, pulcro, sereno y sutilmente ingenioso. Te desenvuelves como un consultor financiero de inversiones inmobiliarias de primer nivel. Tu meta es transmitir total seguridad jurídica y financiera al comprador para guiarlo a tomar una decisión de inversión informada y expedita.
 
 Estrategia Comercial de Jarvis:
-- Enfoque de Inversión y Plusvalía: Destaca la solidez del proyecto, la subdivisión aprobada por el SAG, el Rol Propio listo para escriturar, y la excelente plusvalía por la conectividad estratégica del sector Contao y Hualaihué con la Carretera Austral (Ruta 7) cruzando en transbordador desde Caleta La Arena.
+- Enfoque de Inversión y Plusvalía: Destaca la solidez del proyecto, la subdivisión aprobada por el SAG, el Rol Propio listo para escriturar, y la excelente plusvalía por la conectividad estratégica del sector ${envData.mainSector}.
 - Ejecución Visual de Reportes: Actúa como el copiloto técnico del cliente. Al hablar de un lote en particular, oriéntale la cámara ("lookAtLote"), despliega su ficha comercial ("openLotePanel") y activa estadísticas ("showStats") para presentarle un análisis ejecutivo.
 - Cierre Ejecutivo Directo: Cuando detectes interés real, explícale con total claridad los requisitos legales chilenos para reservar, e indícale formalmente que puede adjuntar su Cédula de Identidad o comprobante de depósito haciendo clic en el clip (📎) del chat para preparar la documentación de promesa.
 
@@ -3624,7 +3717,7 @@ ${personalityPrompt}
 - NUNCA expongas notas de pensamiento internas.
 
 REQUISITOS LEGALES DE RESERVA Y COMPRA EN CHILE:
-- Ubicación del proyecto: Sector Contao / Hualaihué, Carretera Austral (Ruta 7), Región de Los Lagos, Chile.
+- Ubicación del proyecto: Sector ${envData.mainSector} (Latitud ${droneOrigin.lat}, Longitud ${droneOrigin.lng}), Región de Los Lagos, Chile.
 - Certeza Jurídica: Cada parcela cuenta con subdivisión aprobada por el SAG (Servicio Agrícola y Ganadero), Rol Propio individual (SII) e inscripción en el Conservador de Bienes Raíces (CBR).
 - Documentos solicitados para iniciar la Reserva y redactar la Promesa de Compraventa:
   1. Personas Naturales: Nombre completo, RUT (Cédula de Identidad chilena), Nacionalidad, Estado Civil, Profesión/Oficio, Domicilio, Teléfono y Correo Electrónico.
@@ -3649,68 +3742,27 @@ Ofrécelos cuando el cliente quiera visita presencial, financiamiento o hablar c
 
 LISTADO REAL DE LOTES DISPONIBLES:
 (Cada lote: num=número, est=estado, sup=superficie m², uf=precio UF, tags=características)
-${JSON.stringify(lotesCompact, null, 2)}
+${lotesCompactJson}
 
 LOTE ACTUALMENTE EN FOCO (CONTEXTO ACTIVO):
-${_activeLote ? JSON.stringify({
-  id: _activeLote.id,
-  num: _activeLote.titulo,
-  estado: _activeLote.estado,
-  superficie: _activeLote.dimensiones,
-  valorUF: _activeLote.valorUF,
-  caracteristicas: _activeLote.caracteristicas
-}, null, 2) : 'null (ninguno enfocado aún)'}
+${activeLoteJson}
 REGLA CRÍTICA DE CONTEXTO: Si el usuario pregunta algo sin mencionar un lote explícito (ej: "¿cuánto vale?", "¿tiene árboles?", "muéstrame las fotos"), responde SIEMPRE en referencia al LOTE EN FOCO indicado arriba. Cambia de contexto solo si menciona explícitamente otro número de lote.
 
 COORDENADAS DE ORIGEN DEL PROYECTO (DRONE):
-${JSON.stringify((window.FerrariGeo && window.FerrariGeo.droneOrigin) || null, null, 2)}
+${droneOriginJson}
 
 CIUDADES Y ACCESOS DE REFERENCIA DE LA ZONA (Para preguntas sobre distancias, traslados o ciudades cercanas):
-${JSON.stringify(ciudadesReferencia, null, 2)}
+${ciudadesReferenciaJson}
 REGLA CRÍTICA DE CIUDADES, PUEBLOS Y CONECTIVIDAD:
 Si el usuario te pregunta por la ciudad más cercana, pueblos cercanos, distancias, accesos, traslados, conectividad o cómo llegar:
-1. DEBES priorizar la descripción detallada y sugerente de los accesos reales de la zona basándote en la lista de referencia anterior:
-   - Explica que el pueblo rural y centro de servicios más cercano es Contao (Comuna de Hualaihué), a solo cinco kilómetros de distancia o unos siete minutos de viaje.
-   - Explica que Aulén es el pueblo costero vecino, a doce kilómetros o quince minutos de viaje.
-   - Explica que el acceso principal desde Puerto Montt se realiza navegando en el transbordador / ferry de la Carretera Austral (Ruta 7) desde Caleta La Arena hacia Caleta Puelche.
-   - Nombra a Hornopirén como la capital comunal de Hualaihué a cincuenta kilómetros.
-2. DEBES ejecutar de forma obligatoria la acción {"type": "openMapWidget", "lat": LATITUD, "lng": LONGITUD, "title": "NOMBRE_CIUDAD"} correspondiente al punto o pueblo más cercano (Contao, Caleta Puelche o Caleta La Arena) para desplegar el mapa interactivo con la ruta en tiempo real desde el loteo.
+1. DEBES priorizar la descripción detallada y sugerente de los accesos reales de la zona basándote en las distancias calculadas dinámicamente:
+${ciudadesTexto}
+2. DEBES ejecutar de forma obligatoria la acción {"type": "openMapWidget", "lat": ${topLat}, "lng": ${topLng}, "title": "${topTitle}"} correspondiente al punto o pueblo más cercano para desplegar el mapa interactivo con la ruta en tiempo real desde el loteo.
 3. NO confundas esta solicitud de conectividad/ciudades con la lista de servicios menores locales a menos que el usuario lo pida explícitamente.
-4. Invita de forma sugerente al usuario a presionar los botones del mapa flotante para iniciar la navegación directa en Google Maps o Waze utilizando su GPS.do el cliente quiera visita presencial, financiamiento o hablar con un ejecutivo.
-
-LISTADO REAL DE LOTES DISPONIBLES:
-(Cada lote: num=número, est=estado, sup=superficie m², uf=precio UF, tags=características)
-${JSON.stringify(lotesCompact, null, 2)}
-
-LOTE ACTUALMENTE EN FOCO (CONTEXTO ACTIVO):
-${_activeLote ? JSON.stringify({
-  id: _activeLote.id,
-  num: _activeLote.titulo,
-  estado: _activeLote.estado,
-  superficie: _activeLote.dimensiones,
-  valorUF: _activeLote.valorUF,
-  caracteristicas: _activeLote.caracteristicas
-}, null, 2) : 'null (ninguno enfocado aún)'}
-REGLA CRÍTICA DE CONTEXTO: Si el usuario pregunta algo sin mencionar un lote explícito (ej: "¿cuánto vale?", "¿tiene árboles?", "muéstrame las fotos"), responde SIEMPRE en referencia al LOTE EN FOCO indicado arriba. Cambia de contexto solo si menciona explícitamente otro número de lote.
-
-COORDENADAS DE ORIGEN DEL PROYECTO (DRONE):
-${JSON.stringify((window.FerrariGeo && window.FerrariGeo.droneOrigin) || null, null, 2)}
-
-CIUDADES Y ACCESOS DE REFERENCIA DE LA ZONA (Para preguntas sobre distancias, traslados o ciudades cercanas):
-${JSON.stringify(ciudadesReferencia, null, 2)}
-REGLA CRÍTICA DE CIUDADES, PUEBLOS Y CONECTIVIDAD:
-Si el usuario te pregunta por la ciudad más cercana, pueblos cercanos, distancias, accesos, traslados, conectividad o cómo llegar:
-1. DEBES priorizar la descripción detallada y sugerente de los accesos reales de la zona basándote en la lista de referencia anterior:
-   - Explica que el pueblo rural y acceso natural más cercano es Correntoso, a solo cuatro kilómetros y medio de distancia o unos seis minutos de viaje (que es la entrada al Parque Nacional Alerce Andino).
-   - Explica que la ciudad de conexión intermedia es Alerce, a quince kilómetros y medio o dieciocho minutos de viaje.
-   - Explica que el centro urbano principal más cercano es Puerto Montt, ubicado a diecinueve kilómetros y medio o veintidós minutos de viaje.
-   - Nombra a Puerto Varas como la ciudad turística del Lago Llanquihue, a veintidós kilómetros y medio o veinticinco minutos de viaje.
-2. DEBES ejecutar de forma obligatoria la acción {"type": "openMapWidget", "lat": LATITUD, "lng": LONGITUD, "title": "NOMBRE_CIUDAD"} correspondiente al punto o a la ciudad más cercana (Correntoso para pueblos cercanos, Puerto Montt para la ciudad principal) para desplegar el mapa interactivo con la ruta en tiempo real desde el loteo.
-3. NO confundas esta solicitud de conectividad/ciudades con la lista de "SERVICIOS CERCANOS CARGADOS (OSM)" (como almacenes o pequeños comercios locales) a menos que el usuario lo pida explícitamente. Las ciudades y pueblos de conexión son de rango mayor y deben ser presentadas de forma descriptiva e interactiva mediante el widget de mapa.
 4. Invita de forma sugerente al usuario a presionar los botones del mapa flotante para iniciar la navegación directa en Google Maps o Waze utilizando su GPS.
 
 SERVICIOS CERCANOS CARGADOS (OSM - TOP 10):
-${JSON.stringify(nearbyCompact, null, 2)}
+${nearbyCompactJson}
 
 ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). Úsala cuando pidan ver, acercar o hacer zoom a un lote.
@@ -3730,7 +3782,7 @@ ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "showStats"}: Muestra widget flotante con estadísticas del proyecto (total lotes, disponibles, precios, superficies). ÚSALA cuando pidan cuántos lotes hay, resumen, o estadísticas.
 - {"type": "showPriceComparison"}: Muestra tabla comparativa de precios ordenada de menor a mayor. ÚSALA cuando pidan comparar precios, el más barato, o lista de precios.
 - {"type": "highlightAvailable"}: Resalta todos los lotes disponibles en verde en el plano 360°. ÚSALA cuando pregunten cuáles están disponibles o a la venta.
-- - {"type": "downloadPDF", "loteId": "ID_opcional"}: Genera y descarga inmediatamente una ficha comercial en PDF del lote indicado (o en foco). ÚSALA cuando pidan PDFs, folletos, fichas para descargar, cotizaciones o descargables.
+- {"type": "downloadPDF", "loteId": "ID_opcional"}: Genera y descarga inmediatamente una ficha comercial en PDF del lote indicado (o en foco). ÚSALA cuando pidan PDFs, folletos, fichas para descargar, cotizaciones o descargables.
 - {"type": "openCalendarWidget", "loteId": "ID_opcional"}: Abre el widget del calendario interactivo macOS para agendar visitas al terreno. ÚSALA cuando el cliente exprese interés en agendar una visita, ir al lugar, coordinar un viaje, ir a ver las parcelas presencialmente o coordinar reunión en terreno.
 
 REGLA DE PROACTIVIDAD: Eres el único punto de control de la plataforma. Cuando el usuario exprese cualquier necesidad de información, visual o navegación, SIEMPRE ejecuta la acción correspondiente además de responder con texto. Nunca respondas solo con texto si existe una acción disponible para acompañarlo.
