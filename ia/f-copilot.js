@@ -109,9 +109,51 @@
                 <line x1="17" y1="9" x2="23" y2="15"></line>
               </svg>
             </button>
+            <button class="kpk-ai-action-btn" id="kpk-ai-voice-settings" title="Configurar voz de Jarvis" style="color: rgba(255,255,255,0.30); padding: 4px; border: none; background: none; cursor: pointer; font-size:15px; line-height:1;">
+              ⚙️
+            </button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
+
+        <!-- Panel de Configuración de Voz -->
+        <div id="kpk-voice-cfg-panel" style="display:none; padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25);">
+          <p style="margin:0 0 10px; font-size:12px; color:rgba(255,255,255,0.55); line-height:1.5;">
+            🎙️ <strong style="color:rgba(255,255,255,0.80);">Voz de Jarvis — Motor activo</strong>
+          </p>
+
+          <!-- Selector de voz -->
+          <div style="margin-bottom:10px;">
+            <label style="font-size:11px; color:rgba(255,255,255,0.45); display:block; margin-bottom:4px;">VOZ ACTIVA</label>
+            <select id="kpk-voice-selector" style="width:100%; padding:7px 10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:12px; cursor:pointer;">
+              <option value="elevenlabs">🏆 ElevenLabs &quot;Daniel&quot; — Idéntica a Charon (requiere key)</option>
+              <option value="edge_ryan" selected>🆓 Edge TTS &quot;Ryan&quot; — Microsoft Neural (gratis, inglés grave)</option>
+              <option value="edge_alvaro">🆓 Edge TTS &quot;Álvaro&quot; — Microsoft Neural (gratis, español)</option>
+              <option value="webspeech">🔄 Navegador — Web Speech API (básica)</option>
+            </select>
+          </div>
+
+          <!-- Key de ElevenLabs -->
+          <div id="kpk-el-key-section" style="margin-bottom:10px;">
+            <label style="font-size:11px; color:rgba(255,255,255,0.45); display:block; margin-bottom:4px;">
+              ELEVENLABS API KEY
+              <a href="https://elevenlabs.io/sign-up" target="_blank" rel="noopener" style="color:#00B4FF; margin-left:6px; font-size:10px;">(Obtener gratis →)</a>
+            </label>
+            <div style="display:flex; gap:6px;">
+              <input type="password" id="kpk-el-key-input"
+                placeholder="sk-... (pega tu key aquí)"
+                style="flex:1; padding:7px 10px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; font-size:12px;"
+              >
+              <button id="kpk-el-key-save" style="padding:7px 12px; background:rgba(0,180,255,0.20); border:1px solid rgba(0,180,255,0.35); border-radius:8px; color:#fff; font-size:12px; cursor:pointer; white-space:nowrap;">Guardar</button>
+            </div>
+            <p id="kpk-el-key-status" style="margin:5px 0 0; font-size:10.5px; color:rgba(255,255,255,0.35);"></p>
+          </div>
+
+          <p style="margin:0; font-size:10px; color:rgba(255,255,255,0.25); line-height:1.4;">
+            Sin key: se usa Microsoft Edge TTS gratis. Con key ElevenLabs: voz &quot;Daniel&quot; idéntica a Charon.
+          </p>
+        </div>
+
         <div class="kpk-ai-log" id="kpk-ai-log">
           <div class="kpk-ai-msg msg-system">
             ¡Hola! Soy <b>Jarvis</b>, tu asesor inmobiliario en este tour 360°. ¿En qué te puedo ayudar?
@@ -152,11 +194,67 @@
     _input  = document.getElementById('kpk-ai-input');
     _btnMic = document.getElementById('kpk-ai-mic');
 
-    // Eventos
+    // Eventos base
     _bubble.addEventListener('click', togglePanel);
     document.getElementById('kpk-ai-close').addEventListener('click', togglePanel);
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+
+    // ─── Panel de configuración de voz ⚙️ ────────────────────────────────────
+    const btnVoiceCfg = document.getElementById('kpk-ai-voice-settings');
+    const voiceCfgPanel = document.getElementById('kpk-voice-cfg-panel');
+    const voiceSelector = document.getElementById('kpk-voice-selector');
+    const elKeyInput = document.getElementById('kpk-el-key-input');
+    const elKeySave = document.getElementById('kpk-el-key-save');
+    const elKeyStatus = document.getElementById('kpk-el-key-status');
+
+    // Restaurar preferencias guardadas
+    const savedVoiceMode = localStorage.getItem('kpk_voice_mode') || 'edge_ryan';
+    if (voiceSelector) voiceSelector.value = savedVoiceMode;
+    const savedElKey = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
+    if (elKeyInput && savedElKey) {
+      elKeyInput.value = savedElKey;
+      elKeyStatus.textContent = '✓ Key guardada — usando ElevenLabs Daniel';
+      elKeyStatus.style.color = '#39FF14';
+    }
+
+    if (btnVoiceCfg) {
+      btnVoiceCfg.addEventListener('click', () => {
+        const isOpen = voiceCfgPanel.style.display === 'none';
+        voiceCfgPanel.style.display = isOpen ? 'block' : 'none';
+        btnVoiceCfg.style.opacity = isOpen ? '1' : '0.4';
+      });
+    }
+
+    if (voiceSelector) {
+      voiceSelector.addEventListener('change', () => {
+        const mode = voiceSelector.value;
+        localStorage.setItem('kpk_voice_mode', mode);
+        // Mostrar/ocultar sección de key según selección
+        const elSection = document.getElementById('kpk-el-key-section');
+        if (elSection) elSection.style.display = mode === 'elevenlabs' ? 'block' : 'none';
+        appendMessage(`Motor de voz cambiado. ${_voiceModeLabel(mode)}`, 'system');
+      });
+      // Aplicar visibilidad inicial
+      const elSec = document.getElementById('kpk-el-key-section');
+      if (elSec) elSec.style.display = savedVoiceMode === 'elevenlabs' ? 'block' : 'none';
+    }
+
+    if (elKeySave) {
+      elKeySave.addEventListener('click', () => {
+        const raw = (elKeyInput.value || '').trim();
+        if (!raw) { elKeyStatus.textContent = '⚠️ Pega una key válida primero'; elKeyStatus.style.color = '#FF9F0A'; return; }
+        localStorage.setItem('ferrari_ai_key_elevenlabs', raw);
+        localStorage.setItem('kpk_voice_mode', 'elevenlabs');
+        if (voiceSelector) voiceSelector.value = 'elevenlabs';
+        elKeyStatus.textContent = '✓ Key guardada — Jarvis usará ElevenLabs Daniel desde ahora';
+        elKeyStatus.style.color = '#39FF14';
+        // Prueba inmediata: hablar con la nueva voz
+        if (_speechEnabled) {
+          setTimeout(() => speakJarvis('ElevenLabs activado. Soy Daniel, la voz de Jarvis.'), 300);
+        }
+      });
+    }
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
@@ -1669,11 +1767,24 @@
 
   // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
   // Voces masculinas disponibles en español / inglés para Jarvis:
-  //   es-ES-AlvaroNeural   → grave, neutro, perfecto para Jarvis en español
-  //   es-CL-LorenzoNeural  → acento chileno (si disponible)
-  //   en-GB-RyanNeural     → brit. grave (si el usuario prefiere inglés)
-  const EDGE_TTS_VOICE_ES = 'es-ES-AlvaroNeural';
-  const EDGE_TTS_VOICE_EN = 'en-GB-RyanNeural';
+  //   es-ES-AlvaroNeural   → grave, neutro, español
+  //   en-GB-RyanNeural     → británico grave (más parecido a Jarvis/Charon)
+  const EDGE_TTS_VOICE_ES   = 'es-ES-AlvaroNeural';
+  const EDGE_TTS_VOICE_RYAN = 'en-GB-RyanNeural';   // por defecto
+
+  function _getVoiceMode() {
+    return localStorage.getItem('kpk_voice_mode') || 'edge_ryan';
+  }
+
+  function _voiceModeLabel(mode) {
+    switch(mode) {
+      case 'elevenlabs':  return 'ElevenLabs "Daniel" activo — voz idéntica a Charon.';
+      case 'edge_ryan':   return 'Edge TTS "Ryan" activo — inglés británico grave (Microsoft Neural).';
+      case 'edge_alvaro': return 'Edge TTS "Álvaro" activo — español neutro (Microsoft Neural).';
+      case 'webspeech':   return 'Síntesis de navegador activa (básica).';
+      default:            return 'Voz actualizada.';
+    }
+  }
 
   async function _loadEdgeTTS() {
     if (_edgeTTSModule) return _edgeTTSModule;
@@ -1700,16 +1811,20 @@
     return _edgeTTSModule;
   }
 
-  async function _speakEdgeTTS(text) {
+  async function _speakEdgeTTS(text, forceVoice) {
     try {
       const mod = await _loadEdgeTTS();
       if (!mod || !mod.EdgeTTS) return false;
       const clean = text.replace(/<[^>]*>/g, '').substring(0, 600);
       const tts = new mod.EdgeTTS();
       const chunks = [];
-      // Detectar idioma del texto para elegir la voz correcta
-      const isSpanish = /[áéíóúñü¿¡]/i.test(clean) || /\b(el|la|los|las|un|una|señor|hola|gracias|lote|proyecto)\b/i.test(clean);
-      const voice = isSpanish ? EDGE_TTS_VOICE_ES : EDGE_TTS_VOICE_EN;
+      // Voz: usar la forzada o leer el modo del selector
+      let voice = forceVoice;
+      if (!voice) {
+        const mode = _getVoiceMode();
+        if (mode === 'edge_alvaro') voice = EDGE_TTS_VOICE_ES;
+        else voice = EDGE_TTS_VOICE_RYAN; // edge_ryan es el default
+      }
       for await (const chunk of tts.synthesizeStream(clean, voice)) {
         chunks.push(chunk);
       }
@@ -1790,26 +1905,39 @@
     window.speechSynthesis.speak(_synthUtterance);
   }
 
-  // ─── speakJarvis: entrada principal, ejecuta la cascada ────────────────────
+  // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
   async function speakJarvis(text) {
     if (!_speechEnabled || !text) return;
-
-    // Detener cualquier audio activo
     if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
 
-    // Tier 1: ElevenLabs (voz más cercana a Charon, requiere key)
-    if (_getElevenLabsKey()) {
+    const mode = _getVoiceMode();
+
+    // Modo ElevenLabs Daniel (requiere key)
+    if (mode === 'elevenlabs') {
       const ok = await _speakElevenLabs(text);
       if (ok) return;
+      console.warn('[Jarvis/Voz] ElevenLabs falló, cayendo a Edge TTS Ryan');
+      await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
+      return;
     }
 
-    // Tier 2: Microsoft Edge TTS Neural (gratis, sin key, voz premium)
-    try {
-      const ok = await _speakEdgeTTS(text);
+    // Modo Edge TTS Ryan (británico grave, gratis)
+    if (mode === 'edge_ryan') {
+      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
       if (ok) return;
-    } catch(e) {}
+      _speakWebSpeech(text);
+      return;
+    }
 
-    // Tier 3: Web Speech API del navegador
+    // Modo Edge TTS Álvaro (español, gratis)
+    if (mode === 'edge_alvaro') {
+      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_ES);
+      if (ok) return;
+      _speakWebSpeech(text);
+      return;
+    }
+
+    // Modo Web Speech (navegador)
     _speakWebSpeech(text);
   }
 
