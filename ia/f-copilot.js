@@ -455,6 +455,44 @@
     throw lastError || new Error('Todos los niveles de cascada de IA fallaron.');
   }
 
+  function _parseAIResponse(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      return { text: 'Lo siento, no pude procesar la respuesta del servidor.' };
+    }
+
+    let cleaned = rawText.trim();
+    // 1) Eliminar bloques de código markdown ```json ... ```
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+    // 2) Intentar parseo directo
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed.text === 'string') {
+        return parsed;
+      }
+      if (parsed && typeof parsed === 'object') {
+        return { text: JSON.stringify(parsed), actions: parsed.actions || [] };
+      }
+    } catch (e1) {
+      // 3) Si falla, buscar la estructura {"text": "..."} dentro del texto usando Regex
+      const jsonMatch = cleaned.match(/"text"\s*:\s*"([\s\S]*?)"/);
+      if (jsonMatch && jsonMatch[1]) {
+        return { text: jsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n') };
+      }
+
+      // 4) Si no hay JSON válido pero hay texto libre, usar el texto libre limpiando llaves sueltas
+      const fallbackText = cleaned
+        .replace(/^[{\s]*"text"\s*:\s*"?/, '')
+        .replace(/["}\s]*$/, '')
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, '\n');
+
+      return { text: fallbackText || rawText };
+    }
+
+    return { text: rawText };
+  }
+
   // ─── ENVIAR Y COMUNICAR CON GEMINI ──────────────────────────────────
   async function handleSend() {
     const prompt = _input.value.trim();
@@ -563,8 +601,7 @@
           turns: [{
             role: 'user',
             parts: [{ text: prompt }]
-          }],
-          turnComplete: true
+          }]
         }
       }));
       return;
@@ -628,7 +665,7 @@
       }
 
       if (!currentKey) {
-        throw new Error('API Key no configurada. Ve al panel Admin (Alt+A) → Configuración IA y pega la key de OpenRouter.');
+        throw new Error(`No se encontró una API Key para el proveedor "${_provider}". Configúrala en el panel de administración.`);
       }
 
       // 1) Generar Contexto dinámico
@@ -694,8 +731,8 @@
         throw new Error('La respuesta del modelo de IA está vacía');
       }
 
-      // 5) Parsear respuesta JSON estructurada
-      const data = JSON.parse(responseText);
+      // 5) Parsear respuesta de IA con tolerancia total a fallos
+      const data = _parseAIResponse(responseText);
 
       // Agregar respuesta de IA al log
       appendMessage(data.text, 'system');
@@ -762,7 +799,7 @@
               const fbJson = await fbRes.json();
               const fbText = fbJson.choices?.[0]?.message?.content;
               if (fbText) {
-                const fbData = JSON.parse(fbText);
+                const fbData = _parseAIResponse(fbText);
                 typingIndicator.remove();
                 appendMessage(fbData.text, 'system');
                 playFuturisticSound('success');
