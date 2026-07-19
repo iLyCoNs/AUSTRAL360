@@ -495,6 +495,14 @@
       _shouldRestartMic = false;
     };
 
+    _recognition.onspeechstart = () => {
+      const isSpeaking = _isAISpeaking || _activeJarvisAudio || (_activeAudioCtx && _activeAudioCtx.state === 'running') || (window.speechSynthesis && window.speechSynthesis.speaking) || _activeAudioSource;
+      if (isSpeaking) {
+        console.log('[Ferrari/IA] User speech detected (barge-in). Interruption triggered.');
+        stopAISpeech();
+      }
+    };
+
     _recognition.onresult = (e) => {
       const resultIdx = e.results.length - 1;
       const txt = e.results[resultIdx][0].transcript.trim();
@@ -2093,6 +2101,25 @@
     }
   }
 
+  function stopAISpeech() {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    if (_activeJarvisAudio) {
+      try { _activeJarvisAudio.pause(); } catch(e) {}
+      _activeJarvisAudio = null;
+    }
+    if (_activeAudioSource) {
+      try { _activeAudioSource.stop(); } catch(e) {}
+      _activeAudioSource = null;
+    }
+    if (_activeAudioCtx) {
+      try { _activeAudioCtx.close(); } catch(e) {}
+      _activeAudioCtx = null;
+    }
+    setAISpeaking(false);
+  }
+
   // ─── Utilidad: reproducir un Blob de audio ─────────────────────────────────
   function _playAudioBlob(blob, fallbackText) {
     return new Promise(resolve => {
@@ -2105,9 +2132,9 @@
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         _activeJarvisAudio = audio;
-        // Pausar micrófono mientras habla Jarvis
+        // Pausar micrófono mientras habla Jarvis (solo si no estamos en JarvisMode continuo)
         _shouldRestartMic = false;
-        if (_recognition && _isListening) try { _recognition.stop(); } catch(e) {}
+        if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
         audio.onended = () => {
           URL.revokeObjectURL(url);
           _activeJarvisAudio = null;
@@ -2147,7 +2174,7 @@
     _synthUtterance.pitch = 0.88; // Tono grave de Jarvis
     _synthUtterance.onstart = () => {
       _shouldRestartMic = false;
-      if (_recognition && _isListening) try { _recognition.stop(); } catch(e) {}
+      if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
       setAISpeaking(true);
     };
     _synthUtterance.onend = () => {
@@ -2369,9 +2396,9 @@
           }
         };
 
-        // Pausar mic mientras reproduce la voz
+        // Pausar mic mientras reproduce la voz (solo si no estamos en JarvisMode continuo)
         _shouldRestartMic = false;
-        if (_recognition && _isListening) {
+        if (_recognition && _isListening && !_jarvisMode) {
           try { _recognition.stop(); } catch(e) {}
         }
 
@@ -3487,7 +3514,15 @@ ${personalityPrompt}
 - CLIENTE ACTUAL: ${_clientName ? `El nombre del cliente es "${_clientName}". Dirígete a él o ella usando su nombre de pila de forma natural y cálida en algunas de tus oraciones.` : 'Aún no conoces el nombre del cliente. Puedes preguntarle cómo se llama o dirigirte a él/ella de forma general.'}
 
 - Responde SIEMPRE en español impecable.
-- PRONUNCIACIÓN NATURAL DE NÚMEROS (AUDIO/TTS): Para que el motor de voz pronuncie correctamente los números y no los deletree dígito por dígito, escribe SIEMPRE los precios, números de lotes, distancias y superficies en PALABRAS (LETRAS) y nunca con números o dígitos. Por ejemplo: escribe "mil quinientas UF" o "mil quinientas u-efe" (no "1500 UF"), "cincuenta y siete millones de pesos" (no "$57.000.000"), "cinco mil metros cuadrados" (no "5000 m²"), "lote catorce" (no "lote 14"), y "cuatro kilómetros y medio" (no "4.5 km").
+- PRONUNCIACIÓN NATURAL DE CIFRAS Y ABREVIACIONES (AUDIO/TTS): Para que el motor de voz (TTS) pronuncie correctamente y con fluidez natural en español, escribe SIEMPRE los precios, números de lotes, distancias, superficies y siglas en PALABRAS COMPLETAS (LETRAS) y nunca con números o abreviaciones. Reglas de reemplazo obligatorio en tu texto:
+  * Reemplaza abreviaciones de distancia: Escribe "kilómetros" en lugar de "km" (ej: "cuatro kilómetros y medio" en lugar de "4.5 km").
+  * Reemplaza unidades de medida: Escribe "metros cuadrados" en lugar de "m²" (ej: "cinco mil metros cuadrados" en lugar de "5000 m²").
+  * Reemplaza siglas financieras chilenas: Escribe "u-efe" o "unidades de fomento" en lugar de "UF" (ej: "mil quinientas u-efe" en lugar de "1500 UF" o "1.500 UF").
+  * Reemplaza monedas: Escribe "pesos" o "millones de pesos" en lugar del signo "$" con dígitos (ej: "cincuenta y siete millones de pesos" en lugar de "$57.000.000").
+  * Reemplaza números de lotes: Escribe "lote catorce" en lugar de "lote 14".
+  * Reemplaza siglas institucionales difíciles: Escribe "ese-a-ge" o "S.A.G." en lugar de "SAG".
+  * Evita abreviaciones como "m" (escribe "metros"), "min" (escribe "minutos"), "hrs" (escribe "horas").
+  NUNCA dejes dígitos o abreviaciones en el texto conversacional para evitar que el sintetizador de voz los deletree de forma robótica o incorrecta.
 - CONCISIÓN COMERCIAL OBLIGATORIA: Escribe respuestas cortas, directas y persuasivas de un máximo de 2 a 3 oraciones. NUNCA te extiendas en descripciones retóricas o poéticas largas para evitar la fatiga del cliente.
 - FRASES COMPLETAS Y CERRADAS: NUNCA cortes una frase a la mitad. Todas tus oraciones deben estar gramaticalmente completas y cerrarse con su respectivo punto final.
 - CIERRE CON SUGERENCIA ACTIVA: Finaliza tu respuesta SIEMPRE con una sugerencia o invitación concreta para que el cliente avance en el proceso (ej: descargar la ficha PDF del lote, ver la galería de fotos, o presionar el botón del Clip (📎) del chat para enviarnos su RUT y redactar la reserva).
@@ -4187,34 +4222,63 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (popupMicInlineBtn) popupMicInlineBtn.classList.add('is-active');
     }
 
+    const _updateMuteUI = (enabled) => {
+      const desktopVoiceBtn = document.getElementById('kpk-ai-toggle-voice');
+      const desktopVoiceIcon = document.getElementById('kpk-voice-icon');
+      const muteBtn = popup.querySelector('#kpk-mbp-mute-btn');
+
+      if (!enabled) {
+        if (muteBtn) {
+          muteBtn.innerHTML = speakerMutedSvg;
+          muteBtn.classList.remove('kpk-mute-glow');
+        }
+        if (desktopVoiceBtn) {
+          desktopVoiceBtn.style.color = 'rgba(255,255,255,0.25)';
+          desktopVoiceBtn.classList.remove('kpk-mute-glow');
+        }
+        if (desktopVoiceIcon) {
+          desktopVoiceIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>`;
+        }
+      } else {
+        if (muteBtn) {
+          muteBtn.innerHTML = speakerOnSvg;
+          muteBtn.classList.add('kpk-mute-glow');
+        }
+        if (desktopVoiceBtn) {
+          desktopVoiceBtn.style.color = '#39FF14';
+          desktopVoiceBtn.classList.add('kpk-mute-glow');
+        }
+        if (desktopVoiceIcon) {
+          desktopVoiceIcon.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
+        }
+      }
+    };
+
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
 
     popup.querySelector('#kpk-mbp-close-btn').addEventListener('click', closeMobileBubblePopup);
     
     popup.querySelector('#kpk-mbp-mute-btn').addEventListener('click', () => {
-      _speechEnabled = !_speechEnabled;
-      const desktopVoiceBtn = document.getElementById('kpk-ai-toggle-voice');
-      const desktopVoiceIcon = document.getElementById('kpk-voice-icon');
-      const muteBtn = popup.querySelector('#kpk-mbp-mute-btn');
+      const active = !_speechEnabled;
+      _speechEnabled = active;
+      _jarvisMode = active;
+      _shouldRestartMic = active;
 
-      if (!_speechEnabled) {
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-        if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
-        muteBtn.innerHTML = speakerMutedSvg;
-        muteBtn.classList.remove('kpk-mute-glow');
-        if (desktopVoiceBtn) {
-          desktopVoiceBtn.style.color = 'rgba(255,255,255,0.25)';
-          desktopVoiceBtn.classList.remove('kpk-mute-glow');
+      _updateMuteUI(active);
+
+      if (!active) {
+        stopAISpeech();
+        if (_recognition) {
+          try { _recognition.stop(); } catch(e) {}
         }
-        setAISpeaking(false);
       } else {
-        muteBtn.innerHTML = speakerOnSvg;
-        muteBtn.classList.add('kpk-mute-glow');
-        if (desktopVoiceBtn) {
-          desktopVoiceBtn.style.color = '#39FF14';
-          desktopVoiceBtn.classList.add('kpk-mute-glow');
-        }
         _loadEdgeTTS();
+        if (_recognition) {
+          try { _recognition.start(); } catch(e) {}
+        }
       }
     });
 
@@ -4251,6 +4315,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (_isListening) {
         _jarvisMode = false;
         _shouldRestartMic = false;
+        _speechEnabled = false;
+        stopAISpeech();
+        _updateMuteUI(false);
         if (_recognition) _recognition.stop();
         if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
         _bubblePopupTimeout = setTimeout(() => {
@@ -4259,6 +4326,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       } else {
         _jarvisMode = true;
         _shouldRestartMic = true;
+        _speechEnabled = true;
+        _updateMuteUI(true);
+        _loadEdgeTTS();
         if (_recognition) {
           try {
             _recognition.start();
