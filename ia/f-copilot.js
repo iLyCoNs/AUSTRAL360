@@ -401,22 +401,18 @@
     let lastError = null;
     for (let i = 0; i < uniqueTiers.length; i++) {
       const tier = uniqueTiers[i];
-      console.log(`[Ferrari/IA] Ejecutando Tier ${i + 1} (${tier.provider} -> ${tier.model})...`);
-      
       try {
-        if (tier.provider === 'lightning') {
-          // Lightning requiere backend Python/Node; salta directo al Tier 2 en navegadores cliente
-          throw new Error('Lightning API restringido por CORS en navegadores.');
-        }
-
         const messages = [
           { role: 'system', content: context },
           ...apiHistory.map(h => ({ role: h.role, content: h.text }))
         ];
 
-        const url = tier.provider === 'groq'
-          ? 'https://api.groq.com/openai/v1/chat/completions'
-          : 'https://openrouter.ai/api/v1/chat/completions';
+        let url = 'https://openrouter.ai/api/v1/chat/completions';
+        if (tier.provider === 'groq') {
+          url = 'https://api.groq.com/openai/v1/chat/completions';
+        } else if (tier.provider === 'lightning') {
+          url = 'https://cors.eu.org/https://lightning.ai/api/v1/chat/completions';
+        }
 
         const headers = {
           'Content-Type': 'application/json',
