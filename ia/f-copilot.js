@@ -28,6 +28,15 @@
   let _btnMic = null;
   let _recognition = null;
   let _isListening = false;
+
+  // Variables para la carga de archivos adjuntos en el chatbot
+  let _attachedFile = null;
+  let _activeSendFile = null;
+  let _btnAttach = null;
+  let _fileInput = null;
+  let _attachmentBar = null;
+  let _attachmentName = null;
+  let _attachmentClear = null;
   let _chatHistory = []; // Para mantener memoria del diálogo
   let _jarvisMode = false;
   let _shouldRestartMic = false;
@@ -129,9 +138,22 @@
             ` : ''}
           </div>
         </div>
+        <!-- Previsualización de Archivo Adjunto -->
+        <div class="kpk-ai-attachment-bar" id="kpk-ai-attachment-bar" style="display: none;">
+          <span class="kpk-ai-attachment-icon">📎</span>
+          <span class="kpk-ai-attachment-name" id="kpk-ai-attachment-name">archivo.pdf</span>
+          <button class="kpk-ai-attachment-clear" id="kpk-ai-attachment-clear" title="Quitar archivo">✕</button>
+        </div>
+
         <div class="kpk-ai-input-zone">
           <div class="kpk-ai-input-wrap">
-            <input type="text" class="kpk-ai-input" id="kpk-ai-input" placeholder="${(window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) ? 'Presiona 🎙️ para hablar...' : 'Pregunta algo aquí...'}" autocomplete="off">
+            <button class="kpk-ai-attach-btn" id="kpk-ai-attach" title="Adjuntar archivo o imagen">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+              </svg>
+            </button>
+            <input type="file" id="kpk-ai-file-input" style="display: none;" accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            <input type="text" class="kpk-ai-input" id="kpk-ai-input" placeholder="${(window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) ? 'Presiona 🎙️ para hablar...' : 'Pregunta algo aquí o adjunta un archivo...'}" autocomplete="off">
             <button class="kpk-ai-action-btn" id="kpk-ai-mic" title="Grabar voz">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -158,6 +180,46 @@
     _log    = document.getElementById('kpk-ai-log');
     _input  = document.getElementById('kpk-ai-input');
     _btnMic = document.getElementById('kpk-ai-mic');
+
+    // Referencias Uploader
+    _btnAttach       = document.getElementById('kpk-ai-attach');
+    _fileInput       = document.getElementById('kpk-ai-file-input');
+    _attachmentBar   = document.getElementById('kpk-ai-attachment-bar');
+    _attachmentName  = document.getElementById('kpk-ai-attachment-name');
+    _attachmentClear = document.getElementById('kpk-ai-attachment-clear');
+
+    // Eventos de adjuntos de archivos
+    function _clearAttachment() {
+      _attachedFile = null;
+      if (_fileInput) _fileInput.value = '';
+      if (_attachmentBar) _attachmentBar.style.display = 'none';
+    }
+
+    if (_btnAttach && _fileInput) {
+      _btnAttach.addEventListener('click', () => _fileInput.click());
+      _fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+          if (window.FerrariUI && window.FerrariUI.showToast) {
+            window.FerrariUI.showToast('El archivo supera el límite de 10 MB.', 'error');
+          }
+          _fileInput.value = '';
+          return;
+        }
+        _attachedFile = file;
+        if (_attachmentName) {
+          _attachmentName.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        }
+        if (_attachmentBar) _attachmentBar.style.display = 'flex';
+        playFuturisticSound('click');
+      });
+    }
+    if (_attachmentClear) {
+      _attachmentClear.addEventListener('click', _clearAttachment);
+    }
+    window.FerrariUI = window.FerrariUI || {};
+    window.FerrariUI.clearChatAttachment = _clearAttachment;
 
     // Eventos base
     _bubble.addEventListener('click', togglePanel);
@@ -570,10 +632,16 @@
   // ─── ENVIAR Y COMUNICAR CON GEMINI ──────────────────────────────────
   async function handleSend() {
     const prompt = _input.value.trim();
-    if (!prompt) return;
+    if (!prompt && !_attachedFile) return;
 
-    // Agregar mensaje de usuario al log
-    appendMessage(prompt, 'user');
+    // Agregar mensaje de usuario al log con enlace local temporal para descargas
+    let userDisplayMsg = prompt || `Adjunto: ${_attachedFile.name}`;
+    if (_attachedFile) {
+      const blobUrl = URL.createObjectURL(_attachedFile);
+      userDisplayMsg += `<div class="kpk-chat-attachment-link" style="margin-top:6px;padding:6px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:11px;display:flex;align-items:center;gap:6px;"><span style="color:#00B4FF;">📎</span> <a href="${blobUrl}" download="${_attachedFile.name}" style="color:#fff;text-decoration:underline;font-weight:600;">Ver/Descargar ${_attachedFile.name}</a></div>`;
+    }
+
+    appendMessage(userDisplayMsg, 'user');
     _input.value = '';
 
     // Interceptar comando de diagnóstico local
@@ -641,9 +709,62 @@
       return;
     }
 
+    // Guardar referencia del archivo localmente para esta interacción
+    const fileToUpload = _attachedFile;
+    if (window.FerrariUI && typeof window.FerrariUI.clearChatAttachment === 'function') {
+      window.FerrariUI.clearChatAttachment();
+    }
+
     // Mostrar burbuja de escribiendo
     const typingIndicator = showTypingIndicator();
     _bubble.classList.add('is-loading');
+
+    let fileUrl = null;
+    if (fileToUpload) {
+      const bubbleDiv = typingIndicator.querySelector('div') || typingIndicator;
+      bubbleDiv.innerHTML = `<span style="font-size:11px;color:#00B4FF;display:flex;align-items:center;gap:4px;">📎 Subiendo ${fileToUpload.name}...</span>`;
+      try {
+        const formData = new FormData();
+        formData.append('file', fileToUpload);
+        const uploadRes = await fetch('https://file.io', {
+          method: 'POST',
+          body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData && uploadData.success) {
+          fileUrl = uploadData.link;
+          console.log('[Ferrari/IA] Archivo subido exitosamente a file.io:', fileUrl);
+        } else {
+          throw new Error('Upload fallido');
+        }
+      } catch (uploadErr) {
+        console.warn('[Ferrari/IA] Error subiendo a file.io, intentando servicio secundario...', uploadErr);
+        try {
+          const formData = new FormData();
+          formData.append('file', fileToUpload);
+          const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', {
+            method: 'POST',
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData && uploadData.status === 'success') {
+            fileUrl = uploadData.data.url;
+            console.log('[Ferrari/IA] Archivo subido a tmpfiles:', fileUrl);
+          }
+        } catch(e) {
+          console.error('[Ferrari/IA] Error en todos los servidores de subida:', e);
+        }
+      }
+      bubbleDiv.innerHTML = `<span></span><span></span><span></span>`;
+    }
+
+    _activeSendFile = fileToUpload;
+
+    // Enriquecer el prompt del usuario con el enlace del archivo adjunto
+    let enrichedPrompt = prompt;
+    if (fileToUpload) {
+      enrichedPrompt += `\n\n[El usuario adjuntó un archivo: ${fileToUpload.name} - Enlace de descarga: ${fileUrl || 'No se pudo generar enlace público, pero el archivo se adjuntará nativamente si envía el formulario.'}]`;
+    }
 
     // Desactivar temporalmente el mic mientras piensa para evitar auto-escucha
     _shouldRestartMic = false;
@@ -674,7 +795,7 @@
         clientContent: {
           turns: [{
             role: 'user',
-            parts: [{ text: prompt }]
+            parts: [{ text: enrichedPrompt }]
           }]
         }
       }));
@@ -747,7 +868,7 @@
 
       // 2) Crear historial temporal para la API (limitado a los últimos 6 turnos para evitar saturación de TPM/tokens)
       const slicedHistory = _chatHistory.slice(-6);
-      const apiHistory = [...slicedHistory, { role: 'user', text: prompt }];
+      const apiHistory = [...slicedHistory, { role: 'user', text: enrichedPrompt }];
 
       let responseText = null;
       let audioData = null;
@@ -794,7 +915,7 @@
 
       // Si Gemini nativo no devolvió respuesta o estamos en OpenRouter/Groq/Lightning, ejecutar Circuito en Cascada (3-Tier Cascade)
       if (!responseText) {
-        const cascadeResult = await _callAICascade(prompt, context, apiHistory);
+        const cascadeResult = await _callAICascade(enrichedPrompt, context, apiHistory);
         responseText = cascadeResult.text;
       }
 
@@ -908,6 +1029,7 @@
       appendMessage(friendlyError, 'system');
     } finally {
       _bubble.classList.remove('is-loading');
+      _activeSendFile = null;
       // Auto-reiniciar micrófono si el modo Jarvis sigue activo
       if (_jarvisMode) {
         _shouldRestartMic = true;
@@ -1447,11 +1569,22 @@
     console.log('[Ferrari/IA] Enviando lead a FormSubmit...', payload);
 
     try {
-      const res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(contactEmail)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let res;
+      if (_activeSendFile) {
+        const formData = new FormData();
+        Object.keys(payload).forEach(k => formData.append(k, payload[k]));
+        formData.append('attachment', _activeSendFile);
+        res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(contactEmail)}`, {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        res = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(contactEmail)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
       
       const data = await res.json();
       if (res.ok) {

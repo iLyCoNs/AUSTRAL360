@@ -768,3 +768,69 @@
   .kpk-tour-progress-wrap { width: 80px; }
 }
 
+/* ─── FILE ATTACHMENT WIDGETS ─── */
+.kpk-ai-attachment-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  animation: slideUpAttachment 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUpAttachment {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.kpk-ai-attachment-icon {
+  font-size: 14px;
+  color: #00B4FF;
+}
+.kpk-ai-attachment-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: inherit;
+}
+.kpk-ai-attachment-clear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.kpk-ai-attachment-clear:hover {
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.15);
+}
+
+.kpk-ai-attach-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.kpk-ai-attach-btn:hover {
+  color: #00B4FF;
+  background: rgba(255, 255, 255, 0.05);
+}
+.kpk-ai-attach-btn:active {
+  transform: scale(0.92);
+}
+
+
