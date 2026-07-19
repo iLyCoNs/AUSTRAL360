@@ -32,12 +32,21 @@
       remoteProvider = window.FerrariBrandDock.getBrand().aiProvider;
     }
 
-    // Prioridad de configuración:
-    // 1) localStorage (panel admin — más reciente)
-    // 2) window.KPK_CONFIG (config.local.js — gitignoreado)
-    // 3) remoteProvider de la marca
-    // 4) fallback: openrouter
     const cfg = window.KPK_CONFIG || {};
+    
+    // Invalidador automático de caché de configuración (configVersion)
+    const localCfgVer = localStorage.getItem('ferrari_config_version') || '0';
+    const currentCfgVer = String(cfg.configVersion || '0');
+    if (localCfgVer !== currentCfgVer && cfg.configVersion) {
+      console.log(`[Ferrari/IA] Nueva versión de config detectada (${localCfgVer} -> ${currentCfgVer}). Limpiando caché local...`);
+      localStorage.removeItem('ferrari_ai_provider');
+      localStorage.removeItem('ferrari_ai_key_openrouter');
+      localStorage.removeItem('ferrari_ai_key_groq');
+      localStorage.removeItem('ferrari_ai_key_gemini');
+      localStorage.removeItem('ferrari_ai_key_lightning');
+      localStorage.setItem('ferrari_config_version', currentCfgVer);
+    }
+
     _provider = localStorage.getItem('ferrari_ai_provider')
       || cfg.aiProvider
       || remoteProvider
@@ -313,6 +322,70 @@
     // Agregar mensaje de usuario al log
     appendMessage(prompt, 'user');
     _input.value = '';
+
+    // Interceptar comando de diagnóstico local
+    const lowerPrompt = prompt.toLowerCase();
+    if (lowerPrompt === '/debug' || lowerPrompt === '/status' || lowerPrompt === '/api') {
+      const typingIndicator = showTypingIndicator();
+      _bubble.classList.add('is-loading');
+      
+      setTimeout(() => {
+        typingIndicator.remove();
+        _bubble.classList.remove('is-loading');
+        
+        let brandKeys = null;
+        let brandProvider = null;
+        let configSrc = 'Configuración general (config.js)';
+        
+        try {
+          if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+            const brandObj = window.FerrariBrandDock.getBrand();
+            brandKeys = brandObj.aiKeys || null;
+            brandProvider = brandObj.aiProvider || null;
+            if (brandProvider) {
+              configSrc = 'Identidad publicada (brand.json de GitHub)';
+            }
+          }
+        } catch(e) {}
+        
+        const localProvider = localStorage.getItem('ferrari_ai_provider');
+        if (localProvider) {
+          configSrc = 'Caché local de Administración (admin.html)';
+        }
+        
+        const activeProvider = localProvider || brandProvider || (window.KPK_CONFIG && window.KPK_CONFIG.aiProvider) || 'openrouter';
+        
+        const models = {
+          gemini: 'gemini-2.0-flash',
+          groq: 'llama-3.1-8b-instant',
+          openrouter: 'google/gemma-4-26b-a4b-it:free',
+          lightning: 'google/gemini-3.5-flash'
+        };
+        const activeModel = models[activeProvider] || 'Desconocido';
+        
+        const cfg = window.KPK_CONFIG || {};
+        const rawKey = localStorage.getItem(`ferrari_ai_key_${activeProvider}`)
+          || (brandKeys && brandKeys[activeProvider])
+          || (cfg.aiKeys && cfg.aiKeys[activeProvider])
+          || '';
+          
+        const keyPrefix = rawKey ? rawKey.substring(0, 16) + '...' : 'SIN CONFIGURAR';
+        const isEncrypted = rawKey && rawKey.startsWith('kpk-enc-');
+        
+        const diagMsg = `🔧 <b>Diagnóstico de Conexión Copiloto</b><br><br>` +
+          `• <b>Proveedor Activo:</b> <code>${activeProvider}</code><br>` +
+          `• <b>Origen de Ajustes:</b> <i>${configSrc}</i><br>` +
+          `• <b>Modelo Ejecutándose:</b> <code>${activeModel}</code><br>` +
+          `• <b>API Key:</b> ${rawKey ? '✅ Cargada' : '❌ Vacía'}<br>` +
+          `• <b>Prefijo en memoria:</b> <code>${keyPrefix}</code><br>` +
+          `• <b>¿Protegido contra GitGuardian?:</b> ${isEncrypted ? '🔒 Sí (Ofuscada)' : '🔓 No (Texto plano)'}<br><br>` +
+          `<i>Jarvis está verificado y listo en este cliente.</i>`;
+          
+        appendMessage(diagMsg, 'system');
+        playFuturisticSound('success');
+      }, 500);
+      return;
+    }
 
     // Mostrar burbuja de escribiendo
     const typingIndicator = showTypingIndicator();

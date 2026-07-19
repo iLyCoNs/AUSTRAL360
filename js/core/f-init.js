@@ -576,6 +576,8 @@
         if (window.FerrariRAF && window.FerrariRAF.markDataDirty) {
           window.FerrariRAF.markDataDirty();
         }
+        // Disparar evento de resize global para que el chatbot y otros componentes se reconfiguren
+        window.dispatchEvent(new Event('resize'));
       }, 120);
     }
 

@@ -1312,6 +1312,12 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
 
 /* ─── MODO ESPECTADOR · Glassmorphism (mismo token que f-weather.css) ─── */
 .kpk-lote-panel.spectator-mode {
+  top: 96px !important;
+  right: 24px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translateX(120%) scale(1) !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s ease !important;
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
@@ -1323,13 +1329,17 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   border-radius: 20px;
   color: rgba(255, 255, 255, 0.92);
   padding: 0;
-  width: 300px;
+  width: 320px;
   max-height: none;
   overflow: visible;
   font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
 }
+.kpk-lote-panel.spectator-mode.kpk-lote-panel--open {
+  transform: translateX(0) scale(1) !important;
+  opacity: 1 !important;
+}
 .kpk-lote-panel.spectator-mode.form-open {
-  width: min(360px, calc(100vw - 24px));
+  width: 360px;
 }
 
 /* Ocultar elementos de edición */
@@ -2511,23 +2521,23 @@ body.f-tool-mode .kpk-buyer-dock {
     position: fixed !important;
     top: auto !important;
     bottom: 14px !important;
-    left: 10px !important;
-    right: 10px !important;
-    width: auto !important;
-    max-width: none !important;
+    left: 50% !important;
+    right: auto !important;
+    width: 250px !important; /* 30% más angosto */
+    max-width: calc(100vw - 20px) !important;
     border-radius: 18px !important;
-    /* Transición de deslizamiento premium */
-    transform: translateY(120%) scale(0.98) !important;
+    /* Transición de deslizamiento premium centrado */
+    transform: translateX(-50%) translateY(120%) scale(0.98) !important;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease !important;
     z-index: 99999 !important;
   }
   
   .kpk-lote-panel.spectator-mode.kpk-lote-panel--open {
-    transform: translateY(0) scale(1) !important;
+    transform: translateX(-50%) translateY(0) scale(1) !important;
   }
 
   .kpk-lote-panel.spectator-mode.form-open {
-    width: auto !important;
+    width: 280px !important; /* Más angosto también en formulario */
     height: min(72vh, 460px) !important;
     overflow-y: auto !important;
   }

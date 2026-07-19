@@ -454,12 +454,16 @@
   .kpk-ai-bubble svg { width: 20px; height: 20px; }
 
   .kpk-ai-panel {
-    right: 10px;
-    left: 10px;
-    bottom: 136px;
-    width: auto;
-    height: min(62vh, 420px);
-    border-radius: 18px;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 136px !important;
+    width: 260px !important; /* 30% más angosto */
+    height: min(62vh, 420px) !important;
+    border-radius: 18px !important;
+    transform: translateX(-50%) translateY(16px) scale(0.96) !important;
+  }
+  .kpk-ai-panel.is-open {
+    transform: translateX(-50%) translateY(0) scale(1) !important;
   }
   .kpk-ai-header  { padding: 12px 14px 10px; }
   .kpk-ai-log     { padding: 12px 14px; gap: 8px; }

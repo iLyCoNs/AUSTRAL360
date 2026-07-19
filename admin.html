@@ -2522,6 +2522,15 @@ async function loadBrandFromGitHub() {
   const hoverOnlyEl = document.getElementById('brand-lote-fill-hover-only');
   if (hoverOnlyEl) hoverOnlyEl.checked = _brand.loteFillOnHoverOnly === true;
 
+  // Sincronizar llaves remotas al localStorage para evitar borrados accidentales al guardar
+  if (_brand.aiKeys) {
+    for (const key in _brand.aiKeys) {
+      if (_brand.aiKeys[key]) {
+        localStorage.setItem(`ferrari_ai_key_${key}`, _deobfuscateKey(_brand.aiKeys[key]));
+      }
+    }
+  }
+
   const providerEl = document.getElementById('brand-ai-provider');
   if (providerEl) {
     providerEl.value = localStorage.getItem('ferrari_ai_provider') || _brand.aiProvider || 'gemini';
