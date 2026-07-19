@@ -1147,6 +1147,9 @@
           case 'openCalendarWidget':
             openCalendarWidget(act.loteId || null);
             break;
+          case 'openFinanceWidget':
+            openFinanceWidget(act.loteId || null);
+            break;
           default:
             console.warn('[Ferrari/IA] Acción no soportada:', act.type);
         }
@@ -2776,6 +2779,26 @@
         ]
       };
     }
+
+    // 4.7) Buscar si el usuario consulta por financiamiento, cuotas, pie o cotización simulada
+    if (/financiamiento|financiar|credito|cuotas|facilidades|pagar|pago|simulacion|cotizar|cotizacion/i.test(clean)) {
+      const voiceMode = _getVoiceMode();
+      const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+      const prefix = isG
+        ? '¡Por supuesto! Contamos con un increíble sistema de financiamiento directo a tu medida.'
+        : 'Ciertamente. Disponemos de opciones de financiamiento directo para facilitar su adquisición.';
+
+      const text = isG
+        ? `${prefix} He abierto el simulador de financiamiento interactivo en tu pantalla para que juegues con el pie y el plazo (¡financiamiento directo a 0% de interés!). ¿Qué te parece? 😊`
+        : `${prefix} He desplegado el simulador financiero en la pantalla. Puede calcular el pie y el número de cuotas para el lote seleccionado, señor.`;
+
+      return {
+        text: text,
+        actions: [
+          { type: 'openFinanceWidget', loteId: (_activeLote ? _activeLote.id : null) }
+        ]
+      };
+    }
     
     // 5) INTENT ENGINE — Enrutamiento por intención natural del usuario para servicios cercanos
     // Categorías de intención agrupadas por sinónimos naturales
@@ -3505,6 +3528,12 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       closeCalendarWidget();
     }
 
+    const hasFinanceAction = actions.some(a => a.type === 'openFinanceWidget');
+    // Si no hay acción de financiamiento, cerrar simulador
+    if (!hasFinanceAction) {
+      closeFinanceWidget();
+    }
+
     // Si el usuario habla de otra cosa, cerramos la ficha de lote (panel de espectador)
     const changedTopicToPOI = actions.some(a => a.type === 'openMapWidget' || a.type === 'focusNearbyPOI' || a.type === 'openWeatherWidget');
     if (changedTopicToPOI) {
@@ -3516,6 +3545,244 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (window.FerrariBuyerDock && typeof window.FerrariBuyerDock.setExpanded === 'function') {
         window.FerrariBuyerDock.setExpanded(false);
       }
+    }
+  }
+
+  // ─── FINANCE WIDGET (SIMULADOR DE CRÉDITO DIRECTO) ────────────────────────
+  function openFinanceWidget(loteId) {
+    let widget = document.getElementById('kpk-finance-widget');
+    if (!widget) {
+      widget = document.createElement('div');
+      widget.id = 'kpk-finance-widget';
+      widget.className = 'kpk-finance-widget';
+      document.body.appendChild(widget);
+    }
+
+    const ufValue = (window.FerrariUI && typeof window.FerrariUI.getUFValue === 'function') 
+      ? window.FerrariUI.getUFValue() 
+      : 38000;
+
+    const lotes = (window.allDrawnLines || [])
+      .filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && l.estado !== 'VENDIDO');
+
+    let currentSelectedId = loteId || (_activeLote ? _activeLote.id : (lotes[0] ? lotes[0].id : null));
+    
+    const optionsHTML = lotes.map(l => {
+      const isSel = l.id === currentSelectedId ? 'selected' : '';
+      return `<option value="${l.id}" ${isSel}>Lote ${l.titulo || l.id} (${l.valorUF || 0} UF)</option>`;
+    }).join('');
+
+    let preName = '';
+    let preEmail = '';
+    let prePhone = '';
+    const nameInp = document.querySelector('#spec-contact-form input[name="nombre"]');
+    const emailInp = document.querySelector('#spec-contact-form input[name="email"]');
+    const telInp = document.querySelector('#spec-contact-form input[name="tel"]');
+    if (nameInp) preName = nameInp.value;
+    if (emailInp) preEmail = emailInp.value;
+    if (telInp) prePhone = telInp.value;
+
+    widget.innerHTML = `
+      <div class="kpk-widget-header" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.1);">
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 13.5px; font-weight: 700; color: #fff;">Simulador de Financiamiento</span>
+          <span style="font-size: 10.5px; color: rgba(255,255,255,0.5); font-weight: 500; margin-top: 1px;">Crédito Directo del Desarrollador (0% Interés)</span>
+        </div>
+        <button class="kpk-widget-close" id="fin-widget-close-btn" style="border: none; background: transparent; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; transition: color 0.15s;">&times;</button>
+      </div>
+      
+      <div class="kpk-widget-body" style="padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: 310px;">
+        <div>
+          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;">1. Selecciona tu Terreno</div>
+          <select id="fin-select-lote" class="fin-select">
+            ${optionsHTML}
+          </select>
+        </div>
+        
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em;">
+            <span>2. Porcentaje de Pie</span>
+            <span id="fin-pie-percent" style="color: #00B4FF; font-weight: 700;">20%</span>
+          </div>
+          <input type="range" id="fin-slider-pie" class="fin-slider" min="10" max="50" step="5" value="20">
+        </div>
+
+        <div>
+          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px;">3. Plazo del Crédito</div>
+          <div class="fin-months-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
+            <button class="fin-month-btn" data-months="12">12m</button>
+            <button class="fin-month-btn is-selected" data-months="24">24m</button>
+            <button class="fin-month-btn" data-months="36">36m</button>
+            <button class="fin-month-btn" data-months="48">48m</button>
+            <button class="fin-month-btn" data-months="60">60m</button>
+          </div>
+        </div>
+
+        <div class="fin-summary-box">
+          <div class="fin-summary-row">
+            <span>Precio Terreno:</span>
+            <strong id="fin-res-precio">-</strong>
+          </div>
+          <div class="fin-summary-row">
+            <span>Pie Requerido:</span>
+            <strong id="fin-res-pie">-</strong>
+          </div>
+          <div class="fin-summary-row">
+            <span>Saldo a Financiar:</span>
+            <strong id="fin-res-saldo">-</strong>
+          </div>
+          <div class="fin-summary-row highlight">
+            <span>Dividendo Mensual:</span>
+            <strong id="fin-res-cuota">-</strong>
+          </div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px;">4. Datos del Interesado</div>
+          <input type="text" id="fin-input-name" placeholder="Tu Nombre Completo" value="${preName}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <input type="email" id="fin-input-email" placeholder="Correo Electrónico" value="${preEmail}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
+            <input type="tel" id="fin-input-phone" placeholder="WhatsApp" value="${prePhone}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
+          </div>
+        </div>
+      </div>
+      
+      <div class="kpk-widget-footer" style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.15);">
+        <button id="fin-btn-submit" style="width: 100%; height: 36px; border: none; border-radius: 8px; background: linear-gradient(135deg, #00B4FF, #0078FF); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,120,255,0.3);">
+          Enviar Simulación Directa
+        </button>
+      </div>
+    `;
+
+    function fmtCLP(val) {
+      return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(val);
+    }
+
+    function recalculate() {
+      const selLoteId = widget.querySelector('#fin-select-lote').value;
+      const targetLote = lotes.find(l => l.id === selLoteId);
+      if (!targetLote) return;
+
+      const valUF = parseFloat(targetLote.valorUF || 0);
+      const valCLP = Math.round(valUF * ufValue);
+
+      const piePercent = parseInt(widget.querySelector('#fin-slider-pie').value);
+      widget.querySelector('#fin-pie-percent').textContent = `${piePercent}%`;
+
+      const selMonthBtn = widget.querySelector('.fin-month-btn.is-selected');
+      const months = parseInt(selMonthBtn ? selMonthBtn.getAttribute('data-months') : 24);
+
+      const pieUF = valUF * (piePercent / 100);
+      const pieCLP = Math.round(valCLP * (piePercent / 100));
+
+      const saldoUF = valUF - pieUF;
+      const saldoCLP = valCLP - pieCLP;
+
+      const cuotaUF = saldoUF / months;
+      const cuotaCLP = Math.round(saldoCLP / months);
+
+      widget.querySelector('#fin-res-precio').innerHTML = `${valUF.toFixed(0)} UF <span style="font-size:10.5px; font-weight:500; color:rgba(255,255,255,0.5);">(${fmtCLP(valCLP)})</span>`;
+      widget.querySelector('#fin-res-pie').innerHTML = `${pieUF.toFixed(1)} UF <span style="font-size:10.5px; font-weight:500; color:rgba(255,255,255,0.5);">(${fmtCLP(pieCLP)})</span>`;
+      widget.querySelector('#fin-res-saldo').innerHTML = `${saldoUF.toFixed(1)} UF <span style="font-size:10.5px; font-weight:500; color:rgba(255,255,255,0.5);">(${fmtCLP(saldoCLP)})</span>`;
+      widget.querySelector('#fin-res-cuota').innerHTML = `${months} cuotas de ${cuotaUF.toFixed(2)} UF <span style="display:block; font-size:11px; font-weight:500; color:rgba(255,255,255,0.65); margin-top:2px;">~ ${fmtCLP(cuotaCLP)} CLP / mes</span>`;
+    }
+
+    widget.querySelector('#fin-select-lote').addEventListener('change', recalculate);
+    widget.querySelector('#fin-slider-pie').addEventListener('input', recalculate);
+
+    const monthBtns = widget.querySelectorAll('.fin-month-btn');
+    monthBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        monthBtns.forEach(b => b.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
+        recalculate();
+      });
+    });
+
+    widget.querySelector('#fin-widget-close-btn').addEventListener('click', closeFinanceWidget);
+
+    widget.querySelector('#fin-btn-submit').addEventListener('click', async () => {
+      const name = widget.querySelector('#fin-input-name').value.trim();
+      const email = widget.querySelector('#fin-input-email').value.trim();
+      const phone = widget.querySelector('#fin-input-phone').value.trim();
+
+      if (!name || !email || !phone) {
+        alert('Por favor complete sus datos de contacto.');
+        return;
+      }
+
+      const selLoteId = widget.querySelector('#fin-select-lote').value;
+      const targetLote = lotes.find(l => l.id === selLoteId);
+      if (!targetLote) return;
+
+      const valUF = parseFloat(targetLote.valorUF || 0);
+      const valCLP = Math.round(valUF * ufValue);
+      const piePercent = parseInt(widget.querySelector('#fin-slider-pie').value);
+      const months = parseInt(widget.querySelector('.fin-month-btn.is-selected').getAttribute('data-months'));
+
+      const pieUF = valUF * (piePercent / 100);
+      const pieCLP = Math.round(valCLP * (piePercent / 100));
+      const saldoUF = valUF - pieUF;
+      const saldoCLP = valCLP - pieCLP;
+      const cuotaCLP = Math.round(saldoCLP / months);
+
+      const submitBtn = widget.querySelector('#fin-btn-submit');
+      submitBtn.textContent = 'Procesando cotización...';
+      submitBtn.disabled = true;
+
+      const notes = `COTIZACIÓN FINANCIERA DIRECTA:\n` +
+                    `- Terreno: Lote ${targetLote.titulo || targetLote.id}\n` +
+                    `- Valor: ${valUF} UF (~ ${fmtCLP(valCLP)})\n` +
+                    `- Pie (${piePercent}%): ${pieUF.toFixed(1)} UF (~ ${fmtCLP(pieCLP)})\n` +
+                    `- Saldo Financiado: ${saldoUF.toFixed(1)} UF (~ ${fmtCLP(saldoCLP)})\n` +
+                    `- Plazo: ${months} cuotas mensuales sin interés de ~ ${fmtCLP(cuotaCLP)} CLP.`;
+
+      try {
+        await submitLead(name, email, phone, targetLote.id, notes);
+
+        if (window.FerrariUI && typeof window.FerrariUI.playSuccessSound === 'function') {
+          window.FerrariUI.playSuccessSound();
+        }
+
+        const wspMsg = `Hola, me interesa reservar con Financiamiento Directo.\n` +
+                       `*Terreno:* Lote ${targetLote.titulo || targetLote.id}\n` +
+                       `*Valor:* ${valUF} UF (~ ${fmtCLP(valCLP)})\n` +
+                       `*Pie (${piePercent}%):* ${pieUF.toFixed(1)} UF (~ ${fmtCLP(pieCLP)})\n` +
+                       `*Financiado:* ${saldoUF.toFixed(1)} UF\n` +
+                       `*Dividendo:* ${months} cuotas de ~ ${fmtCLP(cuotaCLP)} CLP\n` +
+                       `*Cliente:* ${name}\n` +
+                       `*WhatsApp:* ${phone}`;
+
+        const wspUrl = `https://api.whatsapp.com/send?phone=56987491964&text=${encodeURIComponent(wspMsg)}`;
+        window.open(wspUrl, '_blank');
+
+        closeFinanceWidget();
+
+        appendMessage(`¡Excelente! Hemos generado tu simulación para el **Lote ${targetLote.titulo || targetLote.id}** con un **pie del ${piePercent}%** a **${months} cuotas** de **~ ${fmtCLP(cuotaCLP)} CLP/mes**. La cotización formal fue enviada a los ejecutivos y está lista para ser validada en WhatsApp.`, 'system');
+
+      } catch (err) {
+        console.error('Error al procesar simulación financiera:', err);
+        submitBtn.textContent = 'Enviar Simulación Directa';
+        submitBtn.disabled = false;
+        alert('Ocurrió un error al procesar la cotización. Intente nuevamente.');
+      }
+    });
+
+    recalculate();
+
+    widget.style.display = 'flex';
+    setTimeout(() => {
+      widget.classList.add('is-open');
+    }, 50);
+  }
+
+  function closeFinanceWidget() {
+    const widget = document.getElementById('kpk-finance-widget');
+    if (widget) {
+      widget.classList.remove('is-open');
+      setTimeout(() => {
+        widget.style.display = 'none';
+      }, 300);
     }
   }
 

@@ -377,6 +377,7 @@
     window.FerrariUI = window.FerrariUI || {};
     window.FerrariUI.openLotePanel = openLotePanel;
     window.FerrariUI.getCurrentLoteId = () => _currentLoteId;
+    window.FerrariUI.getUFValue = () => _ufValue;
 
     // Obtener UF de forma asíncrona al arrancar
     _fetchUF();
