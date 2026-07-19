@@ -797,6 +797,13 @@
     setCtaOpen(false);
     _renderCta();
     render();
+    
+    // Auto-gatillar búsqueda de lugares cercanos al iniciar si el origen ya existe
+    if (!_nearbySearched && _origin()) {
+      _nearbySearched = true;
+      setTimeout(_searchNearby, 1000);
+    }
+
     setInterval(() => {
       if (_root && _root.classList.contains('is-visible') && _expanded) render();
       else if (!_isToolMode()) render();
@@ -805,6 +812,10 @@
     document.addEventListener('ferrari:panel-toggle', render);
     document.addEventListener('ferrari:geo-changed', () => {
       _mapLoadedFor = null;
+      if (!_nearbySearched && _origin()) {
+        _nearbySearched = true;
+        setTimeout(_searchNearby, 500);
+      }
       render();
     });
     document.addEventListener('ferrari:lotes-changed', render);

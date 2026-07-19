@@ -2751,29 +2751,41 @@
 
     for (const intent of INTENT_PATTERNS) {
       if (intent.re.test(clean)) {
-        // Intentar buscar el POI real en la lista cargada por el dock
-        let lat = intent.lat;
-        let lng = intent.lng;
+        // Usar origen del dron como fallback de coordenadas seguro en vez de Alerce
+        let lat = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lat) || -41.875850;
+        let lng = (window.FerrariGeo && window.FerrariGeo.droneOrigin && window.FerrariGeo.droneOrigin.lng) || -72.748294;
         let mapTitle = intent.mapTitle;
+        let foundPoiName = intent.poiKey;
+        let hasMatch = false;
+
         try {
           const livePins = (window.FerrariGeo && window.FerrariGeo.pins) || [];
           const match = livePins.find(p =>
-            p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)
+            (p.nombre && p.nombre.toLowerCase().includes(intent.poiKey)) ||
+            (p.categoria && p.categoria.toLowerCase().includes(intent.filter))
           );
           if (match && match.lat && match.lng) {
             lat = match.lat;
             lng = match.lng;
             mapTitle = match.nombre;
+            foundPoiName = match.nombre;
+            hasMatch = true;
           }
         } catch(e) {}
 
+        const actions = [
+          { type: 'filterNearby', category: intent.filter }
+        ];
+
+        if (hasMatch) {
+          actions.push({ type: 'focusNearbyPOI', poiName: foundPoiName });
+        } else {
+          actions.push({ type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle });
+        }
+
         return {
           text: intent.respuesta,
-          actions: [
-            { type: 'filterNearby', category: intent.filter },
-            { type: 'focusNearbyPOI', poiName: intent.poiKey },
-            { type: 'openMapWidget', lat: lat, lng: lng, title: mapTitle }
-          ]
+          actions: actions
         };
       }
     }
