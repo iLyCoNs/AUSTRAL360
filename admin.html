@@ -1142,6 +1142,19 @@
             <span class="brand-opt-hint" id="ai-key-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Clave de acceso de la IA. Se almacena localmente de forma segura en este navegador.</span>
           </div>
 
+          <div class="efield full">
+            <label>Voz Predeterminada del Copiloto</label>
+            <select id="brand-ai-voice" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
+              <option value="elevenlabs_gigi">🏆 ElevenLabs Gigi (Mujer latina · Vendedora premium)</option>
+              <option value="elevenlabs_daniel">🏆 ElevenLabs Daniel (Hombre · Jarvis británico premium)</option>
+              <option value="edge_dalia">🆓 Edge Neural Dalia (Mujer latina · México gratis)</option>
+              <option value="edge_alvaro">🆓 Edge Neural Álvaro (Hombre · España gratis)</option>
+              <option value="edge_ryan">🆓 Edge Neural Ryan (Hombre · Inglés británico gratis)</option>
+              <option value="webspeech">🔄 Navegador — Web Speech API (Voz local básica)</option>
+            </select>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Selecciona la voz que usará Jarvis al hablar. Las opciones ElevenLabs requieren configurar una API Key de ElevenLabs.</span>
+          </div>
+
           <div>
             <div class="brand-opt-label">Tipografía del dock</div>
             <div class="brand-font-grid" id="brand-font-grid">
@@ -2074,7 +2087,7 @@ function _deobfuscateKey(encKey) {
 }
 
 function _brandDefaults() {
-  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '' }, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '' }, voiceMode: 'elevenlabs_gigi', contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
 }
 
 function _normalizeBrand(raw) {
@@ -2088,6 +2101,7 @@ function _normalizeBrand(raw) {
   if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
   if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
   if (b.aiProvider == null) b.aiProvider = 'openrouter';
+  if (b.voiceMode == null) b.voiceMode = 'elevenlabs_gigi';
   if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
@@ -2535,6 +2549,10 @@ async function loadBrandFromGitHub() {
   if (providerEl) {
     providerEl.value = localStorage.getItem('ferrari_ai_provider') || _brand.aiProvider || 'gemini';
   }
+  const voiceEl = document.getElementById('brand-ai-voice');
+  if (voiceEl) {
+    voiceEl.value = _brand.voiceMode || 'elevenlabs_gigi';
+  }
   onAIProviderChange();
 
   _hoverColorSelected = _brand.loteHoverColor || 'neon-green';
@@ -2658,6 +2676,7 @@ async function saveBrand() {
       loteFillOnHoverOnly,
       loteHoverColor: _hoverColorSelected,
       aiProvider,
+      voiceMode: document.getElementById('brand-ai-voice') ? document.getElementById('brand-ai-voice').value : 'elevenlabs_gigi',
       aiKeys: {
         openrouter: _obfuscateKey(localStorage.getItem('ferrari_ai_key_openrouter') || ''),
         groq:       _obfuscateKey(localStorage.getItem('ferrari_ai_key_groq') || ''),

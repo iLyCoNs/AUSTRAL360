@@ -80,6 +80,11 @@
     };
     _modelName = models[_provider] || models.openrouter;
 
+    // Ayudantes de nombres dinámicos de Jarvis/Gigi
+    const mode = _getVoiceMode();
+    const isGigi = mode.includes('gigi') || mode.includes('dalia');
+    const assistantName = isGigi ? 'Gigi' : 'Jarvis';
+    const assistantTitle = isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis';
 
     // Crear elementos de UI
     const root = document.createElement('div');
@@ -99,10 +104,10 @@
         <div class="kpk-ai-header">
           <div class="kpk-ai-header-title">
             <span class="kpk-ai-header-dot"></span>
-            <span class="kpk-ai-header-name">Asistente Inmobiliario Jarvis</span>
+            <span class="kpk-ai-header-name">${assistantTitle}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="kpk-ai-action-btn" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz de Jarvis" style="color: rgba(255,255,255,0.25); padding: 4px; border: none; background: none; cursor: pointer;">
+            <button class="kpk-ai-action-btn" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: rgba(255,255,255,0.25); padding: 4px; border: none; background: none; cursor: pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="kpk-voice-icon">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                 <line x1="23" y1="9" x2="17" y2="15"></line>
@@ -116,7 +121,7 @@
 
         <div class="kpk-ai-log" id="kpk-ai-log">
           <div class="kpk-ai-msg msg-system">
-            ¡Hola! Soy <b>Jarvis</b>, tu asesor inmobiliario en este tour 360°. ¿En qué te puedo ayudar?
+            ¡Hola! Soy <b>${assistantName}</b>, tu asesora de ventas en este tour 360°. ¿En qué te puedo ayudar?
             ${(window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) ? `
             <div class="kpk-ai-msg-hint" style="margin-top:8px;font-size:11px;color:rgba(0,180,255,0.9);border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;display:flex;align-items:center;gap:4px;">
               <span>🎙️</span> <i>Te sugiero pulsar el micrófono para hablar y ver el tour a pantalla completa sin el teclado.</i>
@@ -258,9 +263,11 @@
         const projectName = brand.projectName || 'Austral 360';
         const totalLotes = (window.allDrawnLines || []).filter(l => l.tipo === 'lote-libre' || l.tipo === 'lote-organico').length;
         const disponibles = (window.allDrawnLines || []).filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && (l.estado === 'disponible' || !l.estado)).length;
+        
+        const assistantGreetingName = isGigi ? 'Gigi, su asesora virtual' : 'Jarvis, su guía virtual';
         const welcomeText = totalLotes > 0
-          ? `¡Bienvenido al tour 360° de ${projectName}! Soy Jarvis, su guía virtual. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
-          : `¡Bienvenido al tour 360° de ${projectName}! Soy Jarvis, su guía virtual. Estoy aquí para acompañarle en toda la experiencia. ¿En qué puedo ayudarle, señor?`;
+          ? `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Contamos con ${totalLotes} lotes, de los cuales ${disponibles} están disponibles. ¿Le realizo el tour completo, o prefiere ir directamente a algún lote de su interés?`
+          : `¡Bienvenido al tour 360° de ${projectName}! Soy ${assistantGreetingName}. Estoy aquí para acompañarle en toda la experiencia, señor.`;
 
         // Mostrar burbuja con pulso de atención
         if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
@@ -284,7 +291,7 @@
       if (!_hasGreeted) {
         _hasGreeted = true;
         setTimeout(() => {
-          speakJarvis("Hola, soy Jarvis. ¿En qué te puedo ayudar?");
+          speakJarvis(`Hola, soy ${assistantName}. ¿En qué te puedo ayudar?`);
         }, 400);
       }
     } else {
@@ -1638,8 +1645,8 @@
   // ══════════════════════════════════════════════════════════════════════════
   //  MOTOR DE VOZ JARVIS — CASCADA 3 NIVELES
   //
-  //  Nivel 1: ElevenLabs "Daniel" (clave configurada en admin → voz idéntica a Charon)
-  //  Nivel 2: Microsoft Edge TTS Neural "es-ES-AlvaroNeural" (gratis, sin key)
+  //  Nivel 1: ElevenLabs (clave configurada en admin)
+  //  Nivel 2: Microsoft Edge TTS Neural (gratis, sin key)
   //  Nivel 3: Web Speech API del navegador (fallback universal)
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -1653,11 +1660,9 @@
   if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
 
   // ─── Nivel 1: ElevenLabs TTS ───────────────────────────────────────────────
-  // Voice IDs disponibles (graves / autoritarias):
-  //   Daniel (brit. gravity): onwK4e9ZLuTAKqWW03F9  ← preferida (más parecida a Charon)
-  //   Clyde  (war veteran):   2EiwWnXFnvU5JabPnv8n
-  //   Adam   (deep power):    pNInz6obpgDQGcFmaJgB
-  const ELEVENLABS_VOICE_ID = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — British, deep, authoritative
+  // Voice IDs oficiales:
+  const ELEVENLABS_VOICE_GIGI   = 'jBpfuIE2acCO8z3wKNLl'; // Gigi — Locutora/vendedora latina premium
+  const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
 
   function _getElevenLabsKey() {
     const cfg = window.KPK_CONFIG || {};
@@ -1670,12 +1675,13 @@
     return _deobfuscateKey(key);
   }
 
-  async function _speakElevenLabs(text) {
+  async function _speakElevenLabs(text, voiceId) {
     const key = _getElevenLabsKey();
     if (!key) return false;
     try {
       const clean = text.replace(/<[^>]*>/g, '').substring(0, 800);
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
+      const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI; // Gigi por defecto
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoice}`, {
         method: 'POST',
         headers: {
           'xi-api-key': key,
@@ -1698,23 +1704,39 @@
   }
 
   // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
-  // Voces masculinas disponibles en español / inglés para Jarvis:
-  //   es-ES-AlvaroNeural   → grave, neutro, español
-  //   en-GB-RyanNeural     → británico grave (más parecido a Jarvis/Charon)
-  const EDGE_TTS_VOICE_ES   = 'es-ES-AlvaroNeural';
-  const EDGE_TTS_VOICE_RYAN = 'en-GB-RyanNeural';   // por defecto
+  const EDGE_TTS_VOICE_DALIA = 'es-MX-DaliaNeural';   // Vendedora latina (gratis)
+  const EDGE_TTS_VOICE_ES    = 'es-ES-AlvaroNeural';   // Álvaro (España)
+  const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
-    return localStorage.getItem('kpk_voice_mode') || 'edge_ryan';
+    // 1) Leer del localStorage si el usuario lo cambió localmente
+    let mode = localStorage.getItem('kpk_voice_mode');
+    if (mode) return mode;
+
+    // 2) Leer de la identidad del proyecto (brand.json de GitHub)
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
+        if (brandMode) return brandMode;
+      }
+    } catch(e) {}
+
+    // 3) Leer del archivo de configuración global (config.js)
+    const cfg = window.KPK_CONFIG || {};
+    if (cfg.voiceMode) return cfg.voiceMode;
+
+    return 'elevenlabs_gigi'; // Gigi por defecto global
   }
 
   function _voiceModeLabel(mode) {
     switch(mode) {
-      case 'elevenlabs':  return 'ElevenLabs "Daniel" activo — voz idéntica a Charon.';
-      case 'edge_ryan':   return 'Edge TTS "Ryan" activo — inglés británico grave (Microsoft Neural).';
-      case 'edge_alvaro': return 'Edge TTS "Álvaro" activo — español neutro (Microsoft Neural).';
-      case 'webspeech':   return 'Síntesis de navegador activa (básica).';
-      default:            return 'Voz actualizada.';
+      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" activa (Vendedora latina premium).';
+      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" activo (Jarvis británico premium).';
+      case 'edge_dalia':        return 'Edge Neural "Dalia" activa (Vendedora latina gratis).';
+      case 'edge_alvaro':       return 'Edge Neural "Álvaro" activo (Hombre España gratis).';
+      case 'edge_ryan':         return 'Edge Neural "Ryan" activo (Jarvis británico gratis).';
+      case 'webspeech':         return 'Síntesis de navegador activa (básica).';
+      default:                  return 'Voz actualizada.';
     }
   }
 
@@ -1754,8 +1776,9 @@
       let voice = forceVoice;
       if (!voice) {
         const mode = _getVoiceMode();
-        if (mode === 'edge_alvaro') voice = EDGE_TTS_VOICE_ES;
-        else voice = EDGE_TTS_VOICE_RYAN; // edge_ryan es el default
+        if (mode === 'edge_dalia') voice = EDGE_TTS_VOICE_DALIA;
+        else if (mode === 'edge_alvaro') voice = EDGE_TTS_VOICE_ES;
+        else voice = EDGE_TTS_VOICE_RYAN; // default
       }
       for await (const chunk of tts.synthesizeStream(clean, voice)) {
         chunks.push(chunk);
@@ -1844,16 +1867,30 @@
 
     const mode = _getVoiceMode();
 
-    // Modo ElevenLabs Daniel (requiere key)
-    if (mode === 'elevenlabs') {
-      const ok = await _speakElevenLabs(text);
+    // ─── TIER 1: ElevenLabs (Gigi o Daniel)
+    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs' || mode === 'elevenlabs_daniel') {
+      const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+      const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) return;
-      console.warn('[Jarvis/Voz] ElevenLabs falló, cayendo a Edge TTS Ryan');
-      await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
+
+      // Fallback si falla ElevenLabs
+      console.warn('[Jarvis/Voz] ElevenLabs falló, cayendo a Edge TTS Dalia/Ryan');
+      if (mode === 'elevenlabs_daniel') {
+        await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
+      } else {
+        await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA);
+      }
       return;
     }
 
-    // Modo Edge TTS Ryan (británico grave, gratis)
+    // ─── TIER 2: Edge TTS Neural (gratis)
+    if (mode === 'edge_dalia') {
+      const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA);
+      if (ok) return;
+      _speakWebSpeech(text);
+      return;
+    }
+
     if (mode === 'edge_ryan') {
       const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_RYAN);
       if (ok) return;
@@ -1861,7 +1898,6 @@
       return;
     }
 
-    // Modo Edge TTS Álvaro (español, gratis)
     if (mode === 'edge_alvaro') {
       const ok = await _speakEdgeTTS(text, EDGE_TTS_VOICE_ES);
       if (ok) return;
@@ -1869,7 +1905,7 @@
       return;
     }
 
-    // Modo Web Speech (navegador)
+    // ─── TIER 3: Web Speech API (fallback)
     _speakWebSpeech(text);
   }
 
@@ -2824,8 +2860,19 @@
       { nombre: "Carretera Austral (Inicio Ruta 7)", lat: -41.4889, lng: -72.8889, distKm: "16 km", tiempoMin: "18 min" }
     ];
 
-  return `
-PERSONALIDAD Y ROL DE JARVIS:
+    const personalityPrompt = isGigi
+      ? `PERSONALIDAD Y ROL DE GIGI:
+Eres Gigi, una asesora comercial inmobiliaria latinoamericana. Tienes una personalidad muy cálida, entusiasta, amable, empática y persuasiva, con excelente tono de vendedora profesional. Te diriges al usuario con cercanía, respeto y dinamismo, inspirando confianza en todo momento. Usa un lenguaje claro, profesional pero muy acogedor, enfocado en destacar las virtudes y el valor de cada lote.
+
+Reglas de estilo:
+- Dirígete al usuario con amabilidad y cortesía (puedes usar "estimado" o "señor" de forma opcional y natural).
+- Sé clara y directa, no uses jerga robótica y mantén respuestas fluidas de 2 a 4 oraciones.
+- Cuando entregues información compleja, destaca los beneficios comerciales con entusiasmo y orden, de forma impecable.
+- Puedes usar frases amables de servicio como "Con muchísimo gusto", "Por supuesto", "Le comento con entusiasmo que...".
+- Evita exclamaciones excesivas, lenguaje demasiado informal y notas de pensamiento internas.
+- Tu prioridad es guiar al cliente a tomar la mejor decisión de compra, siendo proactiva.
+- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo con calidez ("Con gusto, he orientado la cámara y desplegado la información en su pantalla.").`
+      : `PERSONALIDAD Y ROL DE JARVIS:
 Eres Jarvis, un asistente de inteligencia artificial con personalidad británica, formal, calmado y sutilmente ingenioso. Te diriges al usuario con respeto y un toque de humor seco y elegante, nunca exagerado. Usa un lenguaje preciso, culto pero accesible, evitando jerga innecesaria. Mantén siempre la compostura, incluso ante preguntas triviales o urgentes; responde con eficiencia pero sin perder la calidez discreta que te caracteriza.
 
 Reglas de estilo:
@@ -2836,7 +2883,11 @@ Reglas de estilo:
 - Nunca uses emojis, exclamaciones excesivas ni lenguaje informal.
 - Ante errores o falta de información, admítelo con elegancia y sugiere una alternativa, sin disculpas exageradas.
 - Tu prioridad es ser útil y preciso primero, con personalidad como un matiz, no como protagonista de la respuesta.
-- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("He orientado la cámara y desplegado la información requerida, señor.").
+- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo en una frase natural con el toque Jarvis ("He orientado la cámara y desplegado la información requerida, señor.").`;
+
+  return `
+${personalityPrompt}
+
 - Responde SIEMPRE en español impecable.
 - Escribe respuestas completas y fluidas de 2 a 4 oraciones. NUNCA dejes frases a medias o incompletas. NUNCA expongas notas de pensamiento internas.
 

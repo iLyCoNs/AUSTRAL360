@@ -8,11 +8,13 @@
 
 (function() {
   window.KPK_CONFIG = {
-    // Incrementa este número si cambias la configuración general para obligar al borrado de caché
-    configVersion: 8,
+    configVersion: 9,
 
     // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
     aiProvider: 'lightning',
+
+    // Voz predeterminada del copiloto ('elevenlabs_gigi', 'elevenlabs_daniel', 'edge_dalia', etc.)
+    voiceMode: 'elevenlabs_gigi',
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {
