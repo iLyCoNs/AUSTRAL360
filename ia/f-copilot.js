@@ -314,6 +314,106 @@
     });
   }
 
+  // ─── CIRCUITO EN CASCADA 3-TIER (REDUNDANCIA AUTOMÁTICA INFALIBLE) ────────
+  async function _callAICascade(prompt, context, apiHistory) {
+    const cfg = window.KPK_CONFIG || {};
+    let brandKeys = null;
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
+      }
+    } catch(e) {}
+
+    function _resolveKey(prov) {
+      const raw = localStorage.getItem(`ferrari_ai_key_${prov}`)
+        || (brandKeys && brandKeys[prov])
+        || (cfg.aiKeys && cfg.aiKeys[prov])
+        || '';
+      return _deobfuscateKey(raw);
+    }
+
+    const primaryProv = _provider || 'openrouter';
+    const primaryKey = _resolveKey(primaryProv);
+
+    // Cascada de Redundancia Ininterrumpida: Tier 1 -> Tier 2 -> Tier 3
+    const cascadeTiers = [
+      { provider: primaryProv, key: primaryKey, model: _modelName },
+      { provider: 'openrouter', key: _resolveKey('openrouter'), model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free' },
+      { provider: 'groq', key: _resolveKey('groq'), model: 'llama-3.1-8b-instant' },
+      { provider: 'openrouter', key: _resolveKey('openrouter'), model: 'google/gemma-4-26b-a4b-it:free' }
+    ];
+
+    const uniqueTiers = [];
+    const seen = new Set();
+    for (const tier of cascadeTiers) {
+      const sig = `${tier.provider}:${tier.model}`;
+      if (!seen.has(sig) && (tier.key || tier.provider === 'openrouter')) {
+        seen.add(sig);
+        uniqueTiers.push(tier);
+      }
+    }
+
+    let lastError = null;
+    for (let i = 0; i < uniqueTiers.length; i++) {
+      const tier = uniqueTiers[i];
+      console.log(`[Ferrari/IA] Ejecutando Tier ${i + 1} (${tier.provider} -> ${tier.model})...`);
+      
+      try {
+        if (tier.provider === 'lightning') {
+          // Lightning requiere backend Python/Node; salta directo al Tier 2 en navegadores cliente
+          throw new Error('Lightning API restringido por CORS en navegadores.');
+        }
+
+        const messages = [
+          { role: 'system', content: context },
+          ...apiHistory.map(h => ({ role: h.role, content: h.text }))
+        ];
+
+        const url = tier.provider === 'groq'
+          ? 'https://api.groq.com/openai/v1/chat/completions'
+          : 'https://openrouter.ai/api/v1/chat/completions';
+
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tier.key}`
+        };
+
+        if (tier.provider === 'openrouter') {
+          headers['HTTP-Referer'] = window.location.origin || 'https://ilycons.github.io';
+          headers['X-Title'] = 'Austral 360 Copilot';
+        }
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            model: tier.model,
+            messages: messages,
+            temperature: 0.3,
+            max_tokens: 400
+          })
+        });
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error?.message || `Error HTTP ${res.status}`);
+        }
+
+        const resJson = await res.json();
+        const text = resJson.choices?.[0]?.message?.content;
+        if (!text) throw new Error('Respuesta del modelo vacía');
+
+        console.log(`[Ferrari/IA] ✅ Respuesta exitosa en Tier ${i + 1} (${tier.provider})`);
+        return { text: text, tier: i + 1, provider: tier.provider, model: tier.model };
+      } catch (err) {
+        console.warn(`[Ferrari/IA] ⚠️ Tier ${i + 1} (${tier.provider}) falló: ${err.message}. Conmutando al siguiente nivel...`);
+        lastError = err;
+      }
+    }
+
+    throw lastError || new Error('Todos los niveles de cascada de IA fallaron.');
+  }
+
   // ─── ENVIAR Y COMUNICAR CON GEMINI ──────────────────────────────────
   async function handleSend() {
     const prompt = _input.value.trim();
@@ -500,27 +600,19 @@
       let audioData = null;
 
       if (_provider === 'gemini') {
-        // --- PROVEEDOR: GEMINI ---
+        // --- PROVEEDOR: GEMINI NATIVO ---
         const geminiHistory = apiHistory.map(h => ({
           role: h.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: h.text }]
         }));
 
         const requestBody = {
-          systemInstruction: {
-            parts: [{ text: context }]
-          },
+          systemInstruction: { parts: [{ text: context }] },
           contents: geminiHistory,
           generationConfig: {
             responseMimeType: 'application/json',
             responseModalities: ["TEXT", "AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: "Charon"
-                }
-              }
-            }
+            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Charon" } } }
           }
         };
 
@@ -530,81 +622,27 @@
           : `https://generativelanguage.googleapis.com/v1beta/models/${_modelName}:generateContent?key=${currentKey}`;
 
         const headers = { 'Content-Type': 'application/json' };
-        if (isAccessToken) {
-          headers['Authorization'] = `Bearer ${currentKey}`;
-        }
+        if (isAccessToken) headers['Authorization'] = `Bearer ${currentKey}`;
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `Error Gemini (${response.status})`);
-        }
-
-        const resJson = await response.json();
-        const parts = resJson.candidates?.[0]?.content?.parts || [];
-        for (const part of parts) {
-          if (part.text) {
-            responseText = part.text;
-          } else if (part.inlineData) {
-            audioData = part.inlineData.data;
+        try {
+          const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(requestBody) });
+          if (response.ok) {
+            const resJson = await response.json();
+            const parts = resJson.candidates?.[0]?.content?.parts || [];
+            for (const part of parts) {
+              if (part.text) responseText = part.text;
+              else if (part.inlineData) audioData = part.inlineData.data;
+            }
           }
+        } catch(gErr) {
+          console.warn('[Ferrari/IA] Gemini nativo falló, ejecutando cascada de redundancia...', gErr);
         }
+      }
 
-      } else {
-        // --- PROVEEDORES: GROQ / OPENROUTER (OpenAI-compatible) ---
-        const openAIHistory = apiHistory.map(h => ({
-          role: h.role,
-          content: h.text
-        }));
-
-        const messages = [
-          { role: 'system', content: context },
-          ...openAIHistory
-        ];
-
-        const requestBody = {
-          model: _modelName,
-          messages: messages,
-          response_format: { type: 'json_object' },
-          temperature: 0.3,
-          max_tokens: 400
-        };
-
-        const url = _provider === 'groq'
-          ? 'https://api.groq.com/openai/v1/chat/completions'
-          : (_provider === 'lightning'
-            ? 'https://lightning.ai/api/v1/chat/completions'
-            : 'https://openrouter.ai/api/v1/chat/completions');
-
-        const headers = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentKey}`
-        };
-
-        // OpenRouter requiere estos headers para el tier gratuito
-        if (_provider === 'openrouter') {
-          headers['HTTP-Referer'] = window.location.origin || 'https://kpranokiller.australdrone.cl';
-          headers['X-Title'] = 'KPRANO Killer 360 Copiloto';
-        }
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `Error API (${response.status})`);
-        }
-
-        const resJson = await response.json();
-        responseText = resJson.choices?.[0]?.message?.content;
+      // Si Gemini nativo no devolvió respuesta o estamos en OpenRouter/Groq/Lightning, ejecutar Circuito en Cascada (3-Tier Cascade)
+      if (!responseText) {
+        const cascadeResult = await _callAICascade(prompt, context, apiHistory);
+        responseText = cascadeResult.text;
       }
 
       // 4) Remover burbuja escribiendo
