@@ -738,7 +738,11 @@
       appendMessage(data.text, 'system');
       playFuturisticSound('success');
       
-      // Hablar respuesta (con voz de Charon nativa si está disponible, sino SpeakJarvis fallback)
+      // Hablar respuesta (con voz de Charon nativa si está disponible, sino sintetizador Jarvis)
+      if (!audioData && _speechEnabled) {
+        audioData = await fetchCharonAudio(data.text);
+      }
+
       if (audioData && _speechEnabled) {
         playAudioBase64(audioData, data.text);
       } else {
@@ -1340,6 +1344,57 @@
     };
 
     window.speechSynthesis.speak(_synthUtterance);
+  }
+
+  async function fetchCharonAudio(text) {
+    const cfg = window.KPK_CONFIG || {};
+    let brandKeys = null;
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
+      }
+    } catch(e) {}
+
+    const geminiKey = localStorage.getItem('ferrari_ai_key_gemini')
+      || (brandKeys && brandKeys.gemini)
+      || (cfg.aiKeys && cfg.aiKeys.gemini)
+      || '';
+
+    let decodedKey = _deobfuscateKey(geminiKey);
+    if (!decodedKey) return null;
+
+    try {
+      const cleanPrompt = text.replace(/<[^>]*>/g, '').substring(0, 300);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${decodedKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: `Di exactamente en voz alta: ${cleanPrompt}` }] }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: "Charon"
+                }
+              }
+            }
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const audioPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (audioPart && audioPart.inlineData?.data) {
+          return audioPart.inlineData.data;
+        }
+      }
+    } catch (e) {
+      console.warn('[Ferrari/IA] No se pudo generar audio Charon nativo:', e);
+    }
+    return null;
   }
 
   let _activeAudioSource = null;
