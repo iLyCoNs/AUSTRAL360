@@ -1641,7 +1641,13 @@
     // Generar URL del iframe con ruta o marcador simple
     if (iframe) {
       if (origin && origin.lat != null && origin.lng != null) {
-        iframe.src = `https://maps.google.com/maps?saddr=${origin.lat},${origin.lng}&daddr=${lat},${lng}&z=11&t=m&hl=es&output=embed`;
+        // Evitar el bug de ruta con origen y destino iguales
+        const isSame = Math.abs(origin.lat - lat) < 0.0001 && Math.abs(origin.lng - lng) < 0.0001;
+        if (isSame) {
+          iframe.src = `https://maps.google.com/maps?q=${lat},${lng}&z=14&t=m&hl=es&output=embed`;
+        } else {
+          iframe.src = `https://maps.google.com/maps?saddr=${origin.lat},${origin.lng}&daddr=${lat},${lng}&z=11&t=m&hl=es&output=embed`;
+        }
       } else {
         iframe.src = `https://maps.google.com/maps?q=${lat},${lng}&z=12&t=m&hl=es&output=embed`;
       }
@@ -2708,10 +2714,10 @@
         respuesta: 'Ciertamente. La Posta de Salud Rural Aulén es el centro de atención médica más cercano al proyecto. He girado la vista hacia su ubicación, abierto el radar de servicios y desplegado la ruta exacta en el mapa flotante.'
       },
       {
-        // EDUCACIÓN: colegio, escuela, liceo, jardín, kínder, niños, hijos, estudiar
+        // EDUCACIÓN: colegio, escuela, liceo, jardín, kínder
         cat: 'educacion',
         filter: 'educacion',
-        re: /colegio|escuela|liceo|jardin\s+infantil|kinder|guarderia|ninos|hijos|estudiar|educaci|clases|profesor/,
+        re: /colegio|escuela|liceo|jardin\s+infantil|kinder|guarderia|\beducacion\b|establecimiento\s+educacional|clases\s+escolares/,
         mapTitle: 'Escuelas y Colegios Cercanos',
         lat: -41.3934, lng: -72.9056,
         poiKey: 'escuela',
@@ -2731,7 +2737,7 @@
         // COMERCIO: supermercado, almacén, negocio, tienda, ferretería, compras, abarrotes
         cat: 'compras',
         filter: 'compras',
-        re: /supermercado|almacen|negocio|tienda|ferreteria|compra|abarrote|minimarket|local\s+comercial|panaderia|carniceria|verduleria/,
+        re: /supermercado|almacen|negocio|tienda|ferreteria|\bcompras\b|abarrote|minimarket|local\s+comercial|panaderia|carniceria|verduleria|negocios\s+locales/,
         mapTitle: 'Comercio y Almacenes de la Zona',
         lat: -41.4589, lng: -72.7423,
         poiKey: 'local comercial',
