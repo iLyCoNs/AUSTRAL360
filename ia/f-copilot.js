@@ -2710,40 +2710,48 @@
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
 
     const mode = _getVoiceMode();
+    const isGeminiMode   = mode === 'gemini_tts';
+    const isEdgeMode     = mode.startsWith('edge_');
+    const isStreamMode   = mode.startsWith('stream_');
+    const isElevenMode   = mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel';
 
-    // ─── TIER 0: Gemini TTS — Voz premium humana (Google AI, si hay key) ───
-    const okGemini = await _speakGeminiTTS(text);
-    if (okGemini) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
+    // ─── PRIMARIO: probar el motor de la voz seleccionada ───
+    if (isGeminiMode && await _speakGeminiTTS(text)) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
 
-    // ─── TIER 1: Edge TTS Neural — Voz HUMANA y natural (gratis vía esm.sh) ───
-    // Voces neuronales de Microsoft — suenan como humanos reales, no robóticas
-    let edgeVoice = EDGE_TTS_VOICE_DALIA; // Dalia (es-MX) por defecto — vendedora latina natural
-    if (mode === 'edge_elvira' || mode === 'stream_lucia')            edgeVoice = EDGE_TTS_VOICE_ELVIRA; // Elvira (España)
-    else if (mode === 'edge_jorge' || mode === 'elevenlabs_daniel')   edgeVoice = EDGE_TTS_VOICE_JORGE;  // Jorge (MX)
-    else if (mode === 'edge_alvaro')                                 edgeVoice = EDGE_TTS_VOICE_ES;    // Álvaro (ES)
-    else if (mode === 'edge_ryan')                                   edgeVoice = EDGE_TTS_VOICE_RYAN;  // Ryan (UK)
-    const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) { _lastUsedVoiceEngine = 'edge_tts'; return; }
+    if (isEdgeMode) {
+      let ev = EDGE_TTS_VOICE_DALIA;
+      if (mode === 'edge_elvira')        ev = EDGE_TTS_VOICE_ELVIRA;
+      else if (mode === 'edge_jorge')    ev = EDGE_TTS_VOICE_JORGE;
+      else if (mode === 'edge_alvaro')   ev = EDGE_TTS_VOICE_ES;
+      else if (mode === 'edge_ryan')     ev = EDGE_TTS_VOICE_RYAN;
+      if (await _speakEdgeTTS(text, ev)) { _lastUsedVoiceEngine = 'edge_tts'; return; }
+    }
 
-    // ─── TIER 2: StreamElements AWS Polly Mia (Voz latina, gratis, sin API key) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) { _lastUsedVoiceEngine = 'streamelements'; return; }
+    if (isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
 
-    // ─── TIER 3: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
+    if (isElevenMode) {
+      const k = _getElevenLabsKey();
+      if (k) {
+        const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+        if (await _speakElevenLabs(text, v)) { _lastUsedVoiceEngine = 'elevenlabs'; return; }
+      }
+    }
+
+    // ─── FALLBACK: cascade completa en orden descendente ───
+    if (!isGeminiMode && await _speakGeminiTTS(text))    { _lastUsedVoiceEngine = 'gemini_tts'; return; }
+    if (!isEdgeMode) {
+      let ev = EDGE_TTS_VOICE_DALIA;
+      if (mode === 'stream_lucia')          ev = EDGE_TTS_VOICE_ELVIRA;
+      else if (mode === 'elevenlabs_daniel') ev = EDGE_TTS_VOICE_JORGE;
+      if (await _speakEdgeTTS(text, ev))    { _lastUsedVoiceEngine = 'edge_tts'; return; }
+    }
+    if (!isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
+
     const okGoogle = await _speakGoogleTranslate(text);
     if (okGoogle) { _lastUsedVoiceEngine = 'google_translate'; return; }
 
-    // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
     const okWeb = _speakWebSpeech(text);
     if (okWeb) { _lastUsedVoiceEngine = 'webspeech'; return; }
-
-    // ─── TIER 5: ElevenLabs (solo si hay API key activa — voz premium ultra humana) ───
-    const elevenKey = _getElevenLabsKey();
-    if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
-      const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
-      const ok = await _speakElevenLabs(text, activeVoice);
-      if (ok) { _lastUsedVoiceEngine = 'elevenlabs'; return; }
-    }
   }
 
   function playFuturisticSound(type) {
