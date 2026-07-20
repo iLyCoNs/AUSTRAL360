@@ -2037,6 +2037,7 @@
 
         try { _globalAudio.pause(); } catch(e) {}
         _globalAudio.src = url;
+        _globalAudio.load();
         _activeJarvisAudio = _globalAudio;
 
         _shouldRestartMic = false;
