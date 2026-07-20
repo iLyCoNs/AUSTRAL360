@@ -4402,14 +4402,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       closeMapWidget();
     }
     
-    // Si no hay acción de clima, cerrar clima
-    if (!hasWeatherAction) {
-      const weatherWidget = document.getElementById('kpk-weather-widget');
-      if (weatherWidget && weatherWidget.style.display !== 'none') {
-        weatherWidget.style.display = 'none';
-        weatherWidget.classList.remove('is-open');
-      }
-    }
+    // El widget del clima se mantiene abierto hasta que el usuario lo cierre manualmente
+    // (ya no se auto-cierra al cambiar de tema para evitar que desaparezca al cambiar voz)
     
     // Si no hay acción de estadísticas, cerrar stats
     if (!hasStatsAction) {
