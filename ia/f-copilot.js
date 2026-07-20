@@ -2451,24 +2451,24 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: Google Translate TTS (Gratis, voz femenina español, sin API key) ───
+    // ─── TIER 1: StreamElements AWS Polly Mia (Voz latina neuronal, gratis, sin API key) ───
+    const okStream = await _speakStreamElements(text);
+    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+
+    // ─── TIER 2: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
     const okGoogle = await _speakGoogleTranslate(text);
     if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
 
-    // ─── TIER 2: Edge TTS Neural — Dalia (es-MX, gratis, alta calidad) ───
+    // ─── TIER 3: Edge TTS Neural — Dalia (es-MX, alta calidad, requiere CDN) ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
     else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
     const okEdge = await _speakEdgeTTS(text, edgeVoice);
     if (okEdge) { console.log('[Gigi/Voz] ✔ Edge TTS Neural'); return; }
 
-    // ─── TIER 3: Web Speech API (Nativa del navegador, depende del SO) ───
+    // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
     const okWeb = _speakWebSpeech(text);
     if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
-
-    // ─── TIER 4: StreamElements TTS (antiguo Tier 1, ahora requiere auth) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements'); return; }
 
     // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
     const elevenKey = _getElevenLabsKey();
