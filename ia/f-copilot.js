@@ -438,73 +438,6 @@
       });
     }
 
-    // ─── Selector interactivo de voz ───
-    const VOICE_OPTIONS = [
-      { id: 'stream_gigi',       label: '⭐ Gigi Mia MX', group: 'StreamElements' },
-      { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
-      { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
-      { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi', group: 'ElevenLabs' },
-      { id: 'elevenlabs_daniel', label: '🏆 ElevenLabs Daniel', group: 'ElevenLabs' },
-      { id: 'gemini_tts',        label: '🤖 Gemini TTS Kore', group: 'Gemini' },
-      { id: 'edge_dalia',        label: 'Dalia Neural MX', group: 'Edge TTS' },
-      { id: 'edge_elvira',       label: 'Elvira Neural ES', group: 'Edge TTS' },
-      { id: 'edge_jorge',        label: 'Jorge Neural MX', group: 'Edge TTS' },
-      { id: 'edge_alvaro',       label: 'Álvaro Neural ES', group: 'Edge TTS' },
-      { id: 'edge_ryan',         label: 'Ryan Neural UK', group: 'Edge TTS' },
-      { id: 'webspeech',         label: 'Web Speech', group: 'Navegador' }
-    ];
-    const voicePanel = document.getElementById('kpk-voice-panel');
-    const voiceSelectBtn = document.getElementById('kpk-ai-voice-select');
-    function _renderVoicePanel() {
-      if (!voicePanel) return;
-      const current = _getVoiceMode();
-      let html = '';
-      let lastGroup = '';
-      for (const v of VOICE_OPTIONS) {
-        if (v.group !== lastGroup) {
-          html += `<div style="font-size:10px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;${lastGroup?';border-top:1px solid rgba(255,255,255,0.06);margin-top:4px':''}">${v.group}</div>`;
-          lastGroup = v.group;
-        }
-        const active = v.id === current;
-        html += `<div class="kpk-voice-opt" data-voice="${v.id}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:${active?'#00B4FF':'#a1a1a6'};background:${active?'rgba(0,180,255,0.1)':'transparent'}">`;
-        html += `<span style="width:14px;height:14px;border-radius:50%;border:2px solid ${active?'#00B4FF':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${active?'<span style="width:8px;height:8px;border-radius:50%;background:#00B4FF"></span>':''}</span>`;
-        html += `<span>${v.label}</span></div>`;
-      }
-      voicePanel.innerHTML = html;
-      voicePanel.querySelectorAll('.kpk-voice-opt').forEach(el => {
-        el.addEventListener('click', () => {
-          const voice = el.dataset.voice;
-          localStorage.setItem('kpk_voice_mode', voice);
-          _renderVoicePanel();
-          setTimeout(() => { voicePanel.style.display = 'none'; }, 300);
-          if (_speechEnabled) {
-            stopAISpeech();
-            setTimeout(() => speakJarvis('Voz cambiada a ' + _voiceModeLabel(voice)), 200);
-          }
-        });
-      });
-    }
-    // Exponer funcion de refresco para comandos inline (/voces)
-    window._kpkRefreshVoice = function() {
-      const panel = document.getElementById('kpk-voice-panel');
-      if (panel && panel.style.display !== 'none') _renderVoicePanel();
-    };
-
-    if (voiceSelectBtn) {
-      voiceSelectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (!voicePanel) return;
-        const isOpen = voicePanel.style.display !== 'none';
-        voicePanel.style.display = isOpen ? 'none' : 'block';
-        if (!isOpen) _renderVoicePanel();
-      });
-      document.addEventListener('click', (e) => {
-        if (voicePanel && !voicePanel.contains(e.target) && e.target !== voiceSelectBtn && !voiceSelectBtn.contains(e.target)) {
-          voicePanel.style.display = 'none';
-        }
-      });
-    }
-
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
     if (btnVoice && voiceIcon) {
@@ -636,47 +569,45 @@
   }
 
   function _startWelcomeOnboarding(isMobile) {
-    const pack = _buildWelcomePack();
-    _isWaitingForName = pack.waitingName;
-    _hasGreeted = true;
+    try {
+      const pack = _buildWelcomePack();
+      _isWaitingForName = pack.waitingName;
+      _hasGreeted = true;
 
-    pack.messages.forEach((msg) => appendMessage(msg, 'system'));
+      pack.messages.forEach((msg) => appendMessage(msg, 'system'));
 
-    if (_input) {
-      _input.placeholder = pack.waitingName
-        ? 'Escribe tu nombre aquí...'
-        : 'Pregunta algo aquí o adjunta un archivo...';
-      if (pack.waitingName) {
-        setTimeout(() => { try { _input.focus(); } catch (e) {} }, 400);
+      if (_input) {
+        _input.placeholder = pack.waitingName
+          ? 'Escribe tu nombre aquí...'
+          : 'Pregunta algo aquí o adjunta un archivo...';
+        if (pack.waitingName) {
+          setTimeout(() => { try { _input.focus(); } catch (e) {} }, 400);
+        }
       }
-    }
 
-    if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
-      _panel.classList.add('is-open');
-    }
-
-    // En móvil: mostrar burbuja con el pedido de nombre (segunda interacción)
-    if (isMobile && pack.waitingName) {
-      showMobileBubblePopup(pack.messages.join('<br><br>'), true);
-    }
-
-    function _playWelcome() {
-      window.removeEventListener('click', _playWelcome);
-      window.removeEventListener('touchstart', _playWelcome);
-      _unlockMobileAudio();
-      // Reproducir directamente en el mismo contexto del click para preservar la autoplay policy
-      const clean = _cleanTextForTTS(welcomeGreeting);
-      if (clean) {
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=es-US&client=tw-ob&q=${encodeURIComponent(clean)}`;
-        _playAudioUrl(url).then(ok => {
-          if (!ok) speakJarvis(welcomeGreeting); // fallback a cascada normal si falla
-        });
-      } else {
-        speakJarvis(welcomeGreeting);
+      // Desktop: abrir panel completo siempre
+      if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
+        _panel.classList.add('is-open');
       }
+
+      // Móvil: tarjeta completa (saludo + pedir nombre + input)
+      if (isMobile) {
+        showMobileBubblePopup(pack.messages.join('<br><br>'), true);
+      }
+
+      function _playWelcome() {
+        window.removeEventListener('click', _playWelcome);
+        window.removeEventListener('touchstart', _playWelcome);
+        _unlockMobileAudio();
+        _welcomeSpoken = true;
+        speakJarvis(pack.speakText);
+      }
+      window.addEventListener('click', _playWelcome, { once: true, passive: true });
+      window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
+    } catch (err) {
+      console.error('[Ferrari/IA] Error en onboarding:', err);
+      if (_panel) _panel.classList.add('is-open');
     }
-    window.addEventListener('click', _playWelcome, { once: true, passive: true });
-    window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
   }
 
   /** Re-hablar el onboarding si abren el panel y aún no sonó (desktop) */
@@ -1212,34 +1143,34 @@
       const typingIndicator = showTypingIndicator();
       _bubble.classList.add('is-loading');
 
-      setTimeout(() => {
+      _probeElevenLabs(true).then((elOk) => {
         typingIndicator.remove();
         _bubble.classList.remove('is-loading');
 
+        const preferred = _getPreferredVoiceMode();
         const mode = _getVoiceMode();
-        const modeLabel = _voiceModeLabel(mode);
         const lastEngine = _lastUsedVoiceEngine || 'aún no usado';
         const engineLabels = {
-          gemini_tts: 'Gemini TTS — Kore (Google AI • voz humana premium)',
-          streamelements: 'StreamElements AWS Polly (Mia es-MX)',
-          google_translate: 'Google Translate TTS (español femenina)',
-          edge_tts: 'Edge TTS Neural — Dalia/Elvira/Jorge (voz HUMANA MX/ES)',
-          webspeech: 'Web Speech API (voz del sistema)',
-          elevenlabs: 'ElevenLabs (Gigi premium — voz ultra humana)'
+          gemini_tts: 'Gemini TTS — Kore',
+          streamelements: 'StreamElements',
+          google_translate: 'Google Translate TTS',
+          edge_tts: 'Edge TTS Neural (Dalia)',
+          webspeech: 'Web Speech API',
+          elevenlabs: 'ElevenLabs Gigi Bella'
         };
-        const engineName = engineLabels[lastEngine] || lastEngine;
+        const remaining = _elStatus && _elStatus.remaining != null ? _elStatus.remaining : '?';
 
         const vozMsg = `🎙️ <b>Modelo de Voz del Copiloto</b><br><br>` +
-          `• <b>Modo configurado:</b> <code>${mode}</code><br>` +
-          `• <b>Nombre:</b> ${modeLabel}<br>` +
-          `• <b>Motor usado:</b> <code>${engineName}</code><br>` +
-          `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br>` +
-          `• <b>Cascada:</b> Gemini TTS → Edge TTS → StreamElements → Google TTS → WebSpeech → ElevenLabs<br><br>` +
-          `<i>Escríbele algo a Gigi y te responderá con esa voz.</i>`;
+          `• <b>Preferencia:</b> <code>${preferred}</code> (${_voiceModeLabel(preferred)})<br>` +
+          `• <b>Efectiva ahora:</b> <code>${mode}</code> (${_voiceModeLabel(mode)})<br>` +
+          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida → Dalia'}<br>` +
+          `• <b>Último motor:</b> <code>${engineLabels[lastEngine] || lastEngine}</code><br>` +
+          `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br><br>` +
+          `<i>Auto Gigi: con créditos habla Bella; sin créditos habla Dalia sola.</i>`;
 
         appendMessage(vozMsg, 'system');
         playFuturisticSound('success');
-      }, 400);
+      });
       return;
     }
 
@@ -1247,23 +1178,24 @@
     if (lowerPrompt === '/voces') {
       const current = _getVoiceMode();
       const VOICE_OPTIONS_LOCAL = [
-        { id: 'stream_gigi',       label: '⭐ Gigi Mia MX', group: 'StreamElements' },
-        { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
-        { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
+        { id: 'auto_gigi',         label: '⭐ Auto · Gigi si hay créditos · si no Dalia', group: 'Recomendado' },
         { id: 'elevenlabs_gigi',   label: '🏆 Gigi Bella (ElevenLabs)', group: 'ElevenLabs' },
         { id: 'elevenlabs_daniel', label: '🏆 Daniel (ElevenLabs)', group: 'ElevenLabs' },
-        { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
-        { id: 'edge_dalia',        label: 'Dalia MX (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_dalia',        label: 'Dalia MX (Edge · gratis)', group: 'Edge TTS' },
         { id: 'edge_elvira',       label: 'Elvira ES (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_jorge',        label: 'Jorge MX (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_alvaro',       label: 'Álvaro ES (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_ryan',         label: 'Ryan UK (Edge TTS)', group: 'Edge TTS' },
+        { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
+        { id: 'stream_gigi',       label: 'Gigi Mia MX', group: 'StreamElements' },
+        { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
+        { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
         { id: 'webspeech',         label: 'Web Speech (Navegador)', group: 'Navegador' }
       ];
       let msg = '🎙️ <b>Selecciona una voz:</b><br><br><div style="display:flex;flex-direction:column;gap:6px;">';
       for (const v of VOICE_OPTIONS_LOCAL) {
         const isActive = v.id === current;
-        msg += `<div onclick="(function(){localStorage.setItem('kpk_voice_mode','${v.id}');window._kpkRefreshVoice?.();})()"`  style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid ${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'};background:${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'};transition:all 0.15s;" onmouseenter="this.style.borderColor='rgba(0,180,255,0.3)';this.style.background='rgba(0,180,255,0.05)'" onmouseleave="this.style.borderColor='${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'}';this.style.background='${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'}'">`;
+        msg += `<div onclick="(function(){localStorage.setItem('kpk_voice_mode','${v.id}');localStorage.setItem('kpk_voice_user_override','1');window._kpkRefreshVoice?.();})()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid ${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'};background:${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'};transition:all 0.15s;" onmouseenter="this.style.borderColor='rgba(0,180,255,0.3)';this.style.background='rgba(0,180,255,0.05)'" onmouseleave="this.style.borderColor='${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'}';this.style.background='${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'}'">`;
         msg += `<span style="width:16px;height:16px;border-radius:50%;border:2px solid ${isActive?'var(--accent)':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${isActive?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>':''}</span>`;
         msg += `<span style="font-size:13px;font-weight:${isActive?'700':'500'};color:${isActive?'var(--accent)':'var(--text)'};">${v.label}</span>`;
         if (isActive) msg += `<span style="margin-left:auto;font-size:10px;color:var(--accent);font-weight:700;">ACTIVA</span>`;
@@ -1273,9 +1205,15 @@
       appendMessage(msg, 'system');
       // Exponer funcion de refresco para los onclick
       window._kpkRefreshVoice = () => {
+        localStorage.setItem('kpk_voice_user_override', '1');
+        _lastUsedVoiceEngine = '';
         _renderVoicePanel?.();
-        const greeting = 'Voz cambiada';
-        if (_speechEnabled) speakJarvis(greeting);
+        const mode = _getVoiceMode();
+        const greeting = 'Voz cambiada a ' + _voiceModeLabel(mode);
+        if (_speechEnabled) {
+          stopAISpeech();
+          setTimeout(() => speakJarvis(greeting), 150);
+        }
       };
       return;
     }
@@ -2653,19 +2591,18 @@
   }
 
   // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
-  // Voces neuronales en español — suenan humanas y naturales (gratis vía esm.sh)
-  const EDGE_TTS_VOICE_DALIA  = 'es-MX-DaliaNeural';   // Dalia — Mexicana (vendedora latina, la más natural)
-  const EDGE_TTS_VOICE_ELVIRA = 'es-ES-ElviraNeural';  // Elvira — Española (femenina, muy natural)
-  const EDGE_TTS_VOICE_JORGE  = 'es-MX-JorgeNeural';    // Jorge — Mexicano (masculino)
-  const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';   // Álvaro (España)
-  const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
+  const EDGE_TTS_VOICE_DALIA  = 'es-MX-DaliaNeural';
+  const EDGE_TTS_VOICE_ELVIRA = 'es-ES-ElviraNeural';
+  const EDGE_TTS_VOICE_JORGE  = 'es-MX-JorgeNeural';
+  const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';
+  const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';
 
-  function _getVoiceMode() {
-    // 1. localStorage tiene prioridad (cambio manual del usuario via selector o /voces)
-    let mode = localStorage.getItem('kpk_voice_mode');
-    if (mode) return mode;
-
-    // 2. brand.json (configuracion del admin)
+  /** Preferencia cruda (admin / usuario) sin resolver Auto Gigi */
+  function _getPreferredVoiceMode() {
+    if (localStorage.getItem('kpk_voice_user_override') === '1') {
+      const userMode = localStorage.getItem('kpk_voice_mode');
+      if (userMode) return userMode;
+    }
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
@@ -2676,15 +2613,50 @@
           return brandMode;
         }
       }
-    } catch(e) {}
-
-    // 3. config.js por defecto
+    } catch (e) {}
+    const stored = localStorage.getItem('kpk_voice_mode');
+    if (stored) return stored;
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
     return 'auto_gigi';
   }
 
-    return 'stream_gigi';
+  /**
+   * Modo efectivo sincrónico (UI / personalidad).
+   * auto_gigi / elevenlabs_* → Gigi si el último probe dijo OK, si no Dalia.
+   */
+  function _getVoiceMode() {
+    const preferred = _getPreferredVoiceMode();
+
+    const wantsGigiAuto = preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi';
+    const wantsDaniel = preferred === 'elevenlabs_daniel';
+
+    if (wantsGigiAuto || wantsDaniel) {
+      const key = _getElevenLabsKey();
+      if (!key) return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      if (_elStatus && _elStatus.keyFp === _elevenLabsKeyFp(key)) {
+        if (_elStatus.ok) return wantsDaniel ? 'elevenlabs_daniel' : 'elevenlabs_gigi';
+        return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      }
+      // Aún no sondeado: Dalia segura hasta que el probe confirme créditos
+      return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+    }
+
+    return preferred;
+  }
+
+  /** Resuelve Gigi vs Dalia consultando créditos justo antes de hablar */
+  async function _resolveVoiceModeAsync() {
+    const preferred = _getPreferredVoiceMode();
+    if (preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi') {
+      const ok = await _probeElevenLabs(false);
+      return ok ? 'elevenlabs_gigi' : 'edge_dalia';
+    }
+    if (preferred === 'elevenlabs_daniel') {
+      const ok = await _probeElevenLabs(false);
+      return ok ? 'elevenlabs_daniel' : 'edge_jorge';
+    }
+    return preferred;
   }
 
   function _voiceModeLabel(mode) {
@@ -2695,7 +2667,7 @@
       case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
       case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
       case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
-      case 'edge_dalia':        return 'Dalia Neural (Edge TTS • humana MX)';
+      case 'edge_dalia':        return 'Dalia Neural MX (Edge TTS • gratis)';
       case 'edge_elvira':       return 'Elvira Neural (Edge TTS • humana ES)';
       case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
       case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
@@ -3014,7 +2986,7 @@
     }
   }
 
-  // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
+  // ─── speakJarvis: Auto Gigi (créditos) → Dalia; respeta modo manual ───
   async function speakJarvis(text) {
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
@@ -3026,16 +2998,48 @@
     _unlockMobileAudio();
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
 
-    const mode = _getVoiceMode();
+    const preferred = _getPreferredVoiceMode();
+    const mode = await _resolveVoiceModeAsync();
     const isGeminiMode   = mode === 'gemini_tts';
     const isEdgeMode     = mode.startsWith('edge_');
     const isStreamMode   = mode.startsWith('stream_');
     const isElevenMode   = mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel';
+    const isWebSpeechMode = mode === 'webspeech';
+    const wantsMale = mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan');
+    const isAutoGigi = preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi' || preferred === 'elevenlabs_daniel';
 
-    // ─── PRIMARIO: probar el motor de la voz seleccionada ───
-    if (isGeminiMode && await _speakGeminiTTS(text)) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
+    console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode);
 
-    if (isEdgeMode) {
+    // ─── AUTO GIGI: intentar ElevenLabs primero si el probe dijo OK ───
+    if (isElevenMode) {
+      const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+      if (await _speakElevenLabs(text, v)) {
+        _lastUsedVoiceEngine = 'elevenlabs';
+        return;
+      }
+      console.warn('[Gigi/Voz] ElevenLabs falló en vivo → Dalia automática');
+      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+      if (await _speakEdgeTTS(text, fallbackVoice)) {
+        _lastUsedVoiceEngine = 'edge_tts';
+        return;
+      }
+    }
+
+    // ─── AUTO sin créditos: Dalia directa ───
+    if (isAutoGigi && isEdgeMode) {
+      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+      if (await _speakEdgeTTS(text, fallbackVoice)) {
+        _lastUsedVoiceEngine = 'edge_tts';
+        return;
+      }
+    }
+
+    // ─── PRIMARIO para modos manuales ───
+    if (isGeminiMode) {
+      if (await _speakGeminiTTS(text)) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
+    }
+
+    if (isEdgeMode && !isAutoGigi) {
       let ev = EDGE_TTS_VOICE_DALIA;
       if (mode === 'edge_elvira')        ev = EDGE_TTS_VOICE_ELVIRA;
       else if (mode === 'edge_jorge')    ev = EDGE_TTS_VOICE_JORGE;
@@ -3046,31 +3050,30 @@
     if (isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
     }
 
-    if (isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
-
-    if (isElevenMode) {
-      const k = _getElevenLabsKey();
-      if (k) {
-        const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
-        if (await _speakElevenLabs(text, v)) { _lastUsedVoiceEngine = 'elevenlabs'; return; }
-      }
+    if (isStreamMode) {
+      if (await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
     }
 
-    // ─── FALLBACK: cascade completa en orden descendente ───
-    if (!isGeminiMode && await _speakGeminiTTS(text))    { _lastUsedVoiceEngine = 'gemini_tts'; return; }
-    if (!isEdgeMode) {
-      let ev = EDGE_TTS_VOICE_DALIA;
-      if (mode === 'stream_lucia')          ev = EDGE_TTS_VOICE_ELVIRA;
-      else if (mode === 'elevenlabs_daniel') ev = EDGE_TTS_VOICE_JORGE;
-      if (await _speakEdgeTTS(text, ev))    { _lastUsedVoiceEngine = 'edge_tts'; return; }
+    if (isWebSpeechMode) {
+      if (_speakWebSpeech(text)) { _lastUsedVoiceEngine = 'webspeech'; return; }
     }
-    if (!isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
 
-    const okGoogle = await _speakGoogleTranslate(text);
-    if (okGoogle) { _lastUsedVoiceEngine = 'google_translate'; return; }
-
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) { _lastUsedVoiceEngine = 'webspeech'; return; }
+    // ─── FALLBACK final ───
+    if (await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA)) {
+      _lastUsedVoiceEngine = 'edge_tts';
+      return;
+    }
+    if (await _speakStreamElements(text)) {
+      _lastUsedVoiceEngine = 'streamelements';
+      return;
+    }
+    if (await _speakGoogleTranslate(text)) {
+      _lastUsedVoiceEngine = 'google_translate';
+      return;
+    }
+    if (_speakWebSpeech(text)) {
+      _lastUsedVoiceEngine = 'webspeech';
+    }
   }
 
   function playFuturisticSound(type) {
@@ -5299,15 +5302,32 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (popupMicBtn) popupMicBtn.addEventListener('click', _sharedToggleMic);
     if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', _sharedToggleMic);
 
+    // Chat completo al pedir nombre / keepOpen; minimal solo mientras habla con voz
+    const isMinimal = !_isWaitingForName && !!_speechEnabled && keepOpen !== true;
     if (isMinimal) {
       popup.classList.add('kpk-mbp-minimal');
     } else {
       popup.classList.remove('kpk-mbp-minimal');
     }
 
+    // Mostrar teclado/input si esperamos el nombre o la voz está silenciada
+    if (inputRow && controlsRow) {
+      if (_isWaitingForName || !_speechEnabled) {
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
+      } else if (!isMinimal) {
+        inputRow.style.display = 'none';
+        controlsRow.style.display = 'flex';
+      }
+    }
+
     popup.style.display = 'flex';
     setTimeout(() => {
       popup.classList.add('is-visible');
+      if (_isWaitingForName) {
+        const inp = popup.querySelector('#kpk-mbp-text-input');
+        if (inp) try { inp.focus(); } catch (e) {}
+      }
     }, 50);
 
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);

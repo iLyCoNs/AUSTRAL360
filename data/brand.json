@@ -11,7 +11,7 @@
   "loteFillOnHoverOnly": false,
   "loteHoverColor": "neon-green",
   "aiProvider": "lightning",
-  "voiceMode": "edge_dalia",
+  "voiceMode": "auto_gigi",
   "aiKeys": {
     "openrouter": "",
     "groq": "",
