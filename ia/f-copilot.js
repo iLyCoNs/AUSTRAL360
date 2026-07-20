@@ -808,50 +808,86 @@
     const prompt = _input.value.trim();
     if (!prompt && !_attachedFile) return;
 
-    // Interceptar si estamos esperando el nombre del cliente (Interacción 1 -> 2)
-    if (_isWaitingForName && prompt) {
+    // Palabras clave que NUNCA deben guardarse como nombre propio de persona
+    const NON_NAME_KEYWORDS = /(?:quiero|busco|necesito|deseo|ver|cu[aá]les|d[oó]nde|lote|parcela|precio|terreno|fotos|cu[aá]nto|hay|tienen|mostrar|acerca|dame|me\s+interesa|camino|vista|recorrido|tour|agua|luz|rol)/i;
+
+    // Interceptar si el usuario solicita cambiar o corregir su nombre (ej: "no me llamo quiero", "me llamo sol", "cambiar nombre")
+    if (prompt && /(?:no\s+me\s+llamo|cambiar\s+nombre|mi\s+nombre\s+es|me\s+llamo|soy)\s+/i.test(prompt) && !NON_NAME_KEYWORDS.test(prompt)) {
       let nameClean = prompt.trim();
-      // Filtrar palabras de cortesía y saludos para extraer limpiamente el nombre
-      nameClean = nameClean.replace(/^(?:hola|buenos\s+días|buenas\s+tardes|buenas\s+noches|mucho\s+gusto|qué\s+tal|hola\s+gigi|hola\s+jarvis|gigi|jarvis)[,\s!]*/gui, '');
-      nameClean = nameClean.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen|por\s+acá|acá)[,\s!]*/gui, '');
+      nameClean = nameClean.replace(/^(?:no\s+me\s+llamo\s+\w+\s*|cambiar\s+nombre\s+a\s*|mi\s+nombre\s+es\s*|me\s+llamo\s*|soy\s*|llámame\s*)[,\s!]*/gui, '');
       let nameParts = nameClean.trim().split(/[\s,.]+/).filter(Boolean);
       let name = nameParts[0] || '';
-      if (name.length > 20) name = name.substring(0, 20);
-
-      if (name) {
+      if (name && name.length <= 20 && !NON_NAME_KEYWORDS.test(name)) {
         name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
         _clientName = name;
         localStorage.setItem('kpk_client_name', name);
         _isWaitingForName = false;
-        _speechEnabled = true;
-        _jarvisMode = true;
-        _shouldRestartMic = true;
-
         _input.value = '';
-        _attachedFile = null;
-
-        const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const mode = _getVoiceMode();
         const isGigi = mode.includes('gigi') || mode.includes('dalia');
-        const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
-        const projectName = brandObj.projectName || 'Austral 360';
-
-        const replyText = isGigi
-          ? `¡Mucho gusto, ${_clientName}! Qué alegría saludarte. Te doy la bienvenida a ${projectName}. Tenemos hermosas parcelas con Rol Propio e inversión garantizada. ¿Te muestro un tour panorámico o buscas algún lote en específico?`
-          : `Es un honor saludarle, ${_clientName}. Le doy la bienvenida formal a ${projectName}. Contamos con parcelas aprobadas con Rol Propio SAG. ¿Desea iniciar un tour panorámico o analizar una parcela en particular?`;
-
+        const replyText = isGigi 
+          ? `¡Listo! Disculpa la confusión 😊. Ahora te llamaré ${_clientName}. ¿En qué te puedo ayudar hoy?` 
+          : `Entendido. Nombre actualizado a ${_clientName}, señor. ¿En qué puedo asistile?`;
         appendMessage(prompt, 'user');
-        if (isMobile) {
-          showMobileBubblePopup(replyText, true);
-        } else {
-          appendMessage(replyText, 'system');
-        }
-
-        _unlockMobileAudio();
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) showMobileBubblePopup(replyText, true); else appendMessage(replyText, 'system');
         speakJarvis(replyText);
-        playFuturisticSound('success');
         _updateSuggestiveChips();
         return;
+      }
+    }
+
+    // Interceptar si estamos esperando el nombre del cliente (Interacción 1 -> 2)
+    if (_isWaitingForName && prompt) {
+      // Si la frase contiene verbos/términos comerciales (ej: "Quiero ver una parcela cerca del camino"), NO guardar como nombre
+      if (NON_NAME_KEYWORDS.test(prompt)) {
+        console.log('[Ferrari/IA] Entrada detectada como consulta comercial en lugar de nombre. Desactivando espera de nombre.');
+        _isWaitingForName = false;
+      } else {
+        let nameClean = prompt.trim();
+        nameClean = nameClean.replace(/^(?:hola|buenos\s+días|buenas\s+tardes|buenas\s+noches|mucho\s+gusto|qué\s+tal|hola\s+gigi|hola\s+jarvis|gigi|jarvis)[,\s!]*/gui, '');
+        nameClean = nameClean.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen|por\s+acá|acá)[,\s!]*/gui, '');
+        let nameParts = nameClean.trim().split(/[\s,.]+/).filter(Boolean);
+        let name = nameParts[0] || '';
+        if (name.length > 20) name = name.substring(0, 20);
+
+        if (name && !NON_NAME_KEYWORDS.test(name)) {
+          name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+          _clientName = name;
+          localStorage.setItem('kpk_client_name', name);
+          _isWaitingForName = false;
+          _speechEnabled = true;
+          _jarvisMode = true;
+          _shouldRestartMic = true;
+
+          _input.value = '';
+          _attachedFile = null;
+
+          const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const mode = _getVoiceMode();
+          const isGigi = mode.includes('gigi') || mode.includes('dalia');
+          const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
+          const projectName = brandObj.projectName || 'Austral 360';
+
+          const replyText = isGigi
+            ? `¡Mucho gusto, ${_clientName}! Qué alegría saludarte. Te doy la bienvenida a ${projectName}. Tenemos hermosas parcelas con Rol Propio e inversión garantizada. ¿Te muestro un tour panorámico o buscas algún lote en específico?`
+            : `Es un honor saludarle, ${_clientName}. Le doy la bienvenida formal a ${projectName}. Contamos con parcelas aprobadas con Rol Propio SAG. ¿Desea iniciar un tour panorámico o analizar una parcela en particular?`;
+
+          appendMessage(prompt, 'user');
+          if (isMobile) {
+            showMobileBubblePopup(replyText, true);
+          } else {
+            appendMessage(replyText, 'system');
+          }
+
+          _unlockMobileAudio();
+          speakJarvis(replyText);
+          playFuturisticSound('success');
+          _updateSuggestiveChips();
+          return;
+        } else {
+          _isWaitingForName = false;
+        }
       }
     }
 
@@ -4345,7 +4381,6 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
   // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
   function showMobileBubblePopup(text, keepOpen) {
-    const isMinimal = _speechEnabled && !_isWaitingForName;
     let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (!popup) {
       popup = document.createElement('div');
@@ -4364,20 +4399,16 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         txtEl.innerHTML = text;
       }
       
-      if (isMinimal) {
-        popup.classList.add('kpk-mbp-minimal');
-      } else {
-        popup.classList.remove('kpk-mbp-minimal');
-        const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
-        const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
-        if (inputRow && controlsRow) {
-          if (_isWaitingForName || !_speechEnabled) {
-            inputRow.style.display = 'flex';
-            controlsRow.style.display = 'none';
-          } else {
-            inputRow.style.display = 'none';
-            controlsRow.style.display = 'flex';
-          }
+      popup.classList.remove('kpk-mbp-minimal');
+      const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
+      const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
+      if (inputRow && controlsRow) {
+        if (_isWaitingForName || !_speechEnabled) {
+          inputRow.style.display = 'flex';
+          controlsRow.style.display = 'none';
+        } else {
+          inputRow.style.display = 'none';
+          controlsRow.style.display = 'flex';
         }
       }
       
@@ -4409,6 +4440,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         <div class="kpk-mbp-ai-profile">
           <span class="kpk-mbp-status-dot"></span>
           <span class="kpk-mbp-name">${name}</span>
+          ${_clientName ? `<span class="kpk-mbp-client-badge" id="kpk-mbp-client-badge" style="margin-left: 6px; font-size: 11px; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); padding: 2px 7px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15);" title="Cambiar tu nombre registrado">👤 ${_clientName} ✏️</span>` : ''}
         </div>
         <div class="kpk-mbp-actions">
           <button class="kpk-mbp-btn ${mbpMuteClass}" id="kpk-mbp-mute-btn" title="Silenciar / Activar Voz">${muteIcon}</button>
@@ -4480,6 +4512,27 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
 
     popup.querySelector('#kpk-mbp-close-btn').addEventListener('click', closeMobileBubblePopup);
+    
+    const clientBadge = popup.querySelector('#kpk-mbp-client-badge');
+    if (clientBadge) {
+      clientBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newName = prompt('¿Cómo te gustaría que te llame la IA?', _clientName || '');
+        if (newName && newName.trim()) {
+          let cleanNew = newName.trim().split(/\s+/)[0];
+          cleanNew = cleanNew.charAt(0).toUpperCase() + cleanNew.slice(1).toLowerCase();
+          _clientName = cleanNew;
+          localStorage.setItem('kpk_client_name', cleanNew);
+          _isWaitingForName = false;
+          _updateSuggestiveChips();
+          const modeStr = _getVoiceMode();
+          const isG = modeStr.includes('gigi') || modeStr.includes('dalia');
+          const reply = isG ? `¡Listo! Ahora te llamaré ${_clientName} 😊.` : `Entendido. Nombre actualizado a ${_clientName}.`;
+          showMobileBubblePopup(reply, true);
+          speakJarvis(reply);
+        }
+      });
+    }
     
     popup.querySelector('#kpk-mbp-mute-btn').addEventListener('click', () => {
       const active = !_speechEnabled;
