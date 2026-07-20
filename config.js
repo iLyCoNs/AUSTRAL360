@@ -8,13 +8,13 @@
 
 (function() {
   window.KPK_CONFIG = {
-    configVersion: 9,
+    configVersion: 12,
 
     // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
     aiProvider: 'lightning',
 
-    // Voz predeterminada del copiloto ('elevenlabs_gigi', 'elevenlabs_daniel', 'edge_dalia', etc.)
-    voiceMode: 'elevenlabs_gigi',
+  // Voz: auto_gigi = ElevenLabs Gigi si hay créditos; si no, Dalia automática
+  voiceMode: 'auto_gigi',
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {
@@ -22,7 +22,7 @@
       openrouter: 'kpk-enc-YjU0YzU0MWU4M2M5Y2Q1MzVmY2U4ODVjM2ZkZTFhMDJkMGE0ZTlmOGZjNDFmZTA0ZmU1M2NmZGE0OGI0NzFkMS0xdi1yby1rcw==',
       elevenlabs: 'kpk-enc-YTgzNTE5NjZlZDE0Zjc1ODkwOTIzM2Y4MmY2MjdiYzhmNTRmYjg3MmE0ZDc5ZTY0X2tz',
       groq:       '',
-      gemini:     ''
+      gemini:     'kpk-enc-d0dsNjRDOXhfWGxGaUNHSjFhZndqVkJZYS1wc2pCVUtfdkQxQloxNnQ5bEw2TlI4YkEuUUE='
     },
 
     // ─── ALERTAS DE WHATSAPP (CallMeBot) ───

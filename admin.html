@@ -1145,25 +1145,35 @@
           <div class="efield full">
             <label>Voz Predeterminada del Copiloto</label>
             <select id="brand-ai-voice" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
-              <optgroup label="🆓 StreamElements TTS — Gratis, sin API Key">
-                <option value="stream_gigi">⭐ Gigi &quot;Mia&quot; MX — Mujer latina mexicana (recomendada)</option>
-                <option value="stream_lucia">🆓 Gigi &quot;Lucía&quot; ES — Mujer española</option>
-                <option value="stream_penelope">🆓 Gigi &quot;Penelope&quot; US — Mujer español americano</option>
+              <optgroup label="⭐ Recomendado (automático)">
+                <option value="auto_gigi" selected>⭐ Auto · Gigi Bella si hay créditos ElevenLabs · si no Dalia</option>
               </optgroup>
-              <optgroup label="🏆 ElevenLabs — Premium (requiere API Key)">
-                <option value="elevenlabs_gigi">🏆 ElevenLabs Gigi — Voz Bella, locutora latina premium</option>
-                <option value="elevenlabs_daniel">🏆 ElevenLabs Daniel — Hombre, Jarvis británico premium</option>
+              <optgroup label="🏆 ElevenLabs (requiere créditos)">
+                <option value="elevenlabs_gigi">ElevenLabs Gigi Bella</option>
+                <option value="elevenlabs_daniel">ElevenLabs Daniel</option>
               </optgroup>
-              <optgroup label="🆓 Edge Neural TTS — Gratis (requiere internet)">
-                <option value="edge_dalia">🆓 Edge Neural Dalia — Mujer latina · México</option>
-                <option value="edge_alvaro">🆓 Edge Neural Álvaro — Hombre · España</option>
-                <option value="edge_ryan">🆓 Edge Neural Ryan — Hombre · Inglés británico</option>
+              <optgroup label="🆓 Edge Neural TTS">
+                <option value="edge_dalia">Edge Neural Dalia — Mujer latina MX</option>
+                <option value="edge_elvira">Edge Neural Elvira — Mujer · España</option>
+                <option value="edge_jorge">Edge Neural Jorge — Hombre · México</option>
+                <option value="edge_alvaro">Edge Neural Álvaro — Hombre · España</option>
+                <option value="edge_ryan">Edge Neural Ryan — Hombre · Inglés británico</option>
               </optgroup>
-              <optgroup label="🔄 Navegador">
-                <option value="webspeech">🔄 Web Speech API — Voz local del sistema</option>
+              <optgroup label="Otras">
+                <option value="gemini_tts">Gemini TTS Kore</option>
+                <option value="stream_gigi">Gigi &quot;Mia&quot; MX (StreamElements)</option>
+                <option value="stream_lucia">Gigi &quot;Lucía&quot; ES</option>
+                <option value="stream_penelope">Gigi &quot;Penelope&quot; US</option>
+                <option value="webspeech">Web Speech API</option>
               </optgroup>
             </select>
-            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Las opciones <b>StreamElements</b> son completamente gratuitas y no requieren ninguna clave. Las opciones <b>ElevenLabs</b> son de calidad superior pero requieren créditos.</span>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);"><b>Auto</b> sondea créditos de ElevenLabs: con saldo habla <b>Gigi Bella</b>; sin créditos o key inválida habla <b>Dalia</b> sola. Al recargar créditos o pegar una key nueva, vuelve a Gigi sin tocar nada.</span>
+          </div>
+
+          <div class="efield full">
+            <label>API Key ElevenLabs (voz Gigi Bella)</label>
+            <input type="password" id="brand-elevenlabs-key" placeholder="xi-... pega tu key aquí" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; outline:none; font-family:inherit;" oninput="onElevenLabsKeyChange()">
+            <span class="brand-opt-hint" style="margin-top:4px; display:block; font-size:11px; color:var(--text-3);">Si cambias o recargas créditos, se limpia el caché y el copiloto re-sondea al instante.</span>
           </div>
 
           <div>
@@ -2051,6 +2061,15 @@ function onAIKeyChange() {
   }
 }
 
+function onElevenLabsKeyChange() {
+  const el = document.getElementById('brand-elevenlabs-key');
+  const val = (el && el.value || '').trim();
+  if (val) localStorage.setItem('ferrari_ai_key_elevenlabs', val);
+  else localStorage.removeItem('ferrari_ai_key_elevenlabs');
+  // Forzar re-sondeo de créditos en el copiloto
+  localStorage.removeItem('kpk_el_status_v1');
+}
+
 function toggleAIKeyVisibility() {
   const txtKey = document.getElementById('brand-ai-key');
   const btn = document.getElementById('btn-toggle-ai-key');
@@ -2098,7 +2117,7 @@ function _deobfuscateKey(encKey) {
 }
 
 function _brandDefaults() {
-  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '' }, voiceMode: 'elevenlabs_gigi', contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '', elevenlabs: '' }, voiceMode: 'auto_gigi', contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
 }
 
 function _normalizeBrand(raw) {
@@ -2112,7 +2131,7 @@ function _normalizeBrand(raw) {
   if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
   if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
   if (b.aiProvider == null) b.aiProvider = 'openrouter';
-  if (b.voiceMode == null) b.voiceMode = 'stream_gigi';
+  if (b.voiceMode == null) b.voiceMode = 'auto_gigi';
   if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
@@ -2562,7 +2581,19 @@ async function loadBrandFromGitHub() {
   }
   const voiceEl = document.getElementById('brand-ai-voice');
   if (voiceEl) {
-    voiceEl.value = _brand.voiceMode || 'stream_gigi';
+    voiceEl.value = _brand.voiceMode || 'auto_gigi';
+    voiceEl.onchange = function() {
+      const v = voiceEl.value;
+      localStorage.setItem('kpk_voice_mode', v);
+      localStorage.removeItem('kpk_voice_user_override');
+    };
+  }
+  const elKeyInput = document.getElementById('brand-elevenlabs-key');
+  if (elKeyInput) {
+    const storedEl = localStorage.getItem('ferrari_ai_key_elevenlabs')
+      || (_brand.aiKeys && _brand.aiKeys.elevenlabs)
+      || '';
+    elKeyInput.value = _deobfuscateKey(storedEl || '');
   }
   onAIProviderChange();
 
@@ -2687,12 +2718,13 @@ async function saveBrand() {
       loteFillOnHoverOnly,
       loteHoverColor: _hoverColorSelected,
       aiProvider,
-      voiceMode: document.getElementById('brand-ai-voice') ? document.getElementById('brand-ai-voice').value : 'elevenlabs_gigi',
+      voiceMode: document.getElementById('brand-ai-voice') ? document.getElementById('brand-ai-voice').value : 'auto_gigi',
       aiKeys: {
         openrouter: _obfuscateKey(localStorage.getItem('ferrari_ai_key_openrouter') || ''),
         groq:       _obfuscateKey(localStorage.getItem('ferrari_ai_key_groq') || ''),
         gemini:     _obfuscateKey(localStorage.getItem('ferrari_ai_key_gemini') || ''),
-        lightning:  _obfuscateKey(localStorage.getItem('ferrari_ai_key_lightning') || '')
+        lightning:  _obfuscateKey(localStorage.getItem('ferrari_ai_key_lightning') || ''),
+        elevenlabs: _obfuscateKey(localStorage.getItem('ferrari_ai_key_elevenlabs') || '')
       },
       contact: _readContactFromForm(),
       updatedAt: stamp
@@ -2710,6 +2742,12 @@ async function saveBrand() {
 
     try {
       localStorage.setItem('ferrari360_brand', JSON.stringify(_brand));
+      if (_brand.voiceMode) {
+        localStorage.setItem('kpk_voice_mode', _brand.voiceMode);
+        localStorage.removeItem('kpk_voice_user_override');
+      }
+      // Nueva key / créditos: invalidar sondeo ElevenLabs
+      localStorage.removeItem('kpk_el_status_v1');
     } catch (e) {}
 
     renderBrandGallery();

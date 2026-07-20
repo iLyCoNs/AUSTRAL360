@@ -11,12 +11,13 @@
   "loteFillOnHoverOnly": false,
   "loteHoverColor": "neon-green",
   "aiProvider": "lightning",
-  "voiceMode": "stream_gigi",
+  "voiceMode": "auto_gigi",
   "aiKeys": {
     "openrouter": "",
     "groq": "",
     "gemini": "",
-    "lightning": "kpk-enc-MGNkODM4OTg1YzQzLTBmY2EtOTgzNC05ZmZhLTY0YjAzMDFkLXRpbC1rcw=="
+    "lightning": "kpk-enc-MGNkODM4OTg1YzQzLTBmY2EtOTgzNC05ZmZhLTY0YjAzMDFkLXRpbC1rcw==",
+    "elevenlabs": "kpk-enc-YTgzNTE5NjZlZDE0Zjc1ODkwOTIzM2Y4MmY2MjdiYzhmNTRmYjg3MmE0ZDc5ZTY0X2tz"
   },
   "contact": {
     "whatsapp": "",
@@ -31,5 +32,5 @@
     "waAlertsPhone": "",
     "waAlertsKey": ""
   },
-  "updatedAt": 1784528923867
+  "updatedAt": 1784540583184
 }

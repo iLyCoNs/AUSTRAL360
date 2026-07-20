@@ -138,6 +138,17 @@
       localStorage.setItem(CACHE_KEY, JSON.stringify(_brand));
     } catch (e) { /* quota */ }
 
+    // Sincronizar voz del admin → copiloto (salvo override manual del usuario en el chat)
+    try {
+      if (_brand.voiceMode && localStorage.getItem('kpk_voice_user_override') !== '1') {
+        localStorage.setItem('kpk_voice_mode', _brand.voiceMode);
+      }
+      // Propagar key ElevenLabs del brand si existe
+      if (_brand.aiKeys && _brand.aiKeys.elevenlabs) {
+        localStorage.setItem('ferrari_ai_key_elevenlabs', _brand.aiKeys.elevenlabs);
+      }
+    } catch (e) { /* quota */ }
+
     const { dock, glass, name, logo, logoWrap, title } = _els();
     if (!dock) return;
 

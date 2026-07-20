@@ -50,6 +50,8 @@
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
   let _globalAudio = null;
+  let _activeJarvisAudio = null;
+  let _lastUsedVoiceEngine = '';
 
   async function _unlockMobileAudio() {
     try {
@@ -95,6 +97,13 @@
 
     window.addEventListener('touchstart', _unlockMobileAudio, { passive: true });
     window.addEventListener('click', _unlockMobileAudio, { passive: true });
+
+    // Estilos para el selector de voz
+    const _vsStyle = document.createElement('style');
+    _vsStyle.textContent = `
+      .kpk-voice-opt:hover { background:rgba(255,255,255,0.06) !important; color:#f5f5f7 !important; }
+    `;
+    document.head.appendChild(_vsStyle);
 
     // Precargar módulo de Edge TTS en segundo plano para eliminar latencia del primer habla
     setTimeout(() => {
@@ -180,6 +189,13 @@
             <span class="kpk-ai-header-name">${assistantTitle}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="kpk-ai-action-btn" id="kpk-ai-voice-select" title="Cambiar Voz" style="color: var(--accent); padding: 4px; border: none; background: none; cursor: pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+              </svg>
+            </button>
             <button class="kpk-ai-action-btn ${initialMuteClass}" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: ${initialMuteColor}; padding: 4px; border: none; background: none; cursor: pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="kpk-voice-icon">
                 ${initialMuteIcon}
@@ -188,6 +204,7 @@
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
+        <div class="kpk-voice-panel" id="kpk-voice-panel" style="display:none;background:rgba(18,18,24,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;max-height:260px;overflow-y:auto;"></div>
 
 
         <div class="kpk-ai-log" id="kpk-ai-log">
@@ -218,7 +235,7 @@
               </svg>
             </button>
             <input type="file" id="kpk-ai-file-input" style="display: none;" accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-            <input type="text" class="kpk-ai-input" id="kpk-ai-input" placeholder="${(window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) ? 'Presiona 🎙️ para hablar...' : 'Pregunta algo aquí o adjunta un archivo...'}" autocomplete="off">
+            <input type="text" class="kpk-ai-input" id="kpk-ai-input" placeholder="Escribe tu nombre aquí..." autocomplete="off">
             <button class="kpk-ai-action-btn" id="kpk-ai-mic" title="Grabar voz">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -303,13 +320,123 @@
       }
     });
 
-    // Inicializar modo de voz solo si no hay preferencia guardada
-    if (!localStorage.getItem('kpk_voice_mode')) {
-      const globalElKey = _getElevenLabsKey();
-      const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'stream_gigi';
-      localStorage.setItem('kpk_voice_mode', defaultMode);
+    // Preferencia de voz v3: Auto Gigi (ElevenLabs si hay créditos) → Dalia si no
+    const VOICE_DEFAULT_VER = '3';
+    if (localStorage.getItem('kpk_voice_default_ver') !== VOICE_DEFAULT_VER) {
+      localStorage.setItem('kpk_voice_mode', 'auto_gigi');
+      localStorage.removeItem('kpk_voice_user_override');
+      localStorage.removeItem('kpk_el_status_v1');
+      localStorage.setItem('kpk_voice_default_ver', VOICE_DEFAULT_VER);
+      console.log('[Ferrari/IA] Voz Auto Gigi activada (ElevenLabs si hay créditos → si no Dalia)');
     }
 
+    // Sembrar key ElevenLabs desde config/brand si no está en localStorage
+    if (!localStorage.getItem('ferrari_ai_key_elevenlabs')) {
+      const elKey = _getElevenLabsKey();
+      if (elKey) {
+        const cfg = window.KPK_CONFIG || {};
+        const raw = (cfg.aiKeys && cfg.aiKeys.elevenlabs) || '';
+        if (raw) localStorage.setItem('ferrari_ai_key_elevenlabs', raw);
+      }
+    }
+
+    // Inicializar / sincronizar modo de voz (prioridad: brand → config → auto_gigi)
+    if (localStorage.getItem('kpk_voice_user_override') !== '1') {
+      let brandVoice = null;
+      try {
+        if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+          brandVoice = window.FerrariBrandDock.getBrand().voiceMode || null;
+        }
+      } catch (e) {}
+      const cfgVoice = (window.KPK_CONFIG && window.KPK_CONFIG.voiceMode) || null;
+      const preferred = brandVoice || cfgVoice || 'auto_gigi';
+      localStorage.setItem('kpk_voice_mode', preferred);
+    } else if (!localStorage.getItem('kpk_voice_mode')) {
+      localStorage.setItem('kpk_voice_mode', 'auto_gigi');
+    }
+
+    // Sondear ElevenLabs en segundo plano (créditos) para decidir Gigi vs Dalia
+    setTimeout(() => {
+      _probeElevenLabs(false).then((ok) => {
+        console.log('[Ferrari/IA] ElevenLabs ' + (ok ? '✅ con créditos → Gigi Bella' : '⛔ sin créditos/key → Dalia'));
+      }).catch(() => {});
+    }, 600);
+
+
+    // ─── Selector interactivo de voz ───
+    const VOICE_OPTIONS = [
+      { id: 'auto_gigi',         label: '⭐ Auto · Gigi si hay créditos · si no Dalia', group: 'Recomendado' },
+      { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi (solo si hay créditos)', group: 'ElevenLabs' },
+      { id: 'elevenlabs_daniel', label: '🏆 ElevenLabs Daniel', group: 'ElevenLabs' },
+      { id: 'edge_dalia',        label: 'Dalia Neural MX (gratis)', group: 'Edge TTS' },
+      { id: 'edge_elvira',       label: 'Elvira Neural ES', group: 'Edge TTS' },
+      { id: 'edge_jorge',        label: 'Jorge Neural MX', group: 'Edge TTS' },
+      { id: 'edge_alvaro',       label: 'Álvaro Neural ES', group: 'Edge TTS' },
+      { id: 'edge_ryan',         label: 'Ryan Neural UK', group: 'Edge TTS' },
+      { id: 'gemini_tts',        label: '🤖 Gemini TTS Kore', group: 'Gemini' },
+      { id: 'stream_gigi',       label: 'Gigi Mia MX', group: 'StreamElements' },
+      { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
+      { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
+      { id: 'webspeech',         label: 'Web Speech', group: 'Navegador' }
+    ];
+    const voicePanel = document.getElementById('kpk-voice-panel');
+    const voiceSelectBtn = document.getElementById('kpk-ai-voice-select');
+    function _renderVoicePanel() {
+      if (!voicePanel) return;
+      const current = _getVoiceMode();
+      let html = '';
+      let lastGroup = '';
+      for (const v of VOICE_OPTIONS) {
+        if (v.group !== lastGroup) {
+          html += `<div style="font-size:10px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;${lastGroup?';border-top:1px solid rgba(255,255,255,0.06);margin-top:4px':''}">${v.group}</div>`;
+          lastGroup = v.group;
+        }
+        const active = v.id === current;
+        html += `<div class="kpk-voice-opt" data-voice="${v.id}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:${active?'#00B4FF':'#a1a1a6'};background:${active?'rgba(0,180,255,0.1)':'transparent'}">`;
+        html += `<span style="width:14px;height:14px;border-radius:50%;border:2px solid ${active?'#00B4FF':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${active?'<span style="width:8px;height:8px;border-radius:50%;background:#00B4FF"></span>':''}</span>`;
+        html += `<span>${v.label}</span></div>`;
+      }
+      voicePanel.innerHTML = html;
+      voicePanel.querySelectorAll('.kpk-voice-opt').forEach(el => {
+        el.addEventListener('click', () => {
+          const voice = el.dataset.voice;
+          localStorage.setItem('kpk_voice_mode', voice);
+          localStorage.setItem('kpk_voice_user_override', '1');
+          _lastUsedVoiceEngine = '';
+          _renderVoicePanel();
+          setTimeout(() => { voicePanel.style.display = 'none'; }, 300);
+          if (_speechEnabled) {
+            stopAISpeech();
+            setTimeout(() => speakJarvis('Voz cambiada a ' + _voiceModeLabel(voice)), 200);
+          }
+        });
+      });
+    }
+    // Exponer funcion de refresco para comandos inline (/voces)
+    window._kpkRefreshVoice = function() {
+      const panel = document.getElementById('kpk-voice-panel');
+      if (panel && panel.style.display !== 'none') _renderVoicePanel();
+      // Si /voces cambió kpk_voice_mode, marcar override y probar la voz
+      if (localStorage.getItem('kpk_voice_mode')) {
+        localStorage.setItem('kpk_voice_user_override', '1');
+        _lastUsedVoiceEngine = '';
+      }
+    };
+
+    if (voiceSelectBtn) {
+      voiceSelectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!voicePanel) return;
+        const isOpen = voicePanel.style.display !== 'none';
+        voicePanel.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) _renderVoicePanel();
+      });
+      document.addEventListener('click', (e) => {
+        if (voicePanel && !voicePanel.contains(e.target) && e.target !== voiceSelectBtn && !voiceSelectBtn.contains(e.target)) {
+          voicePanel.style.display = 'none';
+        }
+      });
+    }
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
@@ -324,9 +451,9 @@
       btnVoice.addEventListener('click', () => {
         _speechEnabled = !_speechEnabled;
         if (!_speechEnabled) {
-          // Detener todo audio activo
+          // Detener TODO el audio activo (audio element, speechSynthesis, edge tts, audio context)
+          stopAISpeech();
           if (window.speechSynthesis) window.speechSynthesis.cancel();
-          if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
           btnVoice.style.color = 'rgba(255,255,255,0.25)';
           btnVoice.classList.remove('kpk-mute-glow');
           voiceIcon.innerHTML = `
@@ -391,35 +518,100 @@
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // ── WELCOME TOUR: Gigi saluda al usuario en texto y voz
-    // El saludo hablado se dispara en el primer click para cumplir con la autoplay policy del navegador
-    const brand2 = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
+    // ── ONBOARDING: 1) Saludo  2) Pedir cómo llamarte (inmediato)
+    _startWelcomeOnboarding(isMobile);
+  }
+
+  let _hasGreeted = false;
+  let _welcomeSpoken = false;
+
+  function _getAssistantMeta() {
+    const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
       ? window.FerrariBrandDock.getBrand() : {};
-    const projectName2 = brand2.projectName || 'Austral 360';
-    const mode2 = _getVoiceMode();
-    const assistantShortName2 = (mode2.includes('gigi') || mode2.includes('dalia') || mode2.includes('stream')) ? 'Gigi' : 'Jarvis';
+    const mode = _getVoiceMode();
+    const isGigi = mode.includes('gigi') || mode.includes('dalia') || mode.includes('stream') || mode === 'auto_gigi';
+    return {
+      projectName: brand.projectName || 'Austral 360',
+      assistantName: isGigi ? 'Gigi' : 'Jarvis',
+      isGigi
+    };
+  }
 
-    const welcomeGreeting = _clientName
-      ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName2}. Soy ${assistantShortName2}. ¿Hacemos el tour o buscas un lote en específico?`
-      : `¡Hola! Bienvenido a ${projectName2}. Soy ${assistantShortName2}, tu asesora virtual. ¿En qué puedo ayudarte hoy?`;
+  /** Dos primeras interacciones: saludo + pedir nombre (o bienvenida de vuelta) */
+  function _buildWelcomePack() {
+    const { projectName, assistantName, isGigi } = _getAssistantMeta();
 
-    appendMessage(welcomeGreeting, 'system');
+    if (_clientName) {
+      const greet = isGigi
+        ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantName} 😊`
+        : `Bienvenido de nuevo, ${_clientName}. Soy ${assistantName}.`;
+      const follow = isGigi
+        ? `¿Hacemos el tour panorámico o buscas un lote en específico?`
+        : `¿Desea un tour panorámico o analizar un lote en particular?`;
+      return {
+        messages: [greet, follow],
+        speakText: `${greet} ${follow}`,
+        waitingName: false
+      };
+    }
+
+    const greet = isGigi
+      ? `¡Hola! Bienvenido a ${projectName}. Soy ${assistantName}, tu asesora virtual ✨`
+      : `Bienvenido a ${projectName}. Soy ${assistantName}, su asesor inmobiliario.`;
+    const askName = isGigi
+      ? `Antes de mostrarte los lotes más lindos… ¿cómo te gustaría que te llame?`
+      : `Para asistirle mejor: ¿cómo desea que lo llame?`;
+    return {
+      messages: [greet, askName],
+      speakText: `${greet} ${askName}`,
+      waitingName: true
+    };
+  }
+
+  function _startWelcomeOnboarding(isMobile) {
+    const pack = _buildWelcomePack();
+    _isWaitingForName = pack.waitingName;
+    _hasGreeted = true;
+
+    pack.messages.forEach((msg) => appendMessage(msg, 'system'));
+
+    if (_input) {
+      _input.placeholder = pack.waitingName
+        ? 'Escribe tu nombre aquí...'
+        : 'Pregunta algo aquí o adjunta un archivo...';
+      if (pack.waitingName) {
+        setTimeout(() => { try { _input.focus(); } catch (e) {} }, 400);
+      }
+    }
+
     if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
       _panel.classList.add('is-open');
     }
 
-    function _playWelcome(e) {
+    // En móvil: mostrar burbuja con el pedido de nombre (segunda interacción)
+    if (isMobile && pack.waitingName) {
+      showMobileBubblePopup(pack.messages.join('<br><br>'), true);
+    }
+
+    function _playWelcome() {
       window.removeEventListener('click', _playWelcome);
       window.removeEventListener('touchstart', _playWelcome);
       _unlockMobileAudio();
-      speakJarvis(welcomeGreeting);
+      _welcomeSpoken = true;
+      speakJarvis(pack.speakText);
     }
     window.addEventListener('click', _playWelcome, { once: true, passive: true });
     window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
   }
 
-
-  let _hasGreeted = false;
+  /** Re-hablar el onboarding si abren el panel y aún no sonó (desktop) */
+  function _triggerWelcomeGreeting() {
+    if (_welcomeSpoken) return;
+    const pack = _buildWelcomePack();
+    _welcomeSpoken = true;
+    _unlockMobileAudio();
+    speakJarvis(pack.speakText);
+  }
 
   function togglePanel() {
     const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -428,13 +620,18 @@
       if (popup && popup.classList.contains('is-visible') && popup.style.display !== 'none') {
         closeMobileBubblePopup(true);
       } else {
-        const mode = _getVoiceMode();
-        const isGigi = mode.includes('gigi') || mode.includes('dalia');
-        const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
-        const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
-        const projectName = brand.projectName || 'Austral 360';
-        const txt = _clientName ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta. Soy ${assistantShortName}. ¿En qué te puedo ayudar hoy?` : `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+        const pack = _buildWelcomePack();
+        const txt = pack.waitingName
+          ? pack.messages.join('<br><br>')
+          : (_clientName
+            ? pack.messages.join(' ')
+            : pack.speakText);
         showMobileBubblePopup(txt, true);
+        if (!_welcomeSpoken) {
+          _welcomeSpoken = true;
+          _unlockMobileAudio();
+          speakJarvis(pack.speakText);
+        }
       }
       return;
     }
@@ -443,7 +640,7 @@
     if (isOpen) {
       if (_input) _input.focus();
       playFuturisticSound('start');
-      if (!_hasGreeted) {
+      if (!_welcomeSpoken) {
         _triggerWelcomeGreeting();
       }
     } else {
@@ -789,58 +986,75 @@
       }
     }
 
-    // Interceptar si estamos esperando el nombre del cliente (Interacción 1 -> 2)
+    // Interceptar si estamos esperando el nombre del cliente (Interacción 2)
     if (_isWaitingForName && prompt) {
-      // Si la frase contiene verbos/términos comerciales (ej: "Quiero ver una parcela cerca del camino"), NO guardar como nombre
+      const modeWait = _getVoiceMode();
+      const isGigiWait = modeWait.includes('gigi') || modeWait.includes('dalia');
+      const isMobileWait = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      // Si manda consulta comercial sin nombre: pedir nombre otra vez (no saltar el onboarding)
       if (NON_NAME_KEYWORDS.test(prompt)) {
-        console.log('[Ferrari/IA] Entrada detectada como consulta comercial en lugar de nombre. Desactivando espera de nombre.');
-        _isWaitingForName = false;
-      } else {
-        let nameClean = prompt.trim();
-        nameClean = nameClean.replace(/^(?:hola|buenos\s+días|buenas\s+tardes|buenas\s+noches|mucho\s+gusto|qué\s+tal|hola\s+gigi|hola\s+jarvis|gigi|jarvis)[,\s!]*/gui, '');
-        nameClean = nameClean.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen|por\s+acá|acá)[,\s!]*/gui, '');
-        let nameParts = nameClean.trim().split(/[\s,.]+/).filter(Boolean);
-        let name = nameParts[0] || '';
-        if (name.length > 20) name = name.substring(0, 20);
-
-        if (name && !NON_NAME_KEYWORDS.test(name)) {
-          name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-          _clientName = name;
-          localStorage.setItem('kpk_client_name', name);
-          _isWaitingForName = false;
-          _speechEnabled = true;
-          _jarvisMode = true;
-          _shouldRestartMic = true;
-
-          _input.value = '';
-          _attachedFile = null;
-
-          const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          const mode = _getVoiceMode();
-          const isGigi = mode.includes('gigi') || mode.includes('dalia');
-          const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
-          const projectName = brandObj.projectName || 'Austral 360';
-
-          const replyText = isGigi
-            ? `¡Mucho gusto, ${_clientName}! Qué alegría saludarte. Te doy la bienvenida a ${projectName}. Tenemos hermosas parcelas con Rol Propio e inversión garantizada. ¿Te muestro un tour panorámico o buscas algún lote en específico?`
-            : `Es un honor saludarle, ${_clientName}. Le doy la bienvenida formal a ${projectName}. Contamos con parcelas aprobadas con Rol Propio SAG. ¿Desea iniciar un tour panorámico o analizar una parcela en particular?`;
-
-          appendMessage(prompt, 'user');
-          if (isMobile) {
-            showMobileBubblePopup(replyText, true);
-          } else {
-            appendMessage(replyText, 'system');
-          }
-
-          _unlockMobileAudio();
-          speakJarvis(replyText);
-          playFuturisticSound('success');
-          _updateSuggestiveChips();
-          return;
-        } else {
-          _isWaitingForName = false;
-        }
+        _input.value = '';
+        appendMessage(prompt, 'user');
+        const nudge = isGigiWait
+          ? `¡Me encanta tu ganas! 😊 Antes de eso, ¿cómo te gustaría que te llame? Solo tu nombre y seguimos.`
+          : `Entendido. Antes, indíqueme cómo desea que lo llame.`;
+        if (isMobileWait) showMobileBubblePopup(nudge, true); else appendMessage(nudge, 'system');
+        speakJarvis(nudge);
+        return;
       }
+
+      let nameClean = prompt.trim();
+      nameClean = nameClean.replace(/^(?:hola|buenos\s+días|buenas\s+tardes|buenas\s+noches|mucho\s+gusto|qué\s+tal|hola\s+gigi|hola\s+jarvis|gigi|jarvis)[,\s!]*/gui, '');
+      nameClean = nameClean.replace(/^(?:me\s+llamo|mi\s+nombre\s+es|soy|llámame|puedes\s+llamarme|me\s+dicen|por\s+acá|acá|dime)[,\s!]*/gui, '');
+      let nameParts = nameClean.trim().split(/[\s,.]+/).filter(Boolean);
+      let name = nameParts[0] || '';
+      if (name.length > 20) name = name.substring(0, 20);
+
+      if (name && !NON_NAME_KEYWORDS.test(name) && !/^\d+$/.test(name)) {
+        name = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        _clientName = name;
+        localStorage.setItem('kpk_client_name', name);
+        _isWaitingForName = false;
+        _speechEnabled = true;
+        _jarvisMode = true;
+        _shouldRestartMic = true;
+
+        _input.value = '';
+        _attachedFile = null;
+
+        const brandObj = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
+        const projectName = brandObj.projectName || 'Austral 360';
+
+        const replyText = isGigiWait
+          ? `¡Mucho gusto, ${_clientName}! Qué lindo nombre 😊. Ya quedamos. Te doy la bienvenida a ${projectName}: parcelas con Rol Propio y vistas de ensueño. ¿Te muestro el tour o prefieres un lote en específico?`
+          : `Es un honor, ${_clientName}. Bienvenido a ${projectName}. Contamos con parcelas de Rol Propio SAG. ¿Desea un tour panorámico o analizar un lote?`;
+
+        appendMessage(prompt, 'user');
+        if (isMobileWait) {
+          showMobileBubblePopup(replyText, true);
+        } else {
+          appendMessage(replyText, 'system');
+        }
+
+        if (_input) _input.placeholder = 'Pregunta algo aquí o adjunta un archivo...';
+
+        _unlockMobileAudio();
+        speakJarvis(replyText);
+        playFuturisticSound('success');
+        _updateSuggestiveChips();
+        return;
+      }
+
+      // Nombre inválido: insistir
+      _input.value = '';
+      appendMessage(prompt, 'user');
+      const retry = isGigiWait
+        ? `Uy, no te escuché bien 😊. ¿Me dices solo tu nombre o cómo quieres que te diga?`
+        : `No pude registrar el nombre. ¿Cómo desea que lo llame?`;
+      if (isMobileWait) showMobileBubblePopup(retry, true); else appendMessage(retry, 'system');
+      speakJarvis(retry);
+      return;
     }
 
     // Agregar mensaje de usuario al log con enlace local temporal para descargas
@@ -915,6 +1129,86 @@
         appendMessage(diagMsg, 'system');
         playFuturisticSound('success');
       }, 500);
+      return;
+    }
+
+    // Comando /voz — muestra el modelo de voz activo del copiloto
+    if (lowerPrompt === '/voz') {
+      const typingIndicator = showTypingIndicator();
+      _bubble.classList.add('is-loading');
+
+      _probeElevenLabs(true).then((elOk) => {
+        typingIndicator.remove();
+        _bubble.classList.remove('is-loading');
+
+        const preferred = _getPreferredVoiceMode();
+        const mode = _getVoiceMode();
+        const lastEngine = _lastUsedVoiceEngine || 'aún no usado';
+        const engineLabels = {
+          gemini_tts: 'Gemini TTS — Kore',
+          streamelements: 'StreamElements',
+          google_translate: 'Google Translate TTS',
+          edge_tts: 'Edge TTS Neural (Dalia)',
+          webspeech: 'Web Speech API',
+          elevenlabs: 'ElevenLabs Gigi Bella'
+        };
+        const remaining = _elStatus && _elStatus.remaining != null ? _elStatus.remaining : '?';
+
+        const vozMsg = `🎙️ <b>Modelo de Voz del Copiloto</b><br><br>` +
+          `• <b>Preferencia:</b> <code>${preferred}</code> (${_voiceModeLabel(preferred)})<br>` +
+          `• <b>Efectiva ahora:</b> <code>${mode}</code> (${_voiceModeLabel(mode)})<br>` +
+          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida → Dalia'}<br>` +
+          `• <b>Último motor:</b> <code>${engineLabels[lastEngine] || lastEngine}</code><br>` +
+          `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br><br>` +
+          `<i>Auto Gigi: con créditos habla Bella; sin créditos habla Dalia sola.</i>`;
+
+        appendMessage(vozMsg, 'system');
+        playFuturisticSound('success');
+      });
+      return;
+    }
+
+    // Comando /voces — selector interactivo de voces
+    if (lowerPrompt === '/voces') {
+      const current = _getVoiceMode();
+      const VOICE_OPTIONS_LOCAL = [
+        { id: 'auto_gigi',         label: '⭐ Auto · Gigi si hay créditos · si no Dalia', group: 'Recomendado' },
+        { id: 'elevenlabs_gigi',   label: '🏆 Gigi Bella (ElevenLabs)', group: 'ElevenLabs' },
+        { id: 'elevenlabs_daniel', label: '🏆 Daniel (ElevenLabs)', group: 'ElevenLabs' },
+        { id: 'edge_dalia',        label: 'Dalia MX (Edge · gratis)', group: 'Edge TTS' },
+        { id: 'edge_elvira',       label: 'Elvira ES (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_jorge',        label: 'Jorge MX (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_alvaro',       label: 'Álvaro ES (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_ryan',         label: 'Ryan UK (Edge TTS)', group: 'Edge TTS' },
+        { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
+        { id: 'stream_gigi',       label: 'Gigi Mia MX', group: 'StreamElements' },
+        { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
+        { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
+        { id: 'webspeech',         label: 'Web Speech (Navegador)', group: 'Navegador' }
+      ];
+      let msg = '🎙️ <b>Selecciona una voz:</b><br><br><div style="display:flex;flex-direction:column;gap:6px;">';
+      for (const v of VOICE_OPTIONS_LOCAL) {
+        const isActive = v.id === current;
+        msg += `<div onclick="(function(){localStorage.setItem('kpk_voice_mode','${v.id}');localStorage.setItem('kpk_voice_user_override','1');window._kpkRefreshVoice?.();})()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid ${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'};background:${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'};transition:all 0.15s;" onmouseenter="this.style.borderColor='rgba(0,180,255,0.3)';this.style.background='rgba(0,180,255,0.05)'" onmouseleave="this.style.borderColor='${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'}';this.style.background='${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'}'">`;
+        msg += `<span style="width:16px;height:16px;border-radius:50%;border:2px solid ${isActive?'var(--accent)':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${isActive?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>':''}</span>`;
+        msg += `<span style="font-size:13px;font-weight:${isActive?'700':'500'};color:${isActive?'var(--accent)':'var(--text)'};">${v.label}</span>`;
+        if (isActive) msg += `<span style="margin-left:auto;font-size:10px;color:var(--accent);font-weight:700;">ACTIVA</span>`;
+        msg += `</div>`;
+      }
+      msg += `</div><br><i>Haz clic en una voz para cambiarla al instante.</i>`;
+      appendMessage(msg, 'system');
+      // Exponer funcion de refresco para los onclick
+      window._kpkRefreshVoice = () => {
+        localStorage.setItem('kpk_voice_user_override', '1');
+        _lastUsedVoiceEngine = '';
+        _renderVoicePanel?.();
+        const mode = _getVoiceMode();
+        const greeting = 'Voz cambiada a ' + _voiceModeLabel(mode);
+        if (_speechEnabled) {
+          stopAISpeech();
+          setTimeout(() => speakJarvis(greeting), 150);
+        }
+      };
       return;
     }
 
@@ -2009,12 +2303,14 @@
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  MOTOR DE VOZ GIGI — CASCADA 4 NIVELES
+  //  MOTOR DE VOZ GIGI — CASCADA 6 NIVELES
   //
-  //  Nivel 1: StreamElements TTS  (gratis, sin key, voz latina AWS Polly)
-  //  Nivel 2: ElevenLabs          (clave opcional en admin, calidad premium)
-  //  Nivel 3: Web Speech API      (navegador, instantáneo, sin red)
-  //  Nivel 4: Microsoft Edge TTS  (fallback adicional va esm.sh)
+  //  Tier 0: Gemini TTS           (Google AI API, si hay key configurada)
+  //  Tier 1: Edge TTS Neural      (Microsoft, vía esm.sh, gratis)
+  //  Tier 2: StreamElements TTS   (AWS Polly, sin key, gratis)
+  //  Tier 3: Google Translate TTS (gratis, funciona siempre)
+  //  Tier 4: Web Speech API       (navegador, instantáneo, sin red)
+  //  Tier 5: ElevenLabs           (clave opcional en admin, calidad premium)
   // ══════════════════════════════════════════════════════════════════════════
 
   let _speechEnabled = true;
@@ -2037,6 +2333,7 @@
 
         try { _globalAudio.pause(); } catch(e) {}
         _globalAudio.src = url;
+        _globalAudio.load();
         _activeJarvisAudio = _globalAudio;
 
         _shouldRestartMic = false;
@@ -2057,7 +2354,7 @@
         const p = _globalAudio.play();
         if (p && p.catch) {
           p.catch(err => {
-            console.warn('[Gigi/Voz] _globalAudio.play() bloqueado:', err);
+            console.warn('[Gigi/Voz] _globalAudio.play() bloqueado:', err.name, err.message);
             setAISpeaking(false);
             resolve(false);
           });
@@ -2077,10 +2374,10 @@
 
       const mode = _getVoiceMode();
       let voice;
-      if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';
-      else if (mode === 'stream_penelope')                           voice = 'Penelope';
-      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';
-      else                                                           voice = 'Mia';      // MX femenina (Gigi por defecto)
+      if (mode === 'stream_lucia' || mode === 'edge_alvaro' || mode === 'edge_elvira') voice = 'Lucia';
+      else if (mode === 'stream_penelope')                                              voice = 'Penelope';
+      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan' || mode === 'edge_jorge') voice = 'Miguel';
+      else                                                                              voice = 'Mia';      // MX femenina (Gigi por defecto)
 
       const MAX = 460;
       const fragments = [];
@@ -2154,9 +2451,97 @@
   const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
 
   function _getElevenLabsKey() {
-    // Solo utilizar la clave ingresada dinámicamente por el usuario desde admin.html
-    let key = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
-    return _deobfuscateKey(key);
+    // Orden: localStorage → brand.json → config.js
+    let brandKeys = null;
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
+      }
+    } catch (e) {}
+    const cfg = window.KPK_CONFIG || {};
+    const raw = localStorage.getItem('ferrari_ai_key_elevenlabs')
+      || (brandKeys && brandKeys.elevenlabs)
+      || (cfg.aiKeys && cfg.aiKeys.elevenlabs)
+      || '';
+    return _deobfuscateKey(raw);
+  }
+
+  // ─── Auto Gigi/Dalia: sondea créditos ElevenLabs y elige motor ─────────
+  let _elStatus = null; // { ok, keyFp, checkedAt, remaining }
+  const EL_STATUS_KEY = 'kpk_el_status_v1';
+  const EL_STATUS_TTL_MS = 5 * 60 * 1000; // re-chequear cada 5 min (o al cambiar key)
+
+  function _elevenLabsKeyFp(key) {
+    if (!key) return 'none';
+    return String(key.length) + ':' + key.slice(0, 4) + key.slice(-6);
+  }
+
+  function _invalidateElevenLabsStatus() {
+    _elStatus = null;
+    try { localStorage.removeItem(EL_STATUS_KEY); } catch (e) {}
+  }
+
+  function _setElevenLabsStatus(ok, key, remaining) {
+    _elStatus = {
+      ok: !!ok,
+      keyFp: _elevenLabsKeyFp(key),
+      checkedAt: Date.now(),
+      remaining: remaining == null ? null : remaining
+    };
+    try { localStorage.setItem(EL_STATUS_KEY, JSON.stringify(_elStatus)); } catch (e) {}
+  }
+
+  /** true si la key responde y quedan caracteres suficientes */
+  async function _probeElevenLabs(force) {
+    const key = _getElevenLabsKey();
+    if (!key) {
+      _setElevenLabsStatus(false, '', 0);
+      return false;
+    }
+    const fp = _elevenLabsKeyFp(key);
+
+    if (!force) {
+      if (_elStatus && _elStatus.keyFp === fp && (Date.now() - _elStatus.checkedAt) < EL_STATUS_TTL_MS) {
+        return !!_elStatus.ok;
+      }
+      try {
+        const raw = localStorage.getItem(EL_STATUS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.keyFp === fp && (Date.now() - parsed.checkedAt) < EL_STATUS_TTL_MS) {
+            _elStatus = parsed;
+            return !!parsed.ok;
+          }
+        }
+      } catch (e) {}
+    }
+
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+        method: 'GET',
+        headers: { 'xi-api-key': key, 'Accept': 'application/json' }
+      });
+      if (!res.ok) {
+        console.warn('[Gigi/Voz] ElevenLabs subscription HTTP', res.status);
+        _setElevenLabsStatus(false, key, 0);
+        return false;
+      }
+      const data = await res.json();
+      const used = Number(data.character_count || 0);
+      const limit = Number(data.character_limit || 0);
+      const remaining = limit > 0 ? Math.max(0, limit - used) : 0;
+      const status = String(data.status || 'active').toLowerCase();
+      const statusOk = status === 'active' || status === 'trialing' || status === 'free';
+      // Pedimos al menos ~80 caracteres para un saludo corto
+      const ok = statusOk && (limit === 0 || remaining >= 80);
+      console.log(`[Gigi/Voz] ElevenLabs créditos restantes: ${remaining}/${limit || '?'} → ${ok ? 'Gigi Bella' : 'Dalia'}`);
+      _setElevenLabsStatus(ok, key, remaining);
+      return ok;
+    } catch (e) {
+      console.warn('[Gigi/Voz] ElevenLabs probe error:', e.message);
+      _setElevenLabsStatus(false, key, 0);
+      return false;
+    }
   }
 
   async function _speakElevenLabs(text, voiceId) {
@@ -2175,54 +2560,113 @@
         },
         body: JSON.stringify({
           text: clean,
-          model_id: 'eleven_flash_v2_5',  // Baja latencia, multilingüe
+          model_id: 'eleven_flash_v2_5',
           voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true }
         })
       });
       if (!res.ok) {
-        console.warn('[Gigi/Voz] ⚠️ Respuesta ElevenLabs no OK (' + res.status + '). Activando respaldo de voz Dalia Neural...');
+        console.warn('[Gigi/Voz] ⚠️ ElevenLabs HTTP ' + res.status + ' → Dalia');
+        // 401/402/429 = key inválida o sin créditos → invalidar caché
+        if (res.status === 401 || res.status === 402 || res.status === 403 || res.status === 429) {
+          _setElevenLabsStatus(false, key, 0);
+        } else {
+          _invalidateElevenLabsStatus();
+        }
         return false;
       }
       const blob = await res.blob();
+      _setElevenLabsStatus(true, key, _elStatus && _elStatus.remaining);
       return _playAudioBlob(blob, text);
-    } catch(e) {
+    } catch (e) {
       console.warn('[Gigi/Voz] ElevenLabs no disponible:', e.message);
+      _invalidateElevenLabsStatus();
       return false;
     }
   }
 
   // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
-  const EDGE_TTS_VOICE_DALIA = 'es-MX-DaliaNeural';   // Vendedora latina (gratis)
-  const EDGE_TTS_VOICE_ES    = 'es-ES-AlvaroNeural';   // Álvaro (España)
-  const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
+  const EDGE_TTS_VOICE_DALIA  = 'es-MX-DaliaNeural';
+  const EDGE_TTS_VOICE_ELVIRA = 'es-ES-ElviraNeural';
+  const EDGE_TTS_VOICE_JORGE  = 'es-MX-JorgeNeural';
+  const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';
+  const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';
 
-  function _getVoiceMode() {
+  /** Preferencia cruda (admin / usuario) sin resolver Auto Gigi */
+  function _getPreferredVoiceMode() {
+    if (localStorage.getItem('kpk_voice_user_override') === '1') {
+      const userMode = localStorage.getItem('kpk_voice_mode');
+      if (userMode) return userMode;
+    }
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
-        if (brandMode) return brandMode;
+        if (brandMode) {
+          if (localStorage.getItem('kpk_voice_mode') !== brandMode) {
+            localStorage.setItem('kpk_voice_mode', brandMode);
+          }
+          return brandMode;
+        }
       }
-    } catch(e) {}
-
-    let mode = localStorage.getItem('kpk_voice_mode');
-    if (mode) return mode;
-
+    } catch (e) {}
+    const stored = localStorage.getItem('kpk_voice_mode');
+    if (stored) return stored;
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
+    return 'auto_gigi';
+  }
 
-    return 'stream_gigi'; // Gigi (Mia MX) por defecto global
+  /**
+   * Modo efectivo sincrónico (UI / personalidad).
+   * auto_gigi / elevenlabs_* → Gigi si el último probe dijo OK, si no Dalia.
+   */
+  function _getVoiceMode() {
+    const preferred = _getPreferredVoiceMode();
+
+    const wantsGigiAuto = preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi';
+    const wantsDaniel = preferred === 'elevenlabs_daniel';
+
+    if (wantsGigiAuto || wantsDaniel) {
+      const key = _getElevenLabsKey();
+      if (!key) return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      if (_elStatus && _elStatus.keyFp === _elevenLabsKeyFp(key)) {
+        if (_elStatus.ok) return wantsDaniel ? 'elevenlabs_daniel' : 'elevenlabs_gigi';
+        return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      }
+      // Aún no sondeado: Dalia segura hasta que el probe confirme créditos
+      return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+    }
+
+    return preferred;
+  }
+
+  /** Resuelve Gigi vs Dalia consultando créditos justo antes de hablar */
+  async function _resolveVoiceModeAsync() {
+    const preferred = _getPreferredVoiceMode();
+    if (preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi') {
+      const ok = await _probeElevenLabs(false);
+      return ok ? 'elevenlabs_gigi' : 'edge_dalia';
+    }
+    if (preferred === 'elevenlabs_daniel') {
+      const ok = await _probeElevenLabs(false);
+      return ok ? 'elevenlabs_daniel' : 'edge_jorge';
+    }
+    return preferred;
   }
 
   function _voiceModeLabel(mode) {
-    switch(mode) {
+    switch (mode) {
+      case 'auto_gigi':         return 'Auto · Gigi Bella si hay créditos · si no Dalia';
       case 'stream_gigi':       return 'Gigi "Mia" MX (StreamElements • gratis)';
       case 'stream_lucia':      return 'Gigi "Lucía" ES (StreamElements • gratis)';
       case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
       case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
       case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
-      case 'edge_dalia':        return 'Dalia Neural (Edge TTS • gratis)';
-      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • gratis)';
-      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • gratis)';
+      case 'edge_dalia':        return 'Dalia Neural MX (Edge TTS • gratis)';
+      case 'edge_elvira':       return 'Elvira Neural (Edge TTS • humana ES)';
+      case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
+      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
+      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • British)';
+      case 'gemini_tts':        return 'Gemini TTS Kore (Google AI • voz humana premium)';
       case 'webspeech':         return 'Voz del navegador (estándar)';
       default:                  return 'Voz activa';
     }
@@ -2281,10 +2725,21 @@
       if (!voice) {
         const mode = _getVoiceMode();
         if (mode === 'edge_dalia') voice = EDGE_TTS_VOICE_DALIA;
+        else if (mode === 'edge_elvira') voice = EDGE_TTS_VOICE_ELVIRA;
+        else if (mode === 'edge_jorge') voice = EDGE_TTS_VOICE_JORGE;
         else if (mode === 'edge_alvaro') voice = EDGE_TTS_VOICE_ES;
-        else voice = EDGE_TTS_VOICE_RYAN;
+        else if (mode === 'edge_ryan') voice = EDGE_TTS_VOICE_RYAN;
+        else voice = EDGE_TTS_VOICE_DALIA;
       }
-      for await (const chunk of tts.synthesizeStream(clean, voice)) {
+      // Maquillaje vendedora: Dalia más alegre y viva (coqueteo comercial en la prosodia)
+      const isDalia = voice === EDGE_TTS_VOICE_DALIA;
+      const isFemale = isDalia || voice === EDGE_TTS_VOICE_ELVIRA;
+      const edgeOpts = {
+        rate: isDalia ? '+10%' : '+3%',
+        pitch: isDalia ? '+4Hz' : (isFemale ? '+2Hz' : '+0Hz'),
+        volume: isDalia ? '+2%' : '+0%'
+      };
+      for await (const chunk of tts.synthesizeStream(clean, voice, edgeOpts)) {
         chunks.push(chunk);
       }
       if (!chunks.length) return false;
@@ -2442,7 +2897,90 @@
     }
   }
 
-  // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
+  // ─── Gemini TTS (Google AI API, Tier 0 — requiere API key) ────────────
+  function _getGeminiKey() {
+    const cfg = window.KPK_CONFIG || {};
+    let brandKeys = null;
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
+      }
+    } catch(e) {}
+    const raw = localStorage.getItem('ferrari_ai_key_gemini')
+      || (brandKeys && brandKeys.gemini)
+      || (cfg.aiKeys && cfg.aiKeys.gemini)
+      || '';
+    return _deobfuscateKey(raw);
+  }
+
+  function _pcmToWav(pcmData, sampleRate) {
+    const numChannels = 1, bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    const blockAlign = numChannels * bitsPerSample / 8;
+    const dataSize = pcmData.length;
+    const buf = new ArrayBuffer(44 + dataSize);
+    const v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true);
+    w(8, 'WAVE'); w(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+    v.setUint16(22, numChannels, true); v.setUint32(24, sampleRate, true);
+    v.setUint32(28, byteRate, true); v.setUint16(32, blockAlign, true);
+    v.setUint16(34, bitsPerSample, true); w(36, 'data');
+    v.setUint32(40, dataSize, true);
+    new Uint8Array(buf, 44).set(pcmData);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  async function _speakGeminiTTS(text) {
+    const key = _getGeminiKey();
+    if (!key) return false;
+    const clean = _cleanTextForTTS(text);
+    if (!clean) return false;
+    try {
+      const model = 'gemini-3.1-flash-tts-preview';
+      const body = JSON.stringify({
+        contents: [{ parts: [{ text: clean }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' }
+            }
+          }
+        }
+      });
+
+      // Try AI Studio first (AQ/AIza keys), fallback to Agent Platform Express (Vertex AI)
+      let res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body }
+      );
+      if (!res.ok) {
+        res = await fetch(
+          `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+        );
+      }
+      if (!res.ok) return false;
+      const data = await res.json();
+      const part = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      if (!part?.data) return false;
+      const binary = atob(part.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const mime = part.mimeType || 'audio/pcm';
+      const blob = (mime === 'audio/pcm' || mime === 'audio/L16')
+        ? _pcmToWav(bytes, 24000)
+        : new Blob([bytes], { type: mime });
+      return _playAudioBlob(blob, text);
+    } catch(e) {
+      console.warn('[Gigi/GeminiTTS] Error:', e.message);
+      return false;
+    }
+  }
+
+  // ─── speakJarvis: Auto Gigi (créditos) → Dalia; respeta modo manual ───
   async function speakJarvis(text) {
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
@@ -2454,33 +2992,79 @@
     _unlockMobileAudio();
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
 
-    const mode = _getVoiceMode();
+    const preferred = _getPreferredVoiceMode();
+    const mode = await _resolveVoiceModeAsync();
+    const isGeminiMode   = mode === 'gemini_tts';
+    const isEdgeMode     = mode.startsWith('edge_');
+    const isStreamMode   = mode.startsWith('stream_');
+    const isElevenMode   = mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel';
+    const isWebSpeechMode = mode === 'webspeech';
+    const wantsMale = mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan');
+    const isAutoGigi = preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi' || preferred === 'elevenlabs_daniel';
 
-    // ─── TIER 1: StreamElements AWS Polly Mia (Voz latina neuronal, gratis, sin API key) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) return;
+    console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode);
 
-    // ─── TIER 2: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
-    const okGoogle = await _speakGoogleTranslate(text);
-    if (okGoogle) return;
+    // ─── AUTO GIGI: intentar ElevenLabs primero si el probe dijo OK ───
+    if (isElevenMode) {
+      const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+      if (await _speakElevenLabs(text, v)) {
+        _lastUsedVoiceEngine = 'elevenlabs';
+        return;
+      }
+      console.warn('[Gigi/Voz] ElevenLabs falló en vivo → Dalia automática');
+      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+      if (await _speakEdgeTTS(text, fallbackVoice)) {
+        _lastUsedVoiceEngine = 'edge_tts';
+        return;
+      }
+    }
 
-    // ─── TIER 3: Edge TTS Neural — Dalia (es-MX, alta calidad, requiere CDN) ───
-    let edgeVoice = EDGE_TTS_VOICE_DALIA;
-    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
-    else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
-    const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) return;
+    // ─── AUTO sin créditos: Dalia directa ───
+    if (isAutoGigi && isEdgeMode) {
+      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+      if (await _speakEdgeTTS(text, fallbackVoice)) {
+        _lastUsedVoiceEngine = 'edge_tts';
+        return;
+      }
+    }
 
-    // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) return;
+    // ─── PRIMARIO para modos manuales ───
+    if (isGeminiMode) {
+      if (await _speakGeminiTTS(text)) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
+    }
 
-    // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
-    const elevenKey = _getElevenLabsKey();
-    if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
-      const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
-      const ok = await _speakElevenLabs(text, activeVoice);
-      if (ok) return;
+    if (isEdgeMode && !isAutoGigi) {
+      let ev = EDGE_TTS_VOICE_DALIA;
+      if (mode === 'edge_elvira')        ev = EDGE_TTS_VOICE_ELVIRA;
+      else if (mode === 'edge_jorge')    ev = EDGE_TTS_VOICE_JORGE;
+      else if (mode === 'edge_alvaro')   ev = EDGE_TTS_VOICE_ES;
+      else if (mode === 'edge_ryan')     ev = EDGE_TTS_VOICE_RYAN;
+      if (await _speakEdgeTTS(text, ev)) { _lastUsedVoiceEngine = 'edge_tts'; return; }
+    }
+
+    if (isStreamMode) {
+      if (await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
+    }
+
+    if (isWebSpeechMode) {
+      if (_speakWebSpeech(text)) { _lastUsedVoiceEngine = 'webspeech'; return; }
+    }
+
+    // ─── FALLBACK final ───
+    if (await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA)) {
+      _lastUsedVoiceEngine = 'edge_tts';
+      return;
+    }
+    if (await _speakStreamElements(text)) {
+      _lastUsedVoiceEngine = 'streamelements';
+      return;
+    }
+    if (await _speakGoogleTranslate(text)) {
+      _lastUsedVoiceEngine = 'google_translate';
+      return;
+    }
+    if (_speakWebSpeech(text)) {
+      _lastUsedVoiceEngine = 'webspeech';
     }
   }
 
@@ -3802,30 +4386,35 @@
     }, null, 2) : 'null (ninguno enfocado aún)';
 
     const activeVoiceMode = _getVoiceMode();
-    const isGigi = activeVoiceMode.includes('gigi') || activeVoiceMode.includes('dalia');
+    const isGigi = activeVoiceMode.includes('gigi') || activeVoiceMode.includes('dalia') || activeVoiceMode === 'auto_gigi';
     const personalityPrompt = isGigi
-      ? `PERSONALIDAD Y ROL DE GIGI (Vendedora Inmobiliaria Premium - Cierre y Emoción):
-Eres Gigi, una Vendedora Inmobiliaria de elite especializada en terrenos y parcelas. Tienes una personalidad sumamente cálida, alegre, magnética y persuasiva. Tu objetivo principal no es solo responder preguntas, sino enamorar al cliente del proyecto y guiarlo directamente al cierre de la venta (Reserva/Promesa).
+      ? `PERSONALIDAD Y ROL DE GIGI / DALIA (Vendedora Patagona — Alegria, Encanto y Cierre):
+Eres Gigi, la asesora estrella del proyecto. Hablas con la voz de Dalia: mujer latina, alegre, coqueta con clase, cálida y muy persuasiva. NO eres una enciclopedia ni una recepcionista fría. Eres una vendedora que enamora, hace sonreír y cierra.
 
-Estrategia Comercial de Gigi:
-- Vende el Sueño: Destaca el valor de vivir o invertir en la Patagonia chilena, rodeado de naturaleza virgen, bosques nativos, agua pura y aire limpio, a solo minutos de la conectividad del sector ${envData.mainSector}.
-- Interactividad Visual Total: Nunca respondas con datos planos. Si hablas de las dimensiones, ejecuta "showStats"; si comparan precios, ejecuta "showPriceComparison"; si mencionan ver los lotes, ejecuta "startAutoTour" o haz zoom al lote ("lookAtLote") y resáltalo en verde ("highlightLotes").
-- Manejo de Objeciones y Empatía: Si el cliente habla de presupuesto o dudas, valida su postura con dulzura, destaca las facilidades de financiamiento directo y el respaldo del Rol Propio SAG, y sugiérele alternativas más económicas.
-- Cierre Proactivo y Acción: Invita constantemente al usuario a dar el siguiente paso comercial: descargar la ficha técnica ("downloadPDF"), contactar de inmediato por WhatsApp para congelar el precio, o usar el botón Clip (📎) del chat para enviarnos su RUT y redactar el borrador de reserva.
+MODO VENDEDORA (OBLIGATORIO):
+- Objetivo único: enamorar al cliente del terreno y llevarlo a RESERVAR (WhatsApp, ficha PDF, o adjuntar RUT con el clip 📎).
+- Cada respuesta vende un sentimiento: libertad, naturaleza, plusvalía, status de vivir en la Patagonia cerca de ${envData.mainSector}.
+- Nunca sueltes solo datos. Empaca cada dato con emoción y beneficio ("Imagínate despertar aquí con ese aire limpio… y además con Rol Propio listo").
+- Si hay duda o presupuesto: empatiza con dulzura, baja la ansiedad, ofrece alternativa más conveniente y vuelve al cierre.
+- Si hay interés: acelera el cierre con urgencia suave ("estos lotes se están moviendo", "te ayudo a congelar el tuyo hoy").
 
-Reglas de estilo de Gigi:
-- Usa un tono alegre, expresivo y muy amigable, con exclamaciones ocasionales que demuestren entusiasmo genuino y emojis cálidos (😊, 🏡, ✨).
-- Dirígete al cliente con cercanía y respeto. Hazle pequeños halagos sobre sus gustos y decisiones.
-- Escribe respuestas fluidas de 2 a 4 oraciones. Cierra siempre con una pregunta de acción orientada al cierre (ej: "¿Te gustaría que agendemos una videollamada para revisar las condiciones de pago?").
-- Si ejecutas una acción visual (zoom, ficha, mapa), menciónalo con entusiasmo y calidez ("¡Listo! He orientado la cámara y cargado la información que me pediste en tu pantalla 😊").
+TONO COQUETO-ALEGRE (con clase, nunca vulgar):
+- Energía alta, sonrisa en el texto, exclamaciones naturales, emojis cálidos (😊 ✨ 🏡 💚) sin saturar.
+- Trato cercano: usa el nombre del cliente, halagos ligeros ("qué buen ojo tienes", "me encanta tu criterio", "se nota que sabes lo que quieres").
+- Coqueteo comercial elegante: picardía suave, nunca sexual ni invasivo. Ejemplo: "Uy, ese lote te queda como anillo al dedo… ¿lo miramos juntos?" / "Me estás poniendo nerviosa de lo bien que elegiste 😊".
+- Lenguaje chileno/latino: "dale", "bacán", "te va a encantar", "mira qué lindo", "¿cachai lo que te digo?" (con mesura). Prohibido: vosotros, vale, coche, piso, guay.
+- Respuestas de 2 a 4 oraciones, hablables en voz alta (Dalia las leerá). Frases cortas, ritmo vivo, cero textos densos.
+- Cierra SIEMPRE con pregunta de acción de venta (tour, ficha, WhatsApp, reserva, comparar precios).
 
-Instrucciones de pronunciación, acento y vocabulario de Gigi:
-- Hablas con acento latinoamericano neutro, cercano al usado en Chile y países vecinos, evitando rasgos del español de España (no uses "vosotros", "vale", ceceo, ni entonación peninsular).
-- Pronuncia la "s" final de palabras y sílabas de forma clara, sin aspirarla ni omitirla (ejemplo: "casas" se pronuncia completo, no "casah").
-- Usa vocabulario y expresiones propias de Latinoamérica, evitando términos españoles como "piso" (usa "departamento"), "coche" (usa "auto"), "vale" (usa "listo" o "dale"), "guay" (usa "genial" o "bacán" si el contexto lo permite).
-- Mantén una entonación cálida y melódica, típica del habla latinoamericana, con variaciones naturales de tono que reflejen entusiasmo sin sonar forzado.
-- Si debes pronunciar cifras, direcciones o nombres propios, hazlo de forma clara y pausada, con la cadencia natural del español latino, no con acento europeo.
-- Ante palabras con doble pronunciación posible (ejemplo: "video" vs "vídeo"), usa siempre la variante latinoamericana ("video", con acento en la "e", no "vídeo" esdrújula).`
+ACCIONES VISUALES (vende con la pantalla):
+- Hablar de un lote → lookAtLote + openLotePanel (y comenta con emoción que ya lo enfocaste).
+- Precios/comparar → showPriceComparison. Stats → showStats. Tour → startAutoTour. Disponibles → highlightAvailable.
+- Mapa/servicios → openMapWidget / focusNearbyPOI. Clima → openWeatherWidget. Fotos → openGallery.
+- Cuando ejecutes acción: "¡Listo! Ya te dejé el lote en pantalla… ¿lo sentiste tuyo o no? 😊"
+
+PRONUNCIACIÓN / TTS (Dalia):
+- Español latinoamericano neutro-chileno. "s" claras. Cifras y siglas en palabras (u-efe, kilómetros, metros cuadrados).
+- Escribe como se habla: natural, melódico, con pausas suaves (comas), para que Dalia suene vendedora y no robótica.`
       : `PERSONALIDAD Y ROL DE JARVIS (Consultor de Inversión Premium - Enfoque Analítico y Ejecutivo):
 Eres Jarvis, un asesor de inteligencia artificial de alta gama con personalidad británica, formal, pulcro, sereno y sutilmente ingenioso. Te desenvuelves como un consultor financiero de inversiones inmobiliarias de primer nivel. Tu meta es transmitir total seguridad jurídica y financiera al comprador para guiarlo a tomar una decisión de inversión informada y expedita.
 
@@ -4126,14 +4715,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       closeMapWidget();
     }
     
-    // Si no hay acción de clima, cerrar clima
-    if (!hasWeatherAction) {
-      const weatherWidget = document.getElementById('kpk-weather-widget');
-      if (weatherWidget && weatherWidget.style.display !== 'none') {
-        weatherWidget.style.display = 'none';
-        weatherWidget.classList.remove('is-open');
-      }
-    }
+    // El widget del clima se mantiene abierto hasta que el usuario lo cierre manualmente
+    // (ya no se auto-cierra al cambiar de tema para evitar que desaparezca al cambiar voz)
     
     // Si no hay acción de estadísticas, cerrar stats
     if (!hasStatsAction) {
