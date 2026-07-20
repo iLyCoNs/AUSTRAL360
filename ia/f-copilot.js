@@ -439,26 +439,26 @@
   function togglePanel() {
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) {
-      if (_panel && _panel.classList.contains('is-open')) {
-        _panel.classList.remove('is-open');
-      }
-
       const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
-      if (popup && popup.classList.contains('is-visible')) {
-        if (popup.classList.contains('kpk-mbp-minimal')) {
-          expandMobileBubblePopup();
-        } else {
-          closeMobileBubblePopup();
-        }
-      } else {
-        const mode = _getVoiceMode();
-        const isGigi = mode.includes('gigi') || mode.includes('dalia');
-        const assistantName = isGigi ? 'Gigi' : 'Jarvis';
-        const txt = _clientName 
-          ? `Hola, ${_clientName}. ¿En qué te puedo ayudar hoy? Puedes presionar el micrófono o escribir.` 
-          : `Hola, soy ${assistantName}. ¿En qué te puedo ayudar hoy?`;
+      const mode = _getVoiceMode();
+      const isGigi = mode.includes('gigi') || mode.includes('dalia');
+      const assistantName = isGigi ? 'Gigi' : 'Jarvis';
+      const txt = _clientName 
+        ? `Hola, ${_clientName}. ¿En qué te puedo ayudar hoy? Puedes hablar o escribir.` 
+        : `¡Hola! Soy ${assistantName}. ¿En qué te puedo ayudar hoy?`;
+
+      if (!popup || !popup.classList.contains('is-visible') || popup.style.display === 'none') {
         showMobileBubblePopup(txt, true);
         speakJarvis(txt);
+      } else {
+        const inputRow = popup.querySelector('#kpk-mbp-input-row');
+        const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
+        if (inputRow && controlsRow) {
+          inputRow.style.display = 'flex';
+          controlsRow.style.display = 'none';
+          const inp = popup.querySelector('#kpk-mbp-text-input');
+          if (inp) inp.focus();
+        }
       }
       return;
     }
