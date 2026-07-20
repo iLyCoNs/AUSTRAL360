@@ -51,6 +51,7 @@
   let _aiSpeechStartTime = 0;
   let _globalAudio = null;
   let _activeJarvisAudio = null;
+  let _lastUsedVoiceEngine = '';
 
   async function _unlockMobileAudio() {
     try {
@@ -925,6 +926,41 @@
         appendMessage(diagMsg, 'system');
         playFuturisticSound('success');
       }, 500);
+      return;
+    }
+
+    // Comando /voz — muestra el modelo de voz activo del copiloto
+    if (lowerPrompt === '/voz') {
+      const typingIndicator = showTypingIndicator();
+      _bubble.classList.add('is-loading');
+
+      setTimeout(() => {
+        typingIndicator.remove();
+        _bubble.classList.remove('is-loading');
+
+        const mode = _getVoiceMode();
+        const modeLabel = _voiceModeLabel(mode);
+        const lastEngine = _lastUsedVoiceEngine || 'aún no usado';
+        const engineLabels = {
+          streamelements: 'StreamElements AWS Polly (Mia es-MX)',
+          google_translate: 'Google Translate TTS (español femenina)',
+          edge_tts: 'Edge TTS Neural (Dalia es-MX)',
+          webspeech: 'Web Speech API (voz del sistema)',
+          elevenlabs: 'ElevenLabs (Gigi premium)'
+        };
+        const engineName = engineLabels[lastEngine] || lastEngine;
+
+        const vozMsg = `🎙️ <b>Modelo de Voz del Copiloto</b><br><br>` +
+          `• <b>Modo configurado:</b> <code>${mode}</code><br>` +
+          `• <b>Nombre:</b> ${modeLabel}<br>` +
+          `• <b>Motor usado:</b> <code>${engineName}</code><br>` +
+          `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br>` +
+          `• <b>Cascada:</b> StreamElements → Google TTS → Edge TTS → WebSpeech → ElevenLabs<br><br>` +
+          `<i>Escríbele algo a Gigi y te responderá con esa voz.</i>`;
+
+        appendMessage(vozMsg, 'system');
+        playFuturisticSound('success');
+      }, 400);
       return;
     }
 
@@ -2469,29 +2505,29 @@
 
     // ─── TIER 1: StreamElements AWS Polly Mia (Voz latina neuronal, gratis, sin API key) ───
     const okStream = await _speakStreamElements(text);
-    if (okStream) return;
+    if (okStream) { _lastUsedVoiceEngine = 'streamelements'; return; }
 
     // ─── TIER 2: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
     const okGoogle = await _speakGoogleTranslate(text);
-    if (okGoogle) return;
+    if (okGoogle) { _lastUsedVoiceEngine = 'google_translate'; return; }
 
     // ─── TIER 3: Edge TTS Neural — Dalia (es-MX, alta calidad, requiere CDN) ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
     else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
     const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) return;
+    if (okEdge) { _lastUsedVoiceEngine = 'edge_tts'; return; }
 
     // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
     const okWeb = _speakWebSpeech(text);
-    if (okWeb) return;
+    if (okWeb) { _lastUsedVoiceEngine = 'webspeech'; return; }
 
     // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
     const elevenKey = _getElevenLabsKey();
     if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
-      if (ok) return;
+      if (ok) { _lastUsedVoiceEngine = 'elevenlabs'; return; }
     }
   }
 
