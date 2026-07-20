@@ -2147,13 +2147,8 @@
   const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
 
   function _getElevenLabsKey() {
-    const cfg = window.KPK_CONFIG || {};
+    // Solo utilizar la clave ingresada dinámicamente por el usuario desde admin.html
     let key = localStorage.getItem('ferrari_ai_key_elevenlabs') || '';
-    if (!key && window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
-      const brand = window.FerrariBrandDock.getBrand();
-      key = (brand.aiKeys && brand.aiKeys.elevenlabs) || '';
-    }
-    if (!key) key = (cfg.aiKeys && cfg.aiKeys.elevenlabs) || '';
     return _deobfuscateKey(key);
   }
 
@@ -2451,16 +2446,17 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: ElevenLabs (solo si hay clave activa configurada) ───
-    if (_getElevenLabsKey() && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
+    // ─── TIER 1: StreamElements AWS Polly Mia (POR DEFECTO GLOBAL — Voz latina neuronal ultra realista, gratis) ───
+    const okStream = await _speakStreamElements(text);
+    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+
+    // ─── TIER 2: ElevenLabs (solo si el usuario ingresó una clave nueva activa en admin.html) ───
+    const elevenKey = _getElevenLabsKey();
+    if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
-
-    // ─── TIER 2: StreamElements AWS Polly Mia (POR DEFECTO GLOBAL — Voz latina neuronal ultra realista, gratis) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
 
     // ─── TIER 3: Web Speech API (Nativa del navegador) ───
     const okWeb = _speakWebSpeech(text);
