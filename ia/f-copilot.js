@@ -101,8 +101,7 @@
     // Estilos para el selector de voz
     const _vsStyle = document.createElement('style');
     _vsStyle.textContent = `
-      .kpk-voice-opt:hover { background:rgba(255,255,255,0.06) !important; }
-      .kpk-voice-opt:hover span { color:var(--text) !important; }
+      .kpk-voice-opt:hover { background:rgba(255,255,255,0.06) !important; color:#f5f5f7 !important; }
     `;
     document.head.appendChild(_vsStyle);
 
@@ -352,9 +351,13 @@
       let html = '';
       let lastGroup = '';
       for (const v of VOICE_OPTIONS) {
-        if (v.group !== lastGroup) { html += `<div style="font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;${lastGroup?';border-top:1px solid rgba(255,255,255,0.06);margin-top:4px':''}">${v.group}</div>`; lastGroup = v.group; }
-        html += `<div class="kpk-voice-opt" data-voice="${v.id}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:12.5px;${v.id===current?'color:var(--accent);background:rgba(0,180,255,0.1)':'color:var(--text-2)'}" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='${v.id===current?'rgba(0,180,255,0.1)':'transparent'}'">`;
-        html += `<span style="width:14px;height:14px;border-radius:50%;border:2px solid ${v.id===current?'var(--accent)':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${v.id===current?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>':''}</span>`;
+        if (v.group !== lastGroup) {
+          html += `<div style="font-size:10px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;${lastGroup?';border-top:1px solid rgba(255,255,255,0.06);margin-top:4px':''}">${v.group}</div>`;
+          lastGroup = v.group;
+        }
+        const active = v.id === current;
+        html += `<div class="kpk-voice-opt" data-voice="${v.id}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:${active?'#00B4FF':'#a1a1a6'};background:${active?'rgba(0,180,255,0.1)':'transparent'}">`;
+        html += `<span style="width:14px;height:14px;border-radius:50%;border:2px solid ${active?'#00B4FF':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${active?'<span style="width:8px;height:8px;border-radius:50%;background:#00B4FF"></span>':''}</span>`;
         html += `<span>${v.label}</span></div>`;
       }
       voicePanel.innerHTML = html;
@@ -363,10 +366,10 @@
           const voice = el.dataset.voice;
           localStorage.setItem('kpk_voice_mode', voice);
           _renderVoicePanel();
+          setTimeout(() => { voicePanel.style.display = 'none'; }, 300);
           if (_speechEnabled) {
             stopAISpeech();
-            const greeting = 'Voz cambiada a ' + _voiceModeLabel(voice);
-            setTimeout(() => speakJarvis(greeting), 200);
+            setTimeout(() => speakJarvis('Voz cambiada a ' + _voiceModeLabel(voice)), 200);
           }
         });
       });
