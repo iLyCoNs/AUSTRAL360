@@ -21,6 +21,8 @@ desktop.ini
 
 # ── Scratch y Pruebas ───────────────────────────────────────
 scratch/
+tmp-*.mp3
+tmp-*.wav
 
 # ── Plantillas Locales (NUNCA subir a GitHub sin permiso) ───
 VERSION LIMPIA/

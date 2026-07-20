@@ -8,13 +8,13 @@
 
 (function() {
   window.KPK_CONFIG = {
-    configVersion: 12,
+    configVersion: 13,
 
     // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
     aiProvider: 'lightning',
 
-  // Voz: auto_gigi = ElevenLabs Gigi si hay créditos; si no, Dalia automática
-  voiceMode: 'auto_gigi',
+  // Voz: jarvis_charon = Gemini Charon (doc Voz_Charon_JARVIS); auto_gigi = Bella/Mia/Dalia
+  voiceMode: 'jarvis_charon',
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {

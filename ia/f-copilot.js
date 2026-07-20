@@ -155,9 +155,10 @@
 
     // Ayudantes de nombres dinámicos de Jarvis/Gigi
     const mode = _getVoiceMode();
-    const isGigi = mode.includes('gigi') || mode.includes('dalia');
-    const assistantName = isGigi ? 'Gigi' : 'Jarvis';
-    const assistantTitle = isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis';
+    const isGigi = mode.includes('gigi') || mode.includes('dalia') || mode.includes('stream') || mode === 'auto_gigi';
+    const isJarvis = mode.includes('jarvis') || mode.includes('charon') || mode.includes('daniel');
+    const assistantName = isJarvis ? 'Jarvis' : (isGigi ? 'Gigi' : 'Jarvis');
+    const assistantTitle = isJarvis ? 'Asistente JARVIS · Charon' : (isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis');
 
     // Crear elementos de UI
     const initialMuteClass = _speechEnabled ? 'kpk-mute-glow' : '';
@@ -313,18 +314,25 @@
       }
     });
 
-    // Preferencia de voz v4: Auto Gigi (ElevenLabs si hay créditos) → Mia gratis si no
-    // (Edge Dalia no funciona en Chrome/Firefox; Mia vía StreamElements sí)
-    const VOICE_DEFAULT_VER = '4';
+    // Preferencia de voz v7: JARVIS Charon (Gemini) disponible vía Voz_Charon_JARVIS.txt
+    const VOICE_DEFAULT_VER = '7';
     if (localStorage.getItem('kpk_voice_default_ver') !== VOICE_DEFAULT_VER) {
-      localStorage.setItem('kpk_voice_mode', 'auto_gigi');
-      localStorage.removeItem('kpk_voice_user_override');
+      // Sembrar Gemini ANTES de decidir default
+      if (!localStorage.getItem('ferrari_ai_key_gemini')) {
+        const cfg0 = window.KPK_CONFIG || {};
+        const raw0 = (cfg0.aiKeys && cfg0.aiKeys.gemini) || '';
+        if (raw0) localStorage.setItem('ferrari_ai_key_gemini', raw0);
+      }
+      const hasGemini = !!_getGeminiKey();
+      localStorage.setItem('kpk_voice_mode', hasGemini ? 'jarvis_charon' : 'auto_gigi');
+      if (hasGemini) localStorage.setItem('kpk_voice_user_override', '1');
+      else localStorage.removeItem('kpk_voice_user_override');
       localStorage.removeItem('kpk_el_status_v1');
       localStorage.setItem('kpk_voice_default_ver', VOICE_DEFAULT_VER);
-      console.log('[Ferrari/IA] Voz Auto Gigi activada (ElevenLabs si hay créditos → si no Mia gratis)');
+      console.log('[Ferrari/IA] Voz v7:', hasGemini ? 'JARVIS Charon (Gemini)' : 'Auto Dalia/Mia');
     }
 
-    // Sembrar key ElevenLabs desde config/brand si no está en localStorage
+    // Sembrar keys desde config
     if (!localStorage.getItem('ferrari_ai_key_elevenlabs')) {
       const elKey = _getElevenLabsKey();
       if (elKey) {
@@ -333,8 +341,24 @@
         if (raw) localStorage.setItem('ferrari_ai_key_elevenlabs', raw);
       }
     }
+    if (!localStorage.getItem('ferrari_ai_key_gemini')) {
+      const cfg = window.KPK_CONFIG || {};
+      const raw = (cfg.aiKeys && cfg.aiKeys.gemini) || '';
+      if (raw) localStorage.setItem('ferrari_ai_key_gemini', raw);
+    }
+
+    // Sondear proxy Dalia + ElevenLabs
+    setTimeout(() => {
+      _probeLocalTtsProxy(true).then((ok) => {
+        console.log('[Ferrari/IA] Proxy Dalia local ' + (ok ? '✅ ACTIVO → voz humana' : '⛔ apagado (ejecuta: npm run tts)'));
+      }).catch(() => {});
+      _probeElevenLabs(false).then((ok) => {
+        console.log('[Ferrari/IA] ElevenLabs ' + (ok ? '✅ con créditos → Gigi Bella' : '⛔ sin créditos → Dalia/Mia'));
+      }).catch(() => {});
+    }, 400);
 
     // Inicializar / sincronizar modo de voz (prioridad: brand → config → auto_gigi)
+    // No pisar jarvis_charon / override manual
     if (localStorage.getItem('kpk_voice_user_override') !== '1') {
       let brandVoice = null;
       try {
@@ -349,29 +373,18 @@
       localStorage.setItem('kpk_voice_mode', 'auto_gigi');
     }
 
-    // Sondear ElevenLabs en segundo plano (créditos) para decidir Bella vs Mia
-    setTimeout(() => {
-      _probeElevenLabs(false).then((ok) => {
-        console.log('[Ferrari/IA] ElevenLabs ' + (ok ? '✅ con créditos → Gigi Bella' : '⛔ sin créditos/key → Mia gratis'));
-      }).catch(() => {});
-    }, 600);
-
-
     // ─── Selector interactivo de voz ───
     const VOICE_OPTIONS = [
-      { id: 'auto_gigi',         label: '⭐ Auto · Bella si hay créditos · si no Mia gratis', group: 'Recomendado' },
-      { id: 'stream_gigi',       label: 'Mia MX neural (gratis · estable)', group: 'Gratis' },
-      { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi (solo si hay créditos)', group: 'ElevenLabs' },
+      { id: 'jarvis_charon',     label: '🎩 JARVIS Charon (Gemini · voz del doc)', group: 'JARVIS' },
+      { id: 'auto_gigi',         label: '⭐ Auto · Dalia local / Bella / Mia', group: 'Recomendado' },
+      { id: 'local_dalia',       label: '🔥 Dalia Neural (npm run tts) — humana gratis', group: 'Humana gratis' },
+      { id: 'stream_gigi',       label: 'Mia MX (StreamElements · gratis)', group: 'Humana gratis' },
+      { id: 'stream_lucia',      label: 'Lucía ES (gratis)', group: 'Humana gratis' },
+      { id: 'stream_penelope',   label: 'Penelope US (gratis)', group: 'Humana gratis' },
+      { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi (créditos)', group: 'ElevenLabs' },
       { id: 'elevenlabs_daniel', label: '🏆 ElevenLabs Daniel', group: 'ElevenLabs' },
-      { id: 'edge_dalia',        label: 'Dalia Edge (falla en Chrome)', group: 'Edge TTS' },
-      { id: 'edge_elvira',       label: 'Elvira Neural ES', group: 'Edge TTS' },
-      { id: 'edge_jorge',        label: 'Jorge Neural MX', group: 'Edge TTS' },
-      { id: 'edge_alvaro',       label: 'Álvaro Neural ES', group: 'Edge TTS' },
-      { id: 'edge_ryan',         label: 'Ryan Neural UK', group: 'Edge TTS' },
       { id: 'gemini_tts',        label: '🤖 Gemini TTS Kore', group: 'Gemini' },
-      { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
-      { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
-      { id: 'webspeech',         label: 'Web Speech (robótica)', group: 'Navegador' }
+      { id: 'webspeech',         label: 'Web Speech (robótica — evitar)', group: 'Navegador' }
     ];
     const voicePanel = document.getElementById('kpk-voice-panel');
     const voiceSelectBtn = document.getElementById('kpk-ai-voice-select');
@@ -393,7 +406,11 @@
       voicePanel.innerHTML = html;
       voicePanel.querySelectorAll('.kpk-voice-opt').forEach(el => {
         el.addEventListener('click', () => {
-          const voice = el.dataset.voice;
+          let voice = el.dataset.voice;
+          // Edge directo en Chrome → usar Dalia vía proxy local
+          if (String(voice).startsWith('edge_') && !_isMicrosoftEdgeBrowser()) {
+            voice = 'local_dalia';
+          }
           localStorage.setItem('kpk_voice_mode', voice);
           localStorage.setItem('kpk_voice_user_override', '1');
           _lastUsedVoiceEngine = '';
@@ -1171,19 +1188,16 @@
     if (lowerPrompt === '/voces') {
       const current = _getVoiceMode();
       const VOICE_OPTIONS_LOCAL = [
-        { id: 'auto_gigi',         label: '⭐ Auto · Bella si hay créditos · si no Mia gratis', group: 'Recomendado' },
-        { id: 'stream_gigi',       label: 'Mia MX neural (gratis · estable)', group: 'Gratis' },
+        { id: 'jarvis_charon',     label: '🎩 JARVIS Charon (Gemini · del doc)', group: 'JARVIS' },
+        { id: 'auto_gigi',         label: '⭐ Auto · Dalia local / Bella / Mia', group: 'Recomendado' },
+        { id: 'local_dalia',       label: '🔥 Dalia Neural (npm run tts) — humana gratis', group: 'Humana gratis' },
+        { id: 'stream_gigi',       label: 'Mia MX (StreamElements · gratis)', group: 'Humana gratis' },
+        { id: 'stream_lucia',      label: 'Lucía ES (gratis)', group: 'Humana gratis' },
+        { id: 'stream_penelope',   label: 'Penelope US (gratis)', group: 'Humana gratis' },
         { id: 'elevenlabs_gigi',   label: '🏆 Gigi Bella (ElevenLabs)', group: 'ElevenLabs' },
         { id: 'elevenlabs_daniel', label: '🏆 Daniel (ElevenLabs)', group: 'ElevenLabs' },
-        { id: 'edge_dalia',        label: 'Dalia Edge (falla en Chrome)', group: 'Edge TTS' },
-        { id: 'edge_elvira',       label: 'Elvira ES (Edge TTS)', group: 'Edge TTS' },
-        { id: 'edge_jorge',        label: 'Jorge MX (Edge TTS)', group: 'Edge TTS' },
-        { id: 'edge_alvaro',       label: 'Álvaro ES (Edge TTS)', group: 'Edge TTS' },
-        { id: 'edge_ryan',         label: 'Ryan UK (Edge TTS)', group: 'Edge TTS' },
         { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
-        { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
-        { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
-        { id: 'webspeech',         label: 'Web Speech (robótica)', group: 'Navegador' }
+        { id: 'webspeech',         label: 'Web Speech (robótica — evitar)', group: 'Navegador' }
       ];
       let msg = '🎙️ <b>Selecciona una voz:</b><br><br><div style="display:flex;flex-direction:column;gap:6px;">';
       for (const v of VOICE_OPTIONS_LOCAL) {
@@ -2377,7 +2391,7 @@
         if (mode === 'stream_lucia' || mode === 'edge_alvaro' || mode === 'edge_elvira') voice = 'Lucia';
         else if (mode === 'stream_penelope') voice = 'Penelope';
         else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan' || mode === 'edge_jorge') voice = 'Miguel';
-        else voice = 'Mia'; // MX femenina neural (AWS Polly vía StreamElements)
+        else voice = 'Mia';
       }
 
       const MAX = 460;
@@ -2396,32 +2410,54 @@
         remaining = remaining.substring(cut + 1).trim();
       }
 
+      // StreamElements bloquea el navegador (401). Usar proxy local si está arriba.
+      const proxyUp = await _probeLocalTtsProxy(false);
+
       for (const frag of fragments) {
-        const url = `${STREAM_TTS_BASE}?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(frag)}`;
-        // Preferir fetch→blob (más fiable que Audio(src) en algunos navegadores)
         let ok = false;
-        try {
-          const res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
-          if (res.ok) {
-            const blob = await res.blob();
-            if (blob && blob.size > 100) {
-              ok = await _playAudioBlob(blob, text);
+
+        if (proxyUp) {
+          try {
+            const proxyUrl = LOCAL_TTS_PROXY + '/se?voice=' + encodeURIComponent(voice)
+              + '&text=' + encodeURIComponent(frag);
+            const res = await fetch(proxyUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (blob && blob.size > 100) ok = await _playAudioBlob(blob, text);
+            }
+          } catch (e) {
+            console.warn('[Gigi/StreamTTS] proxy /se falló:', e.message);
+          }
+        }
+
+        // Intento directo (puede fallar 401 desde el browser)
+        if (!ok) {
+          const url = `${STREAM_TTS_BASE}?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(frag)}`;
+          ok = await _playAudioUrl(url);
+          if (!ok) {
+            try {
+              const res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', credentials: 'omit' });
+              if (res.ok) {
+                const blob = await res.blob();
+                if (blob && blob.size > 100) ok = await _playAudioBlob(blob, text);
+              } else {
+                console.warn('[Gigi/StreamTTS] directo HTTP', res.status);
+              }
+            } catch (fetchErr) {
+              console.warn('[Gigi/StreamTTS] fetch falló:', fetchErr.message);
             }
           }
-        } catch (fetchErr) {
-          console.warn('[Gigi/StreamTTS] fetch falló, probando Audio(src):', fetchErr.message);
         }
-        if (!ok) ok = await _playAudioUrl(url);
-        if (!ok && voice !== 'Penelope') {
-          const fallbackUrl = `${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`;
+
+        if (!ok && voice !== 'Penelope' && proxyUp) {
           try {
+            const fallbackUrl = LOCAL_TTS_PROXY + '/se?voice=Penelope&text=' + encodeURIComponent(frag);
             const res2 = await fetch(fallbackUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
             if (res2.ok) {
               const blob2 = await res2.blob();
               if (blob2 && blob2.size > 100) ok = await _playAudioBlob(blob2, text);
             }
           } catch (e2) {}
-          if (!ok) ok = await _playAudioUrl(fallbackUrl);
         }
         if (!ok) return false;
       }
@@ -2612,7 +2648,71 @@
   const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';
   const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';
 
+  // Proxy local (node tools/tts-proxy.js) — Dalia Neural real desde Chrome
+  const LOCAL_TTS_PORTS = [8787, 8788];
+  let LOCAL_TTS_PROXY = 'http://127.0.0.1:8787';
+  let _localTtsOk = null; // null=unknown, true/false
+  let _localTtsCheckedAt = 0;
+
+  async function _probeLocalTtsProxy(force) {
+    if (!force && _localTtsOk !== null && (Date.now() - _localTtsCheckedAt) < 30000) {
+      return _localTtsOk;
+    }
+    _localTtsOk = false;
+    for (const port of LOCAL_TTS_PORTS) {
+      try {
+        const base = 'http://127.0.0.1:' + port;
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 1200);
+        const res = await fetch(base + '/health', { signal: ctrl.signal, cache: 'no-store' });
+        clearTimeout(t);
+        if (res && res.ok) {
+          LOCAL_TTS_PROXY = base;
+          _localTtsOk = true;
+          break;
+        }
+      } catch (e) { /* try next */ }
+    }
+    _localTtsCheckedAt = Date.now();
+    return _localTtsOk;
+  }
+
+  async function _speakLocalDalia(text, forceVoice) {
+    try {
+      const clean = _cleanTextForTTS(text);
+      if (!clean) return false;
+      const voice = forceVoice || EDGE_TTS_VOICE_DALIA;
+      const url = LOCAL_TTS_PROXY + '/tts?voice=' + encodeURIComponent(voice)
+        + '&rate=' + encodeURIComponent('+8%')
+        + '&pitch=' + encodeURIComponent('+2Hz')
+        + '&text=' + encodeURIComponent(clean);
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) {
+        console.warn('[Gigi/Voz] Proxy local HTTP', res.status);
+        _localTtsOk = false;
+        return false;
+      }
+      const blob = await res.blob();
+      if (!blob || blob.size < 200) return false;
+      _localTtsOk = true;
+      _lastUsedVoiceEngine = 'local_dalia';
+      return _playAudioBlob(blob, text);
+    } catch (e) {
+      console.warn('[Gigi/Voz] Proxy local Dalia no disponible:', e.message);
+      _localTtsOk = false;
+      return false;
+    }
+  }
+
   /** Preferencia cruda (admin / usuario) sin resolver Auto Gigi */
+  function _isMicrosoftEdgeBrowser() {
+    // Edg/ = Chromium Edge. No confundir con "Edge" legacy ni Chrome.
+    return /\bEdg\/\d+/i.test(navigator.userAgent || '');
+  }
+
   function _getPreferredVoiceMode() {
     if (localStorage.getItem('kpk_voice_user_override') === '1') {
       const userMode = localStorage.getItem('kpk_voice_mode');
@@ -2677,19 +2777,22 @@
 
   function _voiceModeLabel(mode) {
     switch (mode) {
-      case 'auto_gigi':         return 'Auto · Gigi Bella si hay créditos · si no Mia gratis';
+      case 'auto_gigi':         return 'Auto · Dalia local / Bella / Mia';
+      case 'jarvis_charon':     return 'JARVIS Charon (Gemini · voz grave del doc)';
+      case 'gemini_charon':     return 'JARVIS Charon (Gemini)';
+      case 'local_dalia':       return 'Dalia Neural MX (proxy local · humana gratis)';
       case 'stream_gigi':       return 'Gigi "Mia" MX (StreamElements • gratis · neural)';
       case 'stream_lucia':      return 'Gigi "Lucía" ES (StreamElements • gratis)';
       case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
       case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
       case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
-      case 'edge_dalia':        return 'Dalia Neural MX (Edge · suele fallar en Chrome)';
-      case 'edge_elvira':       return 'Elvira Neural (Edge TTS • humana ES)';
-      case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
-      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
-      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • British)';
-      case 'gemini_tts':        return 'Gemini TTS Kore (Google AI • voz humana premium)';
-      case 'webspeech':         return 'Voz del navegador (estándar · robótica)';
+      case 'edge_dalia':        return 'Dalia Neural MX (proxy o Microsoft Edge)';
+      case 'edge_elvira':       return 'Elvira Neural (Edge TTS)';
+      case 'edge_jorge':        return 'Jorge Neural (Edge TTS)';
+      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS)';
+      case 'edge_ryan':         return 'Ryan Neural (Edge TTS)';
+      case 'gemini_tts':        return 'Gemini TTS Kore (Google AI)';
+      case 'webspeech':         return 'Voz del navegador (robótica)';
       default:                  return 'Voz activa';
     }
   }
@@ -2796,6 +2899,20 @@
   // ─── Utilidad: reproducir un Blob de audio ─────────────────────────────────
   function _playAudioBlob(blob, fallbackText) {
     return new Promise(resolve => {
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(watchdog);
+        resolve(!!ok);
+      };
+      // Evita cuelgues si el audio nunca dispara onended/onerror
+      const watchdog = setTimeout(() => {
+        console.warn('[Gigi/Voz] timeout reproduciendo blob');
+        try { if (_activeJarvisAudio) _activeJarvisAudio.pause(); } catch (e) {}
+        setAISpeaking(false);
+        done(false);
+      }, 60000);
       try {
         if (_activeJarvisAudio) {
           _activeJarvisAudio.pause();
@@ -2803,9 +2920,10 @@
         }
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = url;
         _activeJarvisAudio = audio;
-        // Pausar micrófono mientras habla Jarvis (solo si no estamos en JarvisMode continuo)
         _shouldRestartMic = false;
         if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
         audio.onended = () => {
@@ -2820,12 +2938,32 @@
               }
             }, 300);
           }
-          resolve(true);
+          done(true);
         };
-        audio.onerror = () => { URL.revokeObjectURL(url); setAISpeaking(false); resolve(false); };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          setAISpeaking(false);
+          done(false);
+        };
         setAISpeaking(true);
-        audio.play().catch(() => { setAISpeaking(false); resolve(false); });
-      } catch(e) { setAISpeaking(false); resolve(false); }
+        const p = audio.play();
+        if (p && p.then) {
+          p.then(() => {
+            // Si el audio es muy corto, onended puede fallar en algunos navegadores
+            if (audio.duration && isFinite(audio.duration) && audio.duration < 0.2) {
+              setTimeout(() => done(true), 250);
+            }
+          }).catch((err) => {
+            console.warn('[Gigi/Voz] audio.play() bloqueado:', err && err.name, err && err.message);
+            URL.revokeObjectURL(url);
+            setAISpeaking(false);
+            done(false);
+          });
+        }
+      } catch(e) {
+        setAISpeaking(false);
+        done(false);
+      }
     });
   }
 
@@ -2920,7 +3058,7 @@
     }
   }
 
-  // ─── Gemini TTS (Google AI API, Tier 0 — requiere API key) ────────────
+  // ─── Gemini TTS / JARVIS Charon (voz grave del doc Voz_Charon_JARVIS.txt) ───
   function _getGeminiKey() {
     const cfg = window.KPK_CONFIG || {};
     let brandKeys = null;
@@ -2928,12 +3066,19 @@
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
       }
-    } catch(e) {}
-    const raw = localStorage.getItem('ferrari_ai_key_gemini')
-      || (brandKeys && brandKeys.gemini)
-      || (cfg.aiKeys && cfg.aiKeys.gemini)
-      || '';
-    return _deobfuscateKey(raw);
+    } catch (e) {}
+    // Preferir config.js (tiene Charon key) sobre brand vacío
+    const candidates = [
+      localStorage.getItem('ferrari_ai_key_gemini'),
+      cfg.aiKeys && cfg.aiKeys.gemini,
+      brandKeys && brandKeys.gemini
+    ];
+    for (const raw of candidates) {
+      if (!raw || !String(raw).trim()) continue;
+      const key = _deobfuscateKey(String(raw).trim());
+      if (key && key.length >= 20) return key;
+    }
+    return '';
   }
 
   function _pcmToWav(pcmData, sampleRate) {
@@ -2955,57 +3100,134 @@
     return new Blob([buf], { type: 'audio/wav' });
   }
 
-  async function _speakGeminiTTS(text) {
-    const key = _getGeminiKey();
-    if (!key) return false;
-    const clean = _cleanTextForTTS(text);
-    if (!clean) return false;
-    try {
-      const model = 'gemini-3.1-flash-tts-preview';
-      const body = JSON.stringify({
-        contents: [{ parts: [{ text: clean }] }],
-        generationConfig: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' }
-            }
-          }
-        }
-      });
-
-      // Try AI Studio first (AQ/AIza keys), fallback to Agent Platform Express (Vertex AI)
-      let res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body }
-      );
-      if (!res.ok) {
-        res = await fetch(
-          `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-        );
-      }
-      if (!res.ok) return false;
-      const data = await res.json();
-      const part = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!part?.data) return false;
-      const binary = atob(part.data);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const mime = part.mimeType || 'audio/pcm';
-      const blob = (mime === 'audio/pcm' || mime === 'audio/L16')
-        ? _pcmToWav(bytes, 24000)
-        : new Blob([bytes], { type: mime });
-      return _playAudioBlob(blob, text);
-    } catch(e) {
-      console.warn('[Gigi/GeminiTTS] Error:', e.message);
-      return false;
-    }
+  function _b64ToBytes(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
   }
 
-  // ─── speakJarvis: ElevenLabs → Mia gratis (StreamElements) → Edge → WebSpeech ───
-  // NOTA: Edge TTS directo desde Chrome/Firefox está bloqueado por Microsoft (WebSocket headers).
-  // Por eso la voz gratis REAL y estable es StreamElements Mia (AWS Polly neural).
+  function _geminiAudioPartToBlob(part) {
+    if (!part || !part.data) return null;
+    const bytes = _b64ToBytes(part.data);
+    const mime = String(part.mimeType || 'audio/pcm').toLowerCase();
+    if (mime.includes('pcm') || mime.includes('l16') || mime === 'audio/raw') {
+      // Gemini Live/TTS: PCM 24 kHz mono 16-bit LE (Voz_Charon_JARVIS.txt)
+      return _pcmToWav(bytes, 24000);
+    }
+    return new Blob([bytes], { type: mime.includes('audio') ? mime : 'audio/mpeg' });
+  }
+
+  const GEMINI_TTS_MODELS = [
+    'gemini-2.5-flash-preview-tts',
+    'gemini-2.5-pro-preview-tts',
+    'gemini-3.1-flash-tts-preview',
+    'gemini-2.0-flash'
+  ];
+
+  /** Charon = JARVIS (grave). Kore = Gigi alternativa. */
+  async function _speakGeminiVoice(text, voiceName) {
+    const key = _getGeminiKey();
+    if (!key) {
+      console.warn('[Gigi/Voz] Sin key Gemini → no Charon/Kore');
+      return false;
+    }
+    const clean = _cleanTextForTTS(text);
+    if (!clean) return false;
+    const voice = voiceName || 'Charon';
+
+    // Prompt estilo JARVIS: fuerza lectura exacta (truco del doc)
+    const speakPrompt = voice === 'Charon'
+      ? `Di exactamente esto en voz alta, con tono de mayordomo JARVIS grave e imponente, sin añadir nada: ${clean}`
+      : clean;
+
+    // A) generateContent clásico (generateContent + AUDIO) — el del archivo Voz_Charon_JARVIS
+    for (const model of GEMINI_TTS_MODELS) {
+      try {
+        const body = JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: speakPrompt }] }],
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: voice }
+              }
+            }
+          }
+        });
+        let res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body }
+        );
+        if (!res.ok) {
+          res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+          );
+        }
+        if (!res.ok) {
+          console.warn('[Gigi/Voz] Gemini', model, 'HTTP', res.status);
+          continue;
+        }
+        const data = await res.json();
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const inline = parts.find(p => p.inlineData && p.inlineData.data)?.inlineData;
+        const blob2 = _geminiAudioPartToBlob(inline);
+        if (blob2 && blob2.size > 100) {
+          _lastUsedVoiceEngine = voice === 'Charon' ? 'jarvis_charon' : 'gemini_tts';
+          console.log('[Gigi/Voz] ✓ Gemini', voice, 'vía', model);
+          return _playAudioBlob(blob2, text);
+        }
+      } catch (e) {
+        console.warn('[Gigi/Voz] Gemini', model, e.message);
+      }
+    }
+
+    // B) Interactions API nueva (speech_config: [{ voice: "Charon" }])
+    try {
+      const body = JSON.stringify({
+        model: 'gemini-3.1-flash-tts-preview',
+        input: speakPrompt,
+        response_format: { type: 'audio' },
+        generation_config: {
+          speech_config: [{ voice: voice }]
+        }
+      });
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+        method: 'POST',
+        headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+        body
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const b64 = data.output_audio?.data || data.outputAudio?.data;
+        if (b64) {
+          const bytes = _b64ToBytes(b64);
+          const blob = _pcmToWav(bytes, 24000);
+          _lastUsedVoiceEngine = voice === 'Charon' ? 'jarvis_charon' : 'gemini_tts';
+          console.log('[Gigi/Voz] ✓ Gemini', voice, 'vía interactions API');
+          return _playAudioBlob(blob, text);
+        }
+      } else {
+        console.warn('[Gigi/Voz] interactions HTTP', res.status);
+      }
+    } catch (e) {
+      console.warn('[Gigi/Voz] interactions error:', e.message);
+    }
+
+    return false;
+  }
+
+  async function _speakGeminiTTS(text) {
+    return _speakGeminiVoice(text, 'Kore');
+  }
+
+  async function _speakCharonJarvis(text) {
+    return _speakGeminiVoice(text, 'Charon');
+  }
+
+  // ─── speakJarvis: Dalia local (proxy) → ElevenLabs → Mia → Google → WebSpeech ───
+  // La voz robótica = WebSpeech. Prioridad absoluta: proxy local Dalia Neural (npm run tts).
   async function speakJarvis(text) {
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
@@ -3018,24 +3240,83 @@
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch (e) {} _activeJarvisAudio = null; }
 
     const preferred = _getPreferredVoiceMode();
-    const mode = await _resolveVoiceModeAsync();
-    const wantsMale = preferred.includes('daniel') || mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan') || mode.includes('miguel');
-    const streamVoice = wantsMale ? 'Miguel' : 'Mia';
+    let mode = await _resolveVoiceModeAsync();
     const isWebSpeechOnly = preferred === 'webspeech' || mode === 'webspeech';
+
+    // Edge TTS directo en Chrome/Firefox → no. Usamos proxy local o Mia.
+    if (String(mode).startsWith('edge_') && !_isMicrosoftEdgeBrowser()) {
+      mode = 'local_dalia';
+    }
+
+    const wantsMale = preferred.includes('daniel') || mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan') || mode.includes('miguel');
+    let streamVoice = wantsMale ? 'Miguel' : 'Mia';
+    if (mode === 'stream_lucia') streamVoice = 'Lucia';
+    else if (mode === 'stream_penelope') streamVoice = 'Penelope';
+    else if (mode === 'stream_gigi' || mode === 'auto_gigi') streamVoice = 'Mia';
 
     console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode);
 
-    // 1) ElevenLabs si el modo efectivo lo pide y hay créditos
-    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel') {
-      const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
-      if (await _speakElevenLabs(text, v)) {
-        _lastUsedVoiceEngine = 'elevenlabs';
-        return;
-      }
-      console.warn('[Gigi/Voz] ElevenLabs no disponible → Mia gratis');
+    if (isWebSpeechOnly) {
+      if (_speakWebSpeech(text)) _lastUsedVoiceEngine = 'webspeech';
+      return;
     }
 
-    // 2) Gemini TTS solo si el usuario lo eligió a mano
+    // 0) JARVIS CHARON (Gemini) — voz del archivo Voz_Charon_JARVIS.txt
+    const wantsCharon = preferred === 'jarvis_charon' || preferred === 'gemini_charon' || mode === 'jarvis_charon'
+      || preferred === 'gemini_tts' || mode === 'gemini_tts';
+    if (wantsCharon || (preferred === 'auto_gigi' && _getGeminiKey() && (preferred.includes('jarvis') || mode.includes('charon')))) {
+      const vName = (preferred === 'gemini_tts' || mode === 'gemini_tts') ? 'Kore' : 'Charon';
+      if (await _speakGeminiVoice(text, vName)) {
+        console.log('[Gigi/Voz] ✓', vName === 'Charon' ? 'JARVIS Charon' : 'Gemini Kore');
+        return;
+      }
+    }
+    // Si el usuario eligió Charon explícitamente, insistir antes de Dalia
+    if (preferred === 'jarvis_charon' || preferred === 'gemini_charon') {
+      if (await _speakCharonJarvis(text)) return;
+    }
+
+    // 0b) DALIA NEURAL vía proxy local (npm run tts)
+    const proxyUp = await _probeLocalTtsProxy(false);
+    if (proxyUp || mode === 'local_dalia' || mode === 'edge_dalia' || preferred === 'local_dalia' || preferred === 'auto_gigi' || preferred === 'stream_gigi') {
+      let localVoice = EDGE_TTS_VOICE_DALIA;
+      if (wantsMale) localVoice = EDGE_TTS_VOICE_JORGE;
+      if (mode === 'edge_elvira') localVoice = EDGE_TTS_VOICE_ELVIRA;
+      else if (mode === 'edge_jorge') localVoice = EDGE_TTS_VOICE_JORGE;
+      else if (mode === 'edge_alvaro') localVoice = EDGE_TTS_VOICE_ES;
+      else if (mode === 'edge_ryan') localVoice = EDGE_TTS_VOICE_RYAN;
+      if (await _speakLocalDalia(text, localVoice)) {
+        _lastUsedVoiceEngine = 'local_dalia';
+        console.log('[Gigi/Voz] ✓ Dalia Neural LOCAL (proxy · humana)');
+        return;
+      }
+    }
+
+    // 0c) Charon como fallback humano si hay key Gemini (antes de robot)
+    if (_getGeminiKey() && preferred !== 'stream_gigi') {
+      if (await _speakCharonJarvis(text)) {
+        console.log('[Gigi/Voz] ✓ JARVIS Charon (fallback Gemini)');
+        return;
+      }
+    }
+
+    // 1) ElevenLabs si hay créditos
+    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel' || preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi' || preferred === 'elevenlabs_daniel') {
+      const wantDaniel = preferred.includes('daniel') || mode.includes('daniel');
+      const tryEl = preferred === 'auto_gigi' || preferred.startsWith('elevenlabs') || mode.startsWith('elevenlabs');
+      if (tryEl) {
+        const elOk = await _probeElevenLabs(false);
+        if (elOk) {
+          const v = wantDaniel ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+          if (await _speakElevenLabs(text, v)) {
+            _lastUsedVoiceEngine = 'elevenlabs';
+            return;
+          }
+        }
+      }
+    }
+
+    // 2) Gemini Kore si quedó pendiente
     if (preferred === 'gemini_tts' || mode === 'gemini_tts') {
       if (await _speakGeminiTTS(text)) {
         _lastUsedVoiceEngine = 'gemini_tts';
@@ -3043,21 +3324,9 @@
       }
     }
 
-    // 3) VOZ GRATIS PRINCIPAL: StreamElements Mia/Miguel (funciona en Chrome/Safari/Firefox)
-    if (!isWebSpeechOnly) {
-      if (await _speakStreamElements(text, streamVoice)) {
-        _lastUsedVoiceEngine = 'streamelements';
-        console.log('[Gigi/Voz] ✓ StreamElements', streamVoice, '(gratis · AWS Polly)');
-        return;
-      }
-      console.warn('[Gigi/Voz] StreamElements falló, probando Edge…');
-    }
-
-    // 4) Edge Neural (solo suele funcionar en navegador Edge)
-    if (!isWebSpeechOnly) {
-      const edgeVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
-      if (mode === 'edge_elvira') { /* keep mapped below */ }
-      let ev = edgeVoice;
+    // 3) Edge directo solo en Microsoft Edge
+    if (String(mode).startsWith('edge_') && _isMicrosoftEdgeBrowser()) {
+      let ev = EDGE_TTS_VOICE_DALIA;
       if (mode === 'edge_elvira') ev = EDGE_TTS_VOICE_ELVIRA;
       else if (mode === 'edge_jorge') ev = EDGE_TTS_VOICE_JORGE;
       else if (mode === 'edge_alvaro') ev = EDGE_TTS_VOICE_ES;
@@ -3068,8 +3337,28 @@
       }
     }
 
-    // 5) Último recurso: WebSpeech (robótica — solo si todo lo demás falló)
-    console.warn('[Gigi/Voz] ⚠️ Solo queda WebSpeech (robótica). Revisa red/bloqueadores.');
+    // 4) StreamElements Mia (AWS Polly) — gratis; a veces la bloquean adblockers
+    if (await _speakStreamElements(text, streamVoice)) {
+      _lastUsedVoiceEngine = 'streamelements';
+      console.log('[Gigi/Voz] ✓ StreamElements', streamVoice, '(gratis · AWS Polly)');
+      return;
+    }
+    console.warn('[Gigi/Voz] StreamElements falló (¿adblocker?). Probando Google…');
+
+    // 5) Google Translate TTS
+    if (await _speakGoogleTranslate(text)) {
+      _lastUsedVoiceEngine = 'google_tts';
+      console.log('[Gigi/Voz] ✓ Google Translate TTS');
+      return;
+    }
+
+    // 6) Último recurso robótico — solo si TODO falló
+    console.warn('[Gigi/Voz] ⚠️ Caída a WebSpeech ROBÓTICA. Arranca el proxy: npm run tts');
+    try {
+      if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+        window.FerrariUI.showToast('Voz robótica: ejecuta npm run tts para Dalia humana', 'warning');
+      }
+    } catch (e) {}
     if (_speakWebSpeech(text)) {
       _lastUsedVoiceEngine = 'webspeech';
     }
@@ -3127,55 +3416,9 @@
   }
 
   async function fetchCharonAudio(text) {
-    const cfg = window.KPK_CONFIG || {};
-    let brandKeys = null;
-    try {
-      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
-        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
-      }
-    } catch(e) {}
-
-    const geminiKey = localStorage.getItem('ferrari_ai_key_gemini')
-      || (brandKeys && brandKeys.gemini)
-      || (cfg.aiKeys && cfg.aiKeys.gemini)
-      || '';
-
-    let decodedKey = _deobfuscateKey(geminiKey);
-    if (!decodedKey) return null;
-
-    try {
-      const cleanPrompt = _cleanTextForTTS(text);
-      if (!cleanPrompt) return null;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${decodedKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: `Di exactamente en voz alta: ${cleanPrompt}` }] }],
-          generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: "Charon"
-                }
-              }
-            }
-          }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const audioPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-        if (audioPart && audioPart.inlineData?.data) {
-          return audioPart.inlineData.data;
-        }
-      }
-    } catch (e) {
-      console.warn('[Ferrari/IA] No se pudo generar audio Charon nativo:', e);
-    }
-    return null;
+    // Compat: usa el motor unificado Charon
+    const ok = await _speakCharonJarvis(text);
+    return ok ? 'played' : null;
   }
 
   let _activeAudioSource = null;
@@ -5113,8 +5356,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     }
 
     const mode = _getVoiceMode();
-    const isGigi = mode.includes('gigi') || mode.includes('dalia');
-    const name = isGigi ? 'Gigi' : 'Jarvis';
+    const isJarvis = mode.includes('jarvis') || mode.includes('charon') || mode.includes('daniel');
+    const isGigi = !isJarvis && (mode.includes('gigi') || mode.includes('dalia') || mode.includes('stream') || mode === 'auto_gigi');
+    const name = isJarvis ? 'Jarvis' : (isGigi ? 'Gigi' : 'Jarvis');
 
     // Iconos SVG
     const micSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>`;
@@ -5401,7 +5645,61 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         mobilePopup.classList.remove('is-speaking');
       }
     }
+    // Badge del motor activo (para ver al instante si es Dalia o robótica)
+    let badge = document.getElementById('kpk-voice-engine-badge');
+    if (!badge) {
+      const header = document.querySelector('.kpk-ai-header-title');
+      if (header) {
+        badge = document.createElement('span');
+        badge.id = 'kpk-voice-engine-badge';
+        badge.style.cssText = 'margin-left:8px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:rgba(0,180,255,0.15);color:#7dd3fc;letter-spacing:0.2px;';
+        header.appendChild(badge);
+      }
+    }
+    if (badge) {
+      if (status && _lastUsedVoiceEngine) {
+        const labels = {
+          jarvis_charon: '🎩 CHARON',
+          gemini_tts: 'Gemini',
+          local_dalia: '🔥 DALIA',
+          elevenlabs: '🏆 BELLA',
+          streamelements: 'Mia',
+          google_tts: 'Google',
+          edge_tts: 'Edge',
+          webspeech: '⚠️ ROBOT'
+        };
+        badge.textContent = labels[_lastUsedVoiceEngine] || _lastUsedVoiceEngine;
+        badge.style.display = 'inline-block';
+        badge.style.background = _lastUsedVoiceEngine === 'webspeech' ? 'rgba(255,80,80,0.2)' : 'rgba(0,180,255,0.15)';
+        badge.style.color = _lastUsedVoiceEngine === 'webspeech' ? '#ff8a8a' : '#7dd3fc';
+      } else if (!status) {
+        // dejar el último motor visible unos segundos
+      }
+    }
   }
+
+  // Debug / prueba manual desde consola
+  window.__kpkSpeak = function(t) { return speakJarvis(t || 'Hola, soy Dalia, voz neural humana.'); };
+  window.__kpkVoiceDebug = function() {
+    const gk = _getGeminiKey();
+    const cfg = window.KPK_CONFIG || {};
+    return {
+      mode: _getVoiceMode(),
+      preferred: _getPreferredVoiceMode(),
+      lastEngine: _lastUsedVoiceEngine,
+      speechEnabled: _speechEnabled,
+      localProxy: _localTtsOk,
+      el: _elStatus,
+      geminiKeyLen: gk ? gk.length : 0,
+      hasConfigGemini: !!(cfg.aiKeys && cfg.aiKeys.gemini),
+      hasLsGemini: !!localStorage.getItem('ferrari_ai_key_gemini')
+    };
+  };
+  window.__kpkSpeakCharon = function(t) {
+    localStorage.setItem('kpk_voice_mode', 'jarvis_charon');
+    localStorage.setItem('kpk_voice_user_override', '1');
+    return _speakCharonJarvis(t || 'Ciertamente, señor. Sistemas en línea.');
+  };
 
   // Carga inicial
   if (document.readyState === 'loading') {

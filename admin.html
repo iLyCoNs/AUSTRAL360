@@ -1145,6 +1145,9 @@
           <div class="efield full">
             <label>Voz Predeterminada del Copiloto</label>
             <select id="brand-ai-voice" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
+              <optgroup label="🎩 JARVIS (Gemini Charon)">
+                <option value="jarvis_charon">JARVIS Charon — voz grave del doc</option>
+              </optgroup>
               <optgroup label="⭐ Recomendado (automático)">
                 <option value="auto_gigi" selected>⭐ Auto · Gigi Bella si hay créditos · si no Mia gratis</option>
               </optgroup>
@@ -1153,23 +1156,17 @@
                 <option value="elevenlabs_daniel">ElevenLabs Daniel</option>
               </optgroup>
               <optgroup label="🆓 Voz gratis (recomendada)">
-                <option value="stream_gigi">Mia MX neural — gratis y estable</option>
+                <option value="local_dalia">Dalia Neural (proxy local npm run tts)</option>
+                <option value="stream_gigi">Mia MX neural — gratis</option>
                 <option value="stream_lucia">Lucía ES (StreamElements)</option>
                 <option value="stream_penelope">Penelope US (StreamElements)</option>
-              </optgroup>
-              <optgroup label="Edge Neural (falla en Chrome)">
-                <option value="edge_dalia">Edge Neural Dalia — suele fallar en Chrome</option>
-                <option value="edge_elvira">Edge Neural Elvira — Mujer · España</option>
-                <option value="edge_jorge">Edge Neural Jorge — Hombre · México</option>
-                <option value="edge_alvaro">Edge Neural Álvaro — Hombre · España</option>
-                <option value="edge_ryan">Edge Neural Ryan — Hombre · Inglés británico</option>
               </optgroup>
               <optgroup label="Otras">
                 <option value="gemini_tts">Gemini TTS Kore</option>
                 <option value="webspeech">Web Speech API (robótica)</option>
               </optgroup>
             </select>
-            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);"><b>Auto</b> sondea créditos de ElevenLabs: con saldo habla <b>Gigi Bella</b>; sin créditos usa <b>Mia</b> (AWS Polly vía StreamElements, gratis y estable en Chrome). Edge Dalia no funciona bien fuera del navegador Edge.</span>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);"><b>Auto</b> sondea créditos de ElevenLabs: con saldo habla <b>Gigi Bella</b>; sin créditos usa <b>Mia</b> (AWS Polly vía StreamElements, gratis y estable en Chrome). <b>Dalia/Edge TTS no puede hablar en Chrome/Firefox</b> — Microsoft bloquea el WebSocket; solo funciona en el navegador Microsoft Edge.</span>
           </div>
 
           <div class="efield full">
