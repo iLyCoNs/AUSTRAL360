@@ -400,33 +400,18 @@
       const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
 
       let welcomeText = "";
-      if (isMobile) {
-        if (_clientName) {
-          welcomeText = `¡Hola, ${_clientName}! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Te muestro un tour o buscas algún lote en específico?`;
-        } else {
-          welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
-          _isWaitingForName = true;
-        }
+      if (_clientName) {
+        welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantShortName}. ¿Hacemos el tour o buscas un lote en específico?`;
       } else {
-        if (_clientName) {
-          welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantShortName}. ¿Hacemos el tour o buscas un lote en específico?`;
-        } else {
-          welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
-          _isWaitingForName = true;
-        }
+        welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+        _isWaitingForName = true;
       }
 
-      // Mostrar burbuja con pulso de atención
       if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
-
-      if (isMobile) {
-        // En móvil mostramos la burbuja flotante translúcida
-        showMobileBubblePopup(welcomeText, true);
-      } else {
-        // En escritorio, abrir panel y entregar el saludo normal
-        if (!_panel.classList.contains('is-open')) togglePanel();
-        appendMessage(welcomeText, 'system');
+      if (_panel && !_panel.classList.contains('is-open')) {
+        _panel.classList.add('is-open');
       }
+      appendMessage(welcomeText, 'system');
 
       _unlockMobileAudio();
       speakJarvis(welcomeText);
@@ -437,45 +422,16 @@
   let _hasGreeted = false;
 
   function togglePanel() {
-    const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
-      const mode = _getVoiceMode();
-      const isGigi = mode.includes('gigi') || mode.includes('dalia');
-      const assistantName = isGigi ? 'Gigi' : 'Jarvis';
-      const txt = _clientName 
-        ? `Hola, ${_clientName}. ¿En qué te puedo ayudar hoy? Puedes hablar o escribir.` 
-        : `¡Hola! Soy ${assistantName}. ¿En qué te puedo ayudar hoy?`;
-
-      if (!popup || !popup.classList.contains('is-visible') || popup.style.display === 'none') {
-        showMobileBubblePopup(txt, true);
-        speakJarvis(txt);
-      } else {
-        const inputRow = popup.querySelector('#kpk-mbp-input-row');
-        const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
-        if (inputRow && controlsRow) {
-          inputRow.style.display = 'flex';
-          controlsRow.style.display = 'none';
-          const inp = popup.querySelector('#kpk-mbp-text-input');
-          if (inp) inp.focus();
-        }
-      }
-      return;
-    }
-
+    if (!_panel) return;
     const isOpen = _panel.classList.toggle('is-open');
     if (isOpen) {
-      _input.focus();
+      if (_input) _input.focus();
       playFuturisticSound('start');
       if (!_hasGreeted) {
-        _hasGreeted = true;
-        setTimeout(() => {
-          speakJarvis(`Hola, soy ${assistantName}. ¿En qué te puedo ayudar?`);
-        }, 400);
+        _triggerWelcomeGreeting();
       }
     } else {
-      clearHighlights();
-      window.speechSynthesis.cancel();
+      playFuturisticSound('click');
     }
   }
 
