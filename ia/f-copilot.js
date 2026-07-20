@@ -391,7 +391,8 @@
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // ── WELCOME TOUR: Gigi saluda al usuario inmediatamente en texto y voz al cargar la página
+    // ── WELCOME TOUR: Gigi saluda al usuario en texto y voz
+    // El saludo hablado se dispara en el primer click para cumplir con la autoplay policy del navegador
     const brand2 = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
       ? window.FerrariBrandDock.getBrand() : {};
     const projectName2 = brand2.projectName || 'Austral 360';
@@ -407,10 +408,14 @@
       _panel.classList.add('is-open');
     }
 
-    setTimeout(() => {
+    function _playWelcome(e) {
+      window.removeEventListener('click', _playWelcome);
+      window.removeEventListener('touchstart', _playWelcome);
       _unlockMobileAudio();
       speakJarvis(welcomeGreeting);
-    }, 800);
+    }
+    window.addEventListener('click', _playWelcome, { once: true, passive: true });
+    window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
   }
 
 
@@ -2453,29 +2458,29 @@
 
     // ─── TIER 1: StreamElements AWS Polly Mia (Voz latina neuronal, gratis, sin API key) ───
     const okStream = await _speakStreamElements(text);
-    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+    if (okStream) return;
 
     // ─── TIER 2: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
     const okGoogle = await _speakGoogleTranslate(text);
-    if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
+    if (okGoogle) return;
 
     // ─── TIER 3: Edge TTS Neural — Dalia (es-MX, alta calidad, requiere CDN) ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
     else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
     const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) { console.log('[Gigi/Voz] ✔ Edge TTS Neural'); return; }
+    if (okEdge) return;
 
     // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
     const okWeb = _speakWebSpeech(text);
-    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
+    if (okWeb) return;
 
     // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
     const elevenKey = _getElevenLabsKey();
     if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
-      if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
+      if (ok) return;
     }
   }
 
