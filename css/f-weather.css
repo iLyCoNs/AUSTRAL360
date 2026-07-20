@@ -15,18 +15,17 @@
   border-radius: 20px;
   overflow: hidden;
 
-  /* Glassmorphism ultra-blur */
-  background: rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Glassmorphism oscuro semi-opaco — visible sobre panoramas brillantes */
+  background: rgba(18, 18, 22, 0.82);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.28),
-    0 1px 0 rgba(255, 255, 255, 0.18) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
 
   font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  color: #fff;
+  color: #f5f5f7;
   user-select: none;
   transition: box-shadow 0.25s ease, opacity 0.2s ease;
   will-change: transform;
@@ -46,8 +45,8 @@
   justify-content: space-between;
   padding: 7px 10px 5px;
   cursor: grab;
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
 }
 .kpk-weather__handle:active { cursor: grabbing; }
 
