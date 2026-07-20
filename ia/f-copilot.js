@@ -152,24 +152,22 @@
     function _fireBannerVoice() {
       if (_bannerFired) return;
       _bannerFired = true;
-      banner.style.transition = 'all 0.4s';
-      banner.style.opacity = '0';
-      banner.style.transform = 'translateY(10px) scale(0.9)';
-      setTimeout(() => { banner.remove(); }, 400);
+      if (banner) {
+        banner.style.transition = 'all 0.4s';
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(10px) scale(0.9)';
+        setTimeout(() => { try { banner.remove(); } catch(e) {} }, 400);
+      }
       _unlockMobileAudio();
-      _loadVoicesWhenReady(() => {
-        speakJarvis(GIGI_MSG);
-      });
+      speakJarvis(GIGI_MSG);
     }
 
     banner.addEventListener('click', _fireBannerVoice);
 
-    // También escuchar el PRIMER gesto en cualquier parte de la página
-    // (para usuarios que hagan clic en el mapa o cualquier elemento antes del banner)
     function _onFirstPageGesture() {
       document.removeEventListener('click', _onFirstPageGesture, true);
       document.removeEventListener('touchstart', _onFirstPageGesture, true);
-      setTimeout(_fireBannerVoice, 100); // pequeño delay para que el gesto se procese primero
+      _fireBannerVoice();
     }
     document.addEventListener('click', _onFirstPageGesture, { capture: true, once: true, passive: true });
     document.addEventListener('touchstart', _onFirstPageGesture, { capture: true, once: true, passive: true });
@@ -2131,6 +2129,48 @@
   //  Límite práctico: ~500 chars por petición (URL length), se parte automáticamente
   const STREAM_TTS_BASE = 'https://api.streamelements.com/kappa/v2/speech';
 
+  // ─── Utilidad: reproducir directamente una URL de audio de forma síncrona ─────
+  function _playAudioUrl(url) {
+    return new Promise(resolve => {
+      try {
+        if (_activeJarvisAudio) {
+          try { _activeJarvisAudio.pause(); } catch(e) {}
+          _activeJarvisAudio = null;
+        }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+        const audio = new Audio(url);
+        _activeJarvisAudio = audio;
+        _shouldRestartMic = false;
+        if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
+
+        audio.onended = () => {
+          _activeJarvisAudio = null;
+          setAISpeaking(false);
+          resolve(true);
+        };
+        audio.onerror = (e) => {
+          console.warn('[Gigi/Voz] Error audio URL:', e);
+          _activeJarvisAudio = null;
+          setAISpeaking(false);
+          resolve(false);
+        };
+        setAISpeaking(true);
+        const p = audio.play();
+        if (p && p.catch) {
+          p.catch(err => {
+            console.warn('[Gigi/Voz] audio.play() bloqueado:', err);
+            setAISpeaking(false);
+            resolve(false);
+          });
+        }
+      } catch(e) {
+        setAISpeaking(false);
+        resolve(false);
+      }
+    });
+  }
+
   async function _speakStreamElements(text) {
     try {
       const clean = _cleanTextForTTS(text);
@@ -2138,12 +2178,11 @@
 
       const mode = _getVoiceMode();
       let voice;
-      if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';    // españa femenina
-      else if (mode === 'stream_penelope')                           voice = 'Penelope'; // US femenina
-      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';   // masculina
-      else                                                           voice = 'Mia';      // MX femenina (Gigi)
+      if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';
+      else if (mode === 'stream_penelope')                           voice = 'Penelope';
+      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';
+      else                                                           voice = 'Mia';
 
-      // Partir en fragmentos si supera 460 chars (límite de URL)
       const MAX = 460;
       const fragments = [];
       let remaining = clean;
@@ -2152,7 +2191,6 @@
           fragments.push(remaining);
           break;
         }
-        // Cortar en el último punto/coma/espacio antes del límite
         let cut = remaining.lastIndexOf('.', MAX);
         if (cut < 80) cut = remaining.lastIndexOf(',', MAX);
         if (cut < 80) cut = remaining.lastIndexOf(' ', MAX);
@@ -2161,22 +2199,13 @@
         remaining = remaining.substring(cut + 1).trim();
       }
 
-      // Reproducir fragmentos en secuencia
       for (const frag of fragments) {
         const url = `${STREAM_TTS_BASE}?voice=${voice}&text=${encodeURIComponent(frag)}`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          console.warn('[Gigi/StreamTTS] HTTP', res.status, '- intentando con Penelope');
-          // Retry con Penelope como fallback de voz
-          const res2 = await fetch(`${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`).catch(() => null);
-          if (!res2 || !res2.ok) return false;
-          const blob2 = await res2.blob();
-          const ok = await _playAudioBlob(blob2, frag);
-          if (!ok) return false;
-        } else {
-          const blob = await res.blob();
-          const ok  = await _playAudioBlob(blob, frag);
-          if (!ok) return false;
+        const ok = await _playAudioUrl(url);
+        if (!ok) {
+          const fallbackUrl = `${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`;
+          const ok2 = await _playAudioUrl(fallbackUrl);
+          if (!ok2) return false;
         }
       }
       return true;
@@ -2253,7 +2282,7 @@
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
 
-    return 'elevenlabs_gigi'; // Gigi por defecto global
+    return 'stream_gigi'; // Gigi (Mia MX) por defecto global
   }
 
   function _voiceModeLabel(mode) {
