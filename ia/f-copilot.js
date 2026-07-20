@@ -2451,20 +2451,20 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: ElevenLabs (solo si hay clave activa) ───
+    // ─── TIER 1: ElevenLabs (solo si hay clave activa configurada) ───
     if (_getElevenLabsKey() && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
 
-    // ─── TIER 2: Web Speech API (Nativa del navegador — instantánea, voz femenina local Dalia/Sabina/Google) ───
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
-
-    // ─── TIER 3: StreamElements AWS Polly Mia (Voz latina neuronal de red) ───
+    // ─── TIER 2: StreamElements AWS Polly Mia (POR DEFECTO GLOBAL — Voz latina neuronal ultra realista, gratis) ───
     const okStream = await _speakStreamElements(text);
     if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+
+    // ─── TIER 3: Web Speech API (Nativa del navegador) ───
+    const okWeb = _speakWebSpeech(text);
+    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
 
     // ─── TIER 4: Google Translate TTS (Voz femenina en español) ───
     const okGoogle = await _speakGoogleTranslate(text);
