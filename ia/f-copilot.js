@@ -49,12 +49,24 @@
   let _isAISpeaking = false;
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
-  let _audioUnlocked = false;
-  let _primedAudio = null;
+  let _globalAudio = null;
 
   function _unlockMobileAudio() {
-    if (_audioUnlocked) return;
     try {
+      if (!_globalAudio) {
+        _globalAudio = new Audio();
+      }
+      if (!_audioUnlocked) {
+        _globalAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        const p = _globalAudio.play();
+        if (p && p.then) {
+          p.then(() => {
+            _audioUnlocked = true;
+            console.log('[Ferrari/IA] 🔊 Audio HTML5 desbloqueado globalmente en _globalAudio');
+          }).catch(() => {});
+        }
+      }
+
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         if (!_activeAudioCtx) {
@@ -69,14 +81,6 @@
         source.connect(_activeAudioCtx.destination);
         source.start(0);
       }
-      if (!_primedAudio) {
-        _primedAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-        _primedAudio.play().then(() => {
-          _audioUnlocked = true;
-          console.log('[Ferrari/IA] 🔊 Audio HTML5 desbloqueado exitosamente.');
-        }).catch(() => {});
-      }
-      // Precargar lista de voces del navegador (SIN hablar, para no cancelar audio posterior)
       if ('speechSynthesis' in window) {
         _cachedVoices = window.speechSynthesis.getVoices();
       }
@@ -2129,42 +2133,42 @@
   //  Límite práctico: ~500 chars por petición (URL length), se parte automáticamente
   const STREAM_TTS_BASE = 'https://api.streamelements.com/kappa/v2/speech';
 
-  // ─── Utilidad: reproducir directamente una URL de audio de forma síncrona ─────
+  // ─── Utilidad: reproducir directamente una URL de audio reutilizando _globalAudio ─────
   function _playAudioUrl(url) {
     return new Promise(resolve => {
       try {
-        if (_activeJarvisAudio) {
-          try { _activeJarvisAudio.pause(); } catch(e) {}
-          _activeJarvisAudio = null;
-        }
         if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (!_globalAudio) _globalAudio = new Audio();
 
-        const audio = new Audio(url);
-        _activeJarvisAudio = audio;
+        try { _globalAudio.pause(); } catch(e) {}
+        _globalAudio.src = url;
+        _activeJarvisAudio = _globalAudio;
+
         _shouldRestartMic = false;
         if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
 
-        audio.onended = () => {
+        _globalAudio.onended = () => {
           _activeJarvisAudio = null;
           setAISpeaking(false);
           resolve(true);
         };
-        audio.onerror = (e) => {
-          console.warn('[Gigi/Voz] Error audio URL:', e);
+        _globalAudio.onerror = (e) => {
+          console.warn('[Gigi/Voz] Error reproduciendo _globalAudio:', e);
           _activeJarvisAudio = null;
           setAISpeaking(false);
           resolve(false);
         };
         setAISpeaking(true);
-        const p = audio.play();
+        const p = _globalAudio.play();
         if (p && p.catch) {
           p.catch(err => {
-            console.warn('[Gigi/Voz] audio.play() bloqueado:', err);
+            console.warn('[Gigi/Voz] _globalAudio.play() bloqueado:', err);
             setAISpeaking(false);
             resolve(false);
           });
         }
       } catch(e) {
+        console.warn('[Gigi/Voz] Excepción en _playAudioUrl:', e);
         setAISpeaking(false);
         resolve(false);
       }
@@ -2460,9 +2464,9 @@
 
   function _pickFemaleSpanishVoice() {
     const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
-    // Prioridad: voces femeninas con nombre conocido → cualquier voz en español → null
-    return voices.find(v => v.lang.startsWith('es') && (v.name.includes('Sabina') || v.name.includes('Dalia') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Monica') || v.name.includes('Paulina') || v.name.includes('Luciana') || v.name.includes('Google esp') || v.name.includes('Spanish Female')))
-        || voices.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('male'))
+    // Prioridad: voces femeninas latinas/españolas con nombre conocido → cualquier voz femenina en español → cualquier voz en español
+    return voices.find(v => v.lang.startsWith('es') && (v.name.includes('Sabina') || v.name.includes('Dalia') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Monica') || v.name.includes('Paulina') || v.name.includes('Luciana') || v.name.includes('Google esp') || v.name.includes('Spanish Female') || v.name.includes('Conchita') || v.name.includes('Penelope') || v.name.includes('Mia') || v.name.includes('Lupe') || v.name.includes('Sofia') || v.name.includes('Victoria') || v.name.includes('Camila') || v.name.includes('Paloma') || v.name.includes('Angelica') || v.name.includes('Soledad') || v.name.includes('Francisca')))
+        || voices.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('male') && !v.name.toLowerCase().includes('hombre') && !v.name.toLowerCase().includes('jorge') && !v.name.toLowerCase().includes('pablo') && !v.name.toLowerCase().includes('carlos') && !v.name.toLowerCase().includes('alvaro') && !v.name.toLowerCase().includes('miguel'))
         || voices.find(v => v.lang.startsWith('es'))
         || null;
   }
