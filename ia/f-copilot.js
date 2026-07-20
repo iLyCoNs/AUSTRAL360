@@ -313,14 +313,15 @@
       }
     });
 
-    // Preferencia de voz v3: Auto Gigi (ElevenLabs si hay créditos) → Dalia si no
-    const VOICE_DEFAULT_VER = '3';
+    // Preferencia de voz v4: Auto Gigi (ElevenLabs si hay créditos) → Mia gratis si no
+    // (Edge Dalia no funciona en Chrome/Firefox; Mia vía StreamElements sí)
+    const VOICE_DEFAULT_VER = '4';
     if (localStorage.getItem('kpk_voice_default_ver') !== VOICE_DEFAULT_VER) {
       localStorage.setItem('kpk_voice_mode', 'auto_gigi');
       localStorage.removeItem('kpk_voice_user_override');
       localStorage.removeItem('kpk_el_status_v1');
       localStorage.setItem('kpk_voice_default_ver', VOICE_DEFAULT_VER);
-      console.log('[Ferrari/IA] Voz Auto Gigi activada (ElevenLabs si hay créditos → si no Dalia)');
+      console.log('[Ferrari/IA] Voz Auto Gigi activada (ElevenLabs si hay créditos → si no Mia gratis)');
     }
 
     // Sembrar key ElevenLabs desde config/brand si no está en localStorage
@@ -348,29 +349,29 @@
       localStorage.setItem('kpk_voice_mode', 'auto_gigi');
     }
 
-    // Sondear ElevenLabs en segundo plano (créditos) para decidir Gigi vs Dalia
+    // Sondear ElevenLabs en segundo plano (créditos) para decidir Bella vs Mia
     setTimeout(() => {
       _probeElevenLabs(false).then((ok) => {
-        console.log('[Ferrari/IA] ElevenLabs ' + (ok ? '✅ con créditos → Gigi Bella' : '⛔ sin créditos/key → Dalia'));
+        console.log('[Ferrari/IA] ElevenLabs ' + (ok ? '✅ con créditos → Gigi Bella' : '⛔ sin créditos/key → Mia gratis'));
       }).catch(() => {});
     }, 600);
 
 
     // ─── Selector interactivo de voz ───
     const VOICE_OPTIONS = [
-      { id: 'auto_gigi',         label: '⭐ Auto · Gigi si hay créditos · si no Dalia', group: 'Recomendado' },
+      { id: 'auto_gigi',         label: '⭐ Auto · Bella si hay créditos · si no Mia gratis', group: 'Recomendado' },
+      { id: 'stream_gigi',       label: 'Mia MX neural (gratis · estable)', group: 'Gratis' },
       { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi (solo si hay créditos)', group: 'ElevenLabs' },
       { id: 'elevenlabs_daniel', label: '🏆 ElevenLabs Daniel', group: 'ElevenLabs' },
-      { id: 'edge_dalia',        label: 'Dalia Neural MX (gratis)', group: 'Edge TTS' },
+      { id: 'edge_dalia',        label: 'Dalia Edge (falla en Chrome)', group: 'Edge TTS' },
       { id: 'edge_elvira',       label: 'Elvira Neural ES', group: 'Edge TTS' },
       { id: 'edge_jorge',        label: 'Jorge Neural MX', group: 'Edge TTS' },
       { id: 'edge_alvaro',       label: 'Álvaro Neural ES', group: 'Edge TTS' },
       { id: 'edge_ryan',         label: 'Ryan Neural UK', group: 'Edge TTS' },
       { id: 'gemini_tts',        label: '🤖 Gemini TTS Kore', group: 'Gemini' },
-      { id: 'stream_gigi',       label: 'Gigi Mia MX', group: 'StreamElements' },
       { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
       { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
-      { id: 'webspeech',         label: 'Web Speech', group: 'Navegador' }
+      { id: 'webspeech',         label: 'Web Speech (robótica)', group: 'Navegador' }
     ];
     const voicePanel = document.getElementById('kpk-voice-panel');
     const voiceSelectBtn = document.getElementById('kpk-ai-voice-select');
@@ -1155,7 +1156,7 @@
         const vozMsg = `🎙️ <b>Modelo de Voz del Copiloto</b><br><br>` +
           `• <b>Preferencia:</b> <code>${preferred}</code> (${_voiceModeLabel(preferred)})<br>` +
           `• <b>Efectiva ahora:</b> <code>${mode}</code> (${_voiceModeLabel(mode)})<br>` +
-          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida → Dalia'}<br>` +
+          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida → Mia gratis'}<br>` +
           `• <b>Último motor:</b> <code>${engineLabels[lastEngine] || lastEngine}</code><br>` +
           `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br><br>` +
           `<i>Auto Gigi: con créditos habla Bella; sin créditos habla Dalia sola.</i>`;
@@ -1170,19 +1171,19 @@
     if (lowerPrompt === '/voces') {
       const current = _getVoiceMode();
       const VOICE_OPTIONS_LOCAL = [
-        { id: 'auto_gigi',         label: '⭐ Auto · Gigi si hay créditos · si no Dalia', group: 'Recomendado' },
+        { id: 'auto_gigi',         label: '⭐ Auto · Bella si hay créditos · si no Mia gratis', group: 'Recomendado' },
+        { id: 'stream_gigi',       label: 'Mia MX neural (gratis · estable)', group: 'Gratis' },
         { id: 'elevenlabs_gigi',   label: '🏆 Gigi Bella (ElevenLabs)', group: 'ElevenLabs' },
         { id: 'elevenlabs_daniel', label: '🏆 Daniel (ElevenLabs)', group: 'ElevenLabs' },
-        { id: 'edge_dalia',        label: 'Dalia MX (Edge · gratis)', group: 'Edge TTS' },
+        { id: 'edge_dalia',        label: 'Dalia Edge (falla en Chrome)', group: 'Edge TTS' },
         { id: 'edge_elvira',       label: 'Elvira ES (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_jorge',        label: 'Jorge MX (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_alvaro',       label: 'Álvaro ES (Edge TTS)', group: 'Edge TTS' },
         { id: 'edge_ryan',         label: 'Ryan UK (Edge TTS)', group: 'Edge TTS' },
         { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
-        { id: 'stream_gigi',       label: 'Gigi Mia MX', group: 'StreamElements' },
         { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
         { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
-        { id: 'webspeech',         label: 'Web Speech (Navegador)', group: 'Navegador' }
+        { id: 'webspeech',         label: 'Web Speech (robótica)', group: 'Navegador' }
       ];
       let msg = '🎙️ <b>Selecciona una voz:</b><br><br><div style="display:flex;flex-direction:column;gap:6px;">';
       for (const v of VOICE_OPTIONS_LOCAL) {
@@ -2365,17 +2366,19 @@
     });
   }
 
-  async function _speakStreamElements(text) {
+  async function _speakStreamElements(text, forceVoice) {
     try {
       const clean = _cleanTextForTTS(text);
       if (!clean) return false;
 
       const mode = _getVoiceMode();
-      let voice;
-      if (mode === 'stream_lucia' || mode === 'edge_alvaro' || mode === 'edge_elvira') voice = 'Lucia';
-      else if (mode === 'stream_penelope')                                              voice = 'Penelope';
-      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan' || mode === 'edge_jorge') voice = 'Miguel';
-      else                                                                              voice = 'Mia';      // MX femenina (Gigi por defecto)
+      let voice = forceVoice;
+      if (!voice) {
+        if (mode === 'stream_lucia' || mode === 'edge_alvaro' || mode === 'edge_elvira') voice = 'Lucia';
+        else if (mode === 'stream_penelope') voice = 'Penelope';
+        else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan' || mode === 'edge_jorge') voice = 'Miguel';
+        else voice = 'Mia'; // MX femenina neural (AWS Polly vía StreamElements)
+      }
 
       const MAX = 460;
       const fragments = [];
@@ -2394,16 +2397,36 @@
       }
 
       for (const frag of fragments) {
-        const url = `${STREAM_TTS_BASE}?voice=${voice}&text=${encodeURIComponent(frag)}`;
-        const ok = await _playAudioUrl(url);
-        if (!ok) {
-          const fallbackUrl = `${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`;
-          const ok2 = await _playAudioUrl(fallbackUrl);
-          if (!ok2) return false;
+        const url = `${STREAM_TTS_BASE}?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(frag)}`;
+        // Preferir fetch→blob (más fiable que Audio(src) en algunos navegadores)
+        let ok = false;
+        try {
+          const res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
+          if (res.ok) {
+            const blob = await res.blob();
+            if (blob && blob.size > 100) {
+              ok = await _playAudioBlob(blob, text);
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('[Gigi/StreamTTS] fetch falló, probando Audio(src):', fetchErr.message);
         }
+        if (!ok) ok = await _playAudioUrl(url);
+        if (!ok && voice !== 'Penelope') {
+          const fallbackUrl = `${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`;
+          try {
+            const res2 = await fetch(fallbackUrl, { method: 'GET', mode: 'cors', cache: 'no-store' });
+            if (res2.ok) {
+              const blob2 = await res2.blob();
+              if (blob2 && blob2.size > 100) ok = await _playAudioBlob(blob2, text);
+            }
+          } catch (e2) {}
+          if (!ok) ok = await _playAudioUrl(fallbackUrl);
+        }
+        if (!ok) return false;
       }
       return true;
-    } catch(e) {
+    } catch (e) {
       console.warn('[Gigi/StreamTTS] Error:', e.message);
       return false;
     }
@@ -2532,7 +2555,7 @@
       const statusOk = status === 'active' || status === 'trialing' || status === 'free';
       // Pedimos al menos ~80 caracteres para un saludo corto
       const ok = statusOk && (limit === 0 || remaining >= 80);
-      console.log(`[Gigi/Voz] ElevenLabs créditos restantes: ${remaining}/${limit || '?'} → ${ok ? 'Gigi Bella' : 'Dalia'}`);
+      console.log(`[Gigi/Voz] ElevenLabs créditos restantes: ${remaining}/${limit || '?'} → ${ok ? 'Gigi Bella' : 'Mia gratis'}`);
       _setElevenLabsStatus(ok, key, remaining);
       return ok;
     } catch (e) {
@@ -2563,7 +2586,7 @@
         })
       });
       if (!res.ok) {
-        console.warn('[Gigi/Voz] ⚠️ ElevenLabs HTTP ' + res.status + ' → Dalia');
+        console.warn('[Gigi/Voz] ⚠️ ElevenLabs HTTP ' + res.status + ' → Mia gratis');
         // 401/402/429 = key inválida o sin créditos → invalidar caché
         if (res.status === 401 || res.status === 402 || res.status === 403 || res.status === 429) {
           _setElevenLabsStatus(false, key, 0);
@@ -2615,7 +2638,8 @@
 
   /**
    * Modo efectivo sincrónico (UI / personalidad).
-   * auto_gigi / elevenlabs_* → Gigi si el último probe dijo OK, si no Dalia.
+   * auto_gigi / elevenlabs_* → Bella si hay créditos; si no Mia (StreamElements).
+   * Edge Dalia no es fiable en Chrome/Firefox (Microsoft bloquea el WebSocket).
    */
   function _getVoiceMode() {
     const preferred = _getPreferredVoiceMode();
@@ -2625,47 +2649,47 @@
 
     if (wantsGigiAuto || wantsDaniel) {
       const key = _getElevenLabsKey();
-      if (!key) return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      if (!key) return 'stream_gigi';
       if (_elStatus && _elStatus.keyFp === _elevenLabsKeyFp(key)) {
         if (_elStatus.ok) return wantsDaniel ? 'elevenlabs_daniel' : 'elevenlabs_gigi';
-        return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+        return 'stream_gigi';
       }
-      // Aún no sondeado: Dalia segura hasta que el probe confirme créditos
-      return wantsDaniel ? 'edge_jorge' : 'edge_dalia';
+      // Aún no sondeado: Mia gratis hasta que el probe confirme créditos
+      return 'stream_gigi';
     }
 
     return preferred;
   }
 
-  /** Resuelve Gigi vs Dalia consultando créditos justo antes de hablar */
+  /** Resuelve Bella vs Mia consultando créditos justo antes de hablar */
   async function _resolveVoiceModeAsync() {
     const preferred = _getPreferredVoiceMode();
     if (preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi') {
       const ok = await _probeElevenLabs(false);
-      return ok ? 'elevenlabs_gigi' : 'edge_dalia';
+      return ok ? 'elevenlabs_gigi' : 'stream_gigi';
     }
     if (preferred === 'elevenlabs_daniel') {
       const ok = await _probeElevenLabs(false);
-      return ok ? 'elevenlabs_daniel' : 'edge_jorge';
+      return ok ? 'elevenlabs_daniel' : 'stream_gigi';
     }
     return preferred;
   }
 
   function _voiceModeLabel(mode) {
     switch (mode) {
-      case 'auto_gigi':         return 'Auto · Gigi Bella si hay créditos · si no Dalia';
-      case 'stream_gigi':       return 'Gigi "Mia" MX (StreamElements • gratis)';
+      case 'auto_gigi':         return 'Auto · Gigi Bella si hay créditos · si no Mia gratis';
+      case 'stream_gigi':       return 'Gigi "Mia" MX (StreamElements • gratis · neural)';
       case 'stream_lucia':      return 'Gigi "Lucía" ES (StreamElements • gratis)';
       case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
       case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
       case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
-      case 'edge_dalia':        return 'Dalia Neural MX (Edge TTS • gratis)';
+      case 'edge_dalia':        return 'Dalia Neural MX (Edge · suele fallar en Chrome)';
       case 'edge_elvira':       return 'Elvira Neural (Edge TTS • humana ES)';
       case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
       case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
       case 'edge_ryan':         return 'Ryan Neural (Edge TTS • British)';
       case 'gemini_tts':        return 'Gemini TTS Kore (Google AI • voz humana premium)';
-      case 'webspeech':         return 'Voz del navegador (estándar)';
+      case 'webspeech':         return 'Voz del navegador (estándar · robótica)';
       default:                  return 'Voz activa';
     }
   }
@@ -2979,7 +3003,9 @@
     }
   }
 
-  // ─── speakJarvis: Auto Gigi (créditos) → Dalia; respeta modo manual ───
+  // ─── speakJarvis: ElevenLabs → Mia gratis (StreamElements) → Edge → WebSpeech ───
+  // NOTA: Edge TTS directo desde Chrome/Firefox está bloqueado por Microsoft (WebSocket headers).
+  // Por eso la voz gratis REAL y estable es StreamElements Mia (AWS Polly neural).
   async function speakJarvis(text) {
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
@@ -2989,78 +3015,61 @@
 
     if (!_speechEnabled) return;
     _unlockMobileAudio();
-    if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
+    if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch (e) {} _activeJarvisAudio = null; }
 
     const preferred = _getPreferredVoiceMode();
     const mode = await _resolveVoiceModeAsync();
-    const isGeminiMode   = mode === 'gemini_tts';
-    const isEdgeMode     = mode.startsWith('edge_');
-    const isStreamMode   = mode.startsWith('stream_');
-    const isElevenMode   = mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel';
-    const isWebSpeechMode = mode === 'webspeech';
-    const wantsMale = mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan');
-    const isAutoGigi = preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi' || preferred === 'elevenlabs_daniel';
+    const wantsMale = preferred.includes('daniel') || mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan') || mode.includes('miguel');
+    const streamVoice = wantsMale ? 'Miguel' : 'Mia';
+    const isWebSpeechOnly = preferred === 'webspeech' || mode === 'webspeech';
 
     console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode);
 
-    // ─── AUTO GIGI: intentar ElevenLabs primero si el probe dijo OK ───
-    if (isElevenMode) {
+    // 1) ElevenLabs si el modo efectivo lo pide y hay créditos
+    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel') {
       const v = mode === 'elevenlabs_daniel' ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       if (await _speakElevenLabs(text, v)) {
         _lastUsedVoiceEngine = 'elevenlabs';
         return;
       }
-      console.warn('[Gigi/Voz] ElevenLabs falló en vivo → Dalia automática');
-      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
-      if (await _speakEdgeTTS(text, fallbackVoice)) {
+      console.warn('[Gigi/Voz] ElevenLabs no disponible → Mia gratis');
+    }
+
+    // 2) Gemini TTS solo si el usuario lo eligió a mano
+    if (preferred === 'gemini_tts' || mode === 'gemini_tts') {
+      if (await _speakGeminiTTS(text)) {
+        _lastUsedVoiceEngine = 'gemini_tts';
+        return;
+      }
+    }
+
+    // 3) VOZ GRATIS PRINCIPAL: StreamElements Mia/Miguel (funciona en Chrome/Safari/Firefox)
+    if (!isWebSpeechOnly) {
+      if (await _speakStreamElements(text, streamVoice)) {
+        _lastUsedVoiceEngine = 'streamelements';
+        console.log('[Gigi/Voz] ✓ StreamElements', streamVoice, '(gratis · AWS Polly)');
+        return;
+      }
+      console.warn('[Gigi/Voz] StreamElements falló, probando Edge…');
+    }
+
+    // 4) Edge Neural (solo suele funcionar en navegador Edge)
+    if (!isWebSpeechOnly) {
+      const edgeVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+      if (mode === 'edge_elvira') { /* keep mapped below */ }
+      let ev = edgeVoice;
+      if (mode === 'edge_elvira') ev = EDGE_TTS_VOICE_ELVIRA;
+      else if (mode === 'edge_jorge') ev = EDGE_TTS_VOICE_JORGE;
+      else if (mode === 'edge_alvaro') ev = EDGE_TTS_VOICE_ES;
+      else if (mode === 'edge_ryan') ev = EDGE_TTS_VOICE_RYAN;
+      if (await _speakEdgeTTS(text, ev)) {
         _lastUsedVoiceEngine = 'edge_tts';
         return;
       }
     }
 
-    // ─── AUTO sin créditos: Dalia directa ───
-    if (isAutoGigi && isEdgeMode) {
-      const fallbackVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
-      if (await _speakEdgeTTS(text, fallbackVoice)) {
-        _lastUsedVoiceEngine = 'edge_tts';
-        return;
-      }
-    }
-
-    // ─── PRIMARIO para modos manuales ───
-    if (isGeminiMode) {
-      if (await _speakGeminiTTS(text)) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
-    }
-
-    if (isEdgeMode && !isAutoGigi) {
-      let ev = EDGE_TTS_VOICE_DALIA;
-      if (mode === 'edge_elvira')        ev = EDGE_TTS_VOICE_ELVIRA;
-      else if (mode === 'edge_jorge')    ev = EDGE_TTS_VOICE_JORGE;
-      else if (mode === 'edge_alvaro')   ev = EDGE_TTS_VOICE_ES;
-      else if (mode === 'edge_ryan')     ev = EDGE_TTS_VOICE_RYAN;
-      if (await _speakEdgeTTS(text, ev)) { _lastUsedVoiceEngine = 'edge_tts'; return; }
-
-    if (isStreamMode && await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
-    }
-
-    if (isStreamMode) {
-      if (await _speakStreamElements(text)) { _lastUsedVoiceEngine = 'streamelements'; return; }
-    }
-
-    if (isWebSpeechMode) {
-      if (_speakWebSpeech(text)) { _lastUsedVoiceEngine = 'webspeech'; return; }
-    }
-
-    // ─── FALLBACK final: Edge Dalia primero (evitar Google/WebSpeech robótico) ───
-    if (await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA)) {
-      _lastUsedVoiceEngine = 'edge_tts';
-      return;
-    }
-    if (await _speakStreamElements(text)) {
-      _lastUsedVoiceEngine = 'streamelements';
-      return;
-    }
-    // Solo si todo lo neural falló
+    // 5) Último recurso: WebSpeech (robótica — solo si todo lo demás falló)
+    console.warn('[Gigi/Voz] ⚠️ Solo queda WebSpeech (robótica). Revisa red/bloqueadores.');
     if (_speakWebSpeech(text)) {
       _lastUsedVoiceEngine = 'webspeech';
     }
