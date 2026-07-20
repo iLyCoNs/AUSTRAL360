@@ -22,7 +22,7 @@
       openrouter: 'kpk-enc-YjU0YzU0MWU4M2M5Y2Q1MzVmY2U4ODVjM2ZkZTFhMDJkMGE0ZTlmOGZjNDFmZTA0ZmU1M2NmZGE0OGI0NzFkMS0xdi1yby1rcw==',
       elevenlabs: 'kpk-enc-YTgzNTE5NjZlZDE0Zjc1ODkwOTIzM2Y4MmY2MjdiYzhmNTRmYjg3MmE0ZDc5ZTY0X2tz',
       groq:       '',
-      gemini:     ''
+      gemini:     'kpk-enc-d0dsNjRDOXhfWGxGaUNHSjFhZndqVkJZYS1wc2pCVUtfdkQxQloxNnQ5bEw2TlI4YkEuUUE='
     },
 
     // ─── ALERTAS DE WHATSAPP (CallMeBot) ───
