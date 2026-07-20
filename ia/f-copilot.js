@@ -2067,7 +2067,7 @@
         const p = _globalAudio.play();
         if (p && p.catch) {
           p.catch(err => {
-            console.warn('[Gigi/Voz] _globalAudio.play() bloqueado:', err);
+            console.warn('[Gigi/Voz] _globalAudio.play() bloqueado:', err.name, err.message);
             setAISpeaking(false);
             resolve(false);
           });
