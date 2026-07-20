@@ -76,6 +76,11 @@
           console.log('[Ferrari/IA] 🔊 Audio HTML5 y AudioContext desbloqueados exitosamente.');
         }).catch(() => {});
       }
+      // Desbloquear Web Speech API (speechSynthesis) para reproducción asíncrona posterior
+      if ('speechSynthesis' in window) {
+        const silentUtterance = new SpeechSynthesisUtterance('');
+        window.speechSynthesis.speak(silentUtterance);
+      }
     } catch(e) {}
   }
 
@@ -488,6 +493,20 @@
       if (popupMicInline) popupMicInline.classList.remove('is-active');
       if (_btnMic) { _btnMic.classList.remove('is-active', 'is-recording'); _btnMic.style.removeProperty('color'); }
       console.warn('[Gigi/Mic] Error de reconocimiento:', e.error);
+
+      // Mostrar toast/alerta visual si es un error de permisos o dispositivo
+      if (e.error === 'not-allowed') {
+        if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+          window.FerrariUI.showToast('Permiso de micrófono denegado. Actívalo en los ajustes de tu navegador.', 'error');
+        } else {
+          alert('Por favor, permite el acceso al micrófono en los ajustes de tu navegador para poder hablar.');
+        }
+      } else if (e.error !== 'aborted' && e.error !== 'no-speech') {
+        if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+          window.FerrariUI.showToast(`Error de micrófono: ${e.error}`, 'warning');
+        }
+      }
+
       if (e.error === 'aborted' || e.error === 'no-speech') return;
       _jarvisMode = false;
       _shouldRestartMic = false;
@@ -4474,19 +4493,16 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const textInput = popup.querySelector('#kpk-mbp-text-input');
     if (textInput) {
       textInput.addEventListener('focus', () => {
-        if (_jarvisMode || _isListening || _speechEnabled) {
-          console.log('[Ferrari/IA] User focused input (switching to text mode). Disabling voice mode...');
-          _jarvisMode = false;
-          _shouldRestartMic = false;
-          _speechEnabled = false;
-          stopAISpeech();
-          _updateMuteUI(false);
-          if (_recognition) {
-            try { _recognition.stop(); } catch(e) {}
-          }
-          inputRow.style.display = 'flex';
-          controlsRow.style.display = 'none';
+        // Al escribir, detenemos el micrófono y el habla activa por comodidad,
+        // pero DEJAMOS la voz habilitada (_speechEnabled = true) para que la respuesta de Gigi sea hablada.
+        _jarvisMode = false;
+        _shouldRestartMic = false;
+        stopAISpeech();
+        if (_recognition) {
+          try { _recognition.stop(); } catch(e) {}
         }
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
       });
     }
 
