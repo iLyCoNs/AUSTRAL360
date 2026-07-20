@@ -8,6 +8,16 @@
   "dockStyle": "graphite",
   "mobileSolid": true,
   "hideLoteFill": false,
+  "loteFillOnHoverOnly": false,
+  "loteHoverColor": "neon-green",
+  "aiProvider": "lightning",
+  "voiceMode": "elevenlabs_gigi",
+  "aiKeys": {
+    "openrouter": "",
+    "groq": "",
+    "gemini": "",
+    "lightning": "kpk-enc-MGNkODM4OTg1YzQzLTBmY2EtOTgzNC05ZmZhLTY0YjAzMDFkLXRpbC1rcw=="
+  },
   "contact": {
     "whatsapp": "",
     "formEmail": "",
@@ -16,7 +26,10 @@
     "platformWhatsapp": "+56987491964",
     "platformWeb": "https://www.australdrone.cl",
     "platformLogo": "https://raw.githubusercontent.com/iLyCoNs/austral-drones/refs/heads/main/logobanner.png",
-    "platformName": "AUSTRALDRONE.CL"
+    "platformName": "AUSTRALDRONE.CL",
+    "waAlertsEnabled": false,
+    "waAlertsPhone": "",
+    "waAlertsKey": ""
   },
-  "updatedAt": 1784309397529
+  "updatedAt": 1784523953448
 }
