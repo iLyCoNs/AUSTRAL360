@@ -2040,18 +2040,83 @@
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  MOTOR DE VOZ GIGI / JARVIS — CASCADA 3 NIVELES
+  //  MOTOR DE VOZ GIGI — CASCADA 4 NIVELES
   //
-  //  Nivel 1: ElevenLabs (clave configurada en admin)
-  //  Nivel 2: Microsoft Edge TTS Neural (gratis, sin key)
-  //  Nivel 3: Web Speech API del navegador (fallback universal)
+  //  Nivel 1: StreamElements TTS  (gratis, sin key, voz latina AWS Polly)
+  //  Nivel 2: ElevenLabs          (clave opcional en admin, calidad premium)
+  //  Nivel 3: Web Speech API      (navegador, instantáneo, sin red)
+  //  Nivel 4: Microsoft Edge TTS  (fallback adicional va esm.sh)
   // ══════════════════════════════════════════════════════════════════════════
 
   let _speechEnabled = true;
   let _synthUtterance = null;
 
+  // ─── NIVEL 1: StreamElements TTS — Gratis, sin API key, voces AWS Polly Neural —
+  //  Voces femeninas en español disponibles:
+  //    Mia      → es-MX (mexicana, la más similar a Gigi)
+  //    Penelope → es-US (estadounidense)
+  //    Lucia    → es-ES (españa)
+  //  Límite práctico: ~500 chars por petición (URL length), se parte automáticamente
+  const STREAM_TTS_BASE = 'https://api.streamelements.com/kappa/v2/speech';
+
+  async function _speakStreamElements(text) {
+    try {
+      const clean = _cleanTextForTTS(text);
+      if (!clean) return false;
+
+      const mode = _getVoiceMode();
+      let voice;
+      if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';    // españa femenina
+      else if (mode === 'stream_penelope')                           voice = 'Penelope'; // US femenina
+      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';   // masculina
+      else                                                           voice = 'Mia';      // MX femenina (Gigi)
+
+      // Partir en fragmentos si supera 460 chars (límite de URL)
+      const MAX = 460;
+      const fragments = [];
+      let remaining = clean;
+      while (remaining.length > 0) {
+        if (remaining.length <= MAX) {
+          fragments.push(remaining);
+          break;
+        }
+        // Cortar en el último punto/coma/espacio antes del límite
+        let cut = remaining.lastIndexOf('.', MAX);
+        if (cut < 80) cut = remaining.lastIndexOf(',', MAX);
+        if (cut < 80) cut = remaining.lastIndexOf(' ', MAX);
+        if (cut < 1)  cut = MAX;
+        fragments.push(remaining.substring(0, cut + 1));
+        remaining = remaining.substring(cut + 1).trim();
+      }
+
+      // Reproducir fragmentos en secuencia
+      for (const frag of fragments) {
+        const url = `${STREAM_TTS_BASE}?voice=${voice}&text=${encodeURIComponent(frag)}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.warn('[Gigi/StreamTTS] HTTP', res.status, '- intentando con Penelope');
+          // Retry con Penelope como fallback de voz
+          const res2 = await fetch(`${STREAM_TTS_BASE}?voice=Penelope&text=${encodeURIComponent(frag)}`).catch(() => null);
+          if (!res2 || !res2.ok) return false;
+          const blob2 = await res2.blob();
+          const ok = await _playAudioBlob(blob2, frag);
+          if (!ok) return false;
+        } else {
+          const blob = await res.blob();
+          const ok  = await _playAudioBlob(blob, frag);
+          if (!ok) return false;
+        }
+      }
+      return true;
+    } catch(e) {
+      console.warn('[Gigi/StreamTTS] Error:', e.message);
+      return false;
+    }
+  }
+
+  // ─── NIVEL 2 (opcional): ElevenLabs solo si hay key activa ────────────────────
   // Voice IDs oficiales:
-  const ELEVENLABS_VOICE_GIGI   = 'hpp4J3VqNfWAUOO0d1Us'; // Gigi (Bella) — Locutora/vendedora latina premium
+  const ELEVENLABS_VOICE_GIGI   = 'hpp4J3VqNfWAUOO0d1Us'; // Gigi (Bella) — Locutora latina premium
   const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
 
   function _getElevenLabsKey() {
@@ -2071,7 +2136,7 @@
     try {
       const clean = _cleanTextForTTS(text);
       if (!clean) return false;
-      const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI; // Gigi (Bella) por defecto
+      const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI;
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoice}`, {
         method: 'POST',
         headers: {
@@ -2121,12 +2186,15 @@
 
   function _voiceModeLabel(mode) {
     switch(mode) {
-      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" (Bella - Locutora Latina)';
-      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" (Mayordomo británico)';
-      case 'edge_dalia':        return 'Edge Neural "Dalia" (Vendedora latina alta calidad)';
-      case 'edge_alvaro':       return 'Edge Neural "Álvaro" (España)';
-      case 'edge_ryan':         return 'Edge Neural "Ryan" (Jarvis británico)';
-      case 'webspeech':         return 'Síntesis de navegador (estándar)';
+      case 'stream_gigi':       return 'Gigi "Mia" MX (StreamElements • gratis)';
+      case 'stream_lucia':      return 'Gigi "Lucía" ES (StreamElements • gratis)';
+      case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
+      case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
+      case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
+      case 'edge_dalia':        return 'Dalia Neural (Edge TTS • gratis)';
+      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • gratis)';
+      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • gratis)';
+      case 'webspeech':         return 'Voz del navegador (estándar)';
       default:                  return 'Voz activa';
     }
   }
@@ -2137,16 +2205,14 @@
   async function _loadEdgeTTS() {
     if (_edgeTTSModule) return _edgeTTSModule;
     if (_edgeTTSLoading) {
-      while (_edgeTTSLoading) {
-        await new Promise(r => setTimeout(r, 50));
-      }
+      while (_edgeTTSLoading) await new Promise(r => setTimeout(r, 50));
       return _edgeTTSModule;
     }
     _edgeTTSLoading = true;
     try {
       const mod = await import('https://esm.sh/@andresaya/edge-tts@latest');
       _edgeTTSModule = mod;
-      console.log('[Gigi/Voz] ✓ Módulo Edge TTS Neural cargado con éxito');
+      console.log('[Gigi/Voz] ✓ Módulo Edge TTS Neural cargado');
     } catch(e) {
       console.warn('[Gigi/Voz] Edge TTS no disponible:', e.message);
       _edgeTTSModule = null;
@@ -2356,39 +2422,33 @@
     _lastSpokenText = _cleanTextForTTS(text);
 
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      showMobileBubblePopup(text);
-    }
+    if (isMobile) showMobileBubblePopup(text);
 
     if (!_speechEnabled) return;
     _unlockMobileAudio();
-    if (_activeJarvisAudio) {
-      try { _activeJarvisAudio.pause(); } catch(e) {}
-      _activeJarvisAudio = null;
-    }
+    if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
 
     const mode = _getVoiceMode();
-    const hasElevenKey = !!_getElevenLabsKey();
 
-    // ─── TIER 1: ElevenLabs (solo si hay clave API real configurada)
-    if (hasElevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs' || mode === 'elevenlabs_daniel')) {
+    // ─── TIER 1: ElevenLabs (solo si hay clave activa y se eligió en el admin) ───
+    if (_getElevenLabsKey() && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
-      if (ok) return;
+      if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
 
-    // ─── TIER 2: WebSpeech API nativa (Instantánea y confiable en Windows/Mac)
+    // ─── TIER 2: StreamElements TTS (GRATIS, sin key, voz latina AWS Polly) ───
+    const okStream = await _speakStreamElements(text);
+    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements TTS'); return; }
+
+    // ─── TIER 3: Web Speech API (navegador, instantáneo) ────────────────────
     const okWeb = _speakWebSpeech(text);
-    if (okWeb) return;
+    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech'); return; }
 
-    // ─── TIER 3: Edge TTS Neural (gratis)
+    // ─── TIER 4: Edge TTS Neural (fallback final vía esm.sh) ───────────────
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
-    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') {
-      edgeVoice = EDGE_TTS_VOICE_RYAN;
-    } else if (mode === 'edge_alvaro') {
-      edgeVoice = EDGE_TTS_VOICE_ES;
-    }
-
+    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
+    else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
     await _speakEdgeTTS(text, edgeVoice);
   }
 
