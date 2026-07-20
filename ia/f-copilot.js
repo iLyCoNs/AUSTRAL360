@@ -550,64 +550,46 @@
       }
     };
 
-    let _isWalkiePushing = false;
+    // Alternar grabación por micrófono (Clic para hablar / Clic para terminar)
+    function _toggleMicRecording(e) {
+      if (e) e.preventDefault();
+      if (!_recognition) {
+        if (window.FerrariUI && window.FerrariUI.showToast) {
+          window.FerrariUI.showToast('Reconocimiento de voz no soportado en este navegador.', 'warning');
+        }
+        return;
+      }
 
-    function _startWalkie() {
-      if (_isWalkiePushing) return;
-      _isWalkiePushing = true;
-      _btnMic.classList.add('is-recording');
-      _input.placeholder = "🔴 Grabando mensaje Walkie-Talkie...";
-      playFuturisticSound('start');
-      if (_recognition && !_isListening) {
+      if (_isListening) {
+        _isListening = false;
+        if (_btnMic) {
+          _btnMic.classList.remove('is-active', 'is-recording');
+          _btnMic.style.removeProperty('color');
+        }
+        if (_input) _input.placeholder = "Pregunta algo aquí...";
+        playFuturisticSound('click');
+        try { _recognition.stop(); } catch(err) {}
+      } else {
+        _unlockMobileAudio();
+        _isListening = true;
+        if (_btnMic) {
+          _btnMic.classList.add('is-active', 'is-recording');
+          _btnMic.style.color = '#FF2D8A';
+        }
+        if (_input) _input.placeholder = "🔴 Escuchando... Habla ahora";
+        playFuturisticSound('start');
         try {
           _recognition.continuous = false;
           _recognition.start();
-        } catch(e) {}
+        } catch(err) {
+          console.warn('[Gigi/Voz] No se pudo iniciar el micrófono:', err.message);
+        }
       }
     }
 
-    function _stopWalkie() {
-      if (!_isWalkiePushing) return;
-      _isWalkiePushing = false;
-      _btnMic.classList.remove('is-recording');
-      _input.placeholder = "Pregunta algo aquí...";
-      playFuturisticSound('click');
-      setTimeout(() => {
-        if (_recognition && _isListening) {
-          try { _recognition.stop(); } catch(e) {}
-        }
-      }, 350);
+    if (_btnMic) {
+      _btnMic.addEventListener('click', _toggleMicRecording);
     }
-
-    // Eventos Walkie-Talkie Push-to-Talk (Compatibles con Windows, Mac, iOS y Android)
-    _btnMic.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      _startWalkie();
-    });
-
-    _btnMic.addEventListener('pointerup', (e) => {
-      e.preventDefault();
-      _stopWalkie();
-    });
-
-    _btnMic.addEventListener('pointercancel', () => {
-      _stopWalkie();
-    });
-
-    _btnMic.addEventListener('mouseleave', () => {
-      if (_isWalkiePushing) _stopWalkie();
-    });
-
-    // Respaldo de eventos táctiles para móviles
-    _btnMic.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      _startWalkie();
-    }, { passive: false });
-
-    _btnMic.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      _stopWalkie();
-    }, { passive: false });
   }
 
   // ─── CIRCUITO EN CASCADA 3-TIER (REDUNDANCIA AUTOMÁTICA INFALIBLE) ────────
@@ -2249,16 +2231,26 @@
     const cleanText = _cleanTextForTTS(text);
     if (!cleanText) return;
     _synthUtterance = new SpeechSynthesisUtterance(cleanText);
-    _synthUtterance.lang = 'es-ES';
+    _synthUtterance.lang = 'es-MX';
     const voices = window.speechSynthesis.getVoices();
-    // Preferir voz masculina en español
-    const jarvisVoice =
-      voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
-      voices.find(v => v.lang.startsWith('es') && !v.name.includes('Sabina') && !v.name.includes('Monica') && !v.name.includes('Elvira')) ||
-      voices.find(v => v.lang.startsWith('es'));
-    if (jarvisVoice) _synthUtterance.voice = jarvisVoice;
+    const mode = _getVoiceMode();
+    const isGigi = mode.includes('gigi') || mode.includes('dalia');
+
+    let voiceMatch = null;
+    if (isGigi) {
+      voiceMatch =
+        voices.find(v => v.lang.startsWith('es') && (v.name.includes('Dalia') || v.name.includes('Monica') || v.name.includes('Sabina') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Luciana') || v.name.includes('Google español'))) ||
+        voices.find(v => v.lang.startsWith('es'));
+      _synthUtterance.pitch = 1.05;
+    } else {
+      voiceMatch =
+        voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
+        voices.find(v => v.lang.startsWith('es'));
+      _synthUtterance.pitch = 0.88;
+    }
+
+    if (voiceMatch) _synthUtterance.voice = voiceMatch;
     _synthUtterance.rate = 1.0;
-    _synthUtterance.pitch = 0.88; // Tono grave de Jarvis
     _synthUtterance.onstart = () => {
       _shouldRestartMic = false;
       if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
