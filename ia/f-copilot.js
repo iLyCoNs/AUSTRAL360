@@ -2250,7 +2250,7 @@
   }
   _initVoiceCache();
 
-  // ─── Nivel 3: Web Speech API (fallback) ────────────────────────────────────
+  // ─── Nivel 3: Web Speech API (fallback universal instantáneo) ──────────────
   function _speakWebSpeech(text) {
     if (!('speechSynthesis' in window)) return false;
     try {
@@ -2258,7 +2258,7 @@
       const cleanText = _cleanTextForTTS(text);
       if (!cleanText) return false;
       _synthUtterance = new SpeechSynthesisUtterance(cleanText);
-      _synthUtterance.lang = 'es-MX';
+
       const voices = (_cachedVoices && _cachedVoices.length) ? _cachedVoices : window.speechSynthesis.getVoices();
       const mode = _getVoiceMode();
       const isGigi = mode.includes('gigi') || mode.includes('dalia');
@@ -2266,7 +2266,7 @@
       let voiceMatch = null;
       if (isGigi) {
         voiceMatch =
-          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Dalia') || v.name.includes('Monica') || v.name.includes('Sabina') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Luciana') || v.name.includes('Google español') || v.name.includes('Spanish'))) ||
+          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Sabina') || v.name.includes('Dalia') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Monica') || v.name.includes('Paulina') || v.name.includes('Luciana') || v.name.includes('Google español') || v.name.includes('Spanish'))) ||
           voices.find(v => v.lang.startsWith('es'));
         _synthUtterance.pitch = 1.05;
       } else {
@@ -2276,7 +2276,14 @@
         _synthUtterance.pitch = 0.88;
       }
 
-      if (voiceMatch) _synthUtterance.voice = voiceMatch;
+      if (voiceMatch) {
+        _synthUtterance.voice = voiceMatch;
+        // CRÍTICO PARA WINDOWS: Hacer coincidir lang con la voz asignada para evitar cancelación en Chromium
+        _synthUtterance.lang = voiceMatch.lang || 'es-ES';
+      } else {
+        _synthUtterance.lang = 'es-ES';
+      }
+
       _synthUtterance.rate = 1.0;
       _synthUtterance.onstart = () => {
         _shouldRestartMic = false;
@@ -2284,7 +2291,8 @@
         setAISpeaking(true);
       };
       _synthUtterance.onend = () => { setAISpeaking(false); };
-      _synthUtterance.onerror = () => { setAISpeaking(false); };
+      _synthUtterance.onerror = (err) => { console.warn('[Gigi/Voz] Error WebSpeech:', err); setAISpeaking(false); };
+      
       setAISpeaking(true);
       window.speechSynthesis.speak(_synthUtterance);
       return true;
@@ -2299,7 +2307,6 @@
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
 
-    // Si estamos en móvil, mostrar la burbuja popup siempre (incluso si la voz está apagada)
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) {
       showMobileBubblePopup(text);
@@ -2322,7 +2329,11 @@
       if (ok) return;
     }
 
-    // ─── TIER 2: Edge TTS Neural (gratis, instantáneo y pre-cargado)
+    // ─── TIER 2: WebSpeech API nativa (Instantánea y confiable en Windows/Mac)
+    const okWeb = _speakWebSpeech(text);
+    if (okWeb) return;
+
+    // ─── TIER 3: Edge TTS Neural (gratis)
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') {
       edgeVoice = EDGE_TTS_VOICE_RYAN;
@@ -2330,12 +2341,7 @@
       edgeVoice = EDGE_TTS_VOICE_ES;
     }
 
-    const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) return;
-
-    // ─── TIER 3: Web Speech API (fallback universal inmediato)
-    console.warn('[Ferrari/IA] Cayendo a WebSpeech API como respaldo de voz.');
-    _speakWebSpeech(text);
+    await _speakEdgeTTS(text, edgeVoice);
   }
 
   function playFuturisticSound(type) {

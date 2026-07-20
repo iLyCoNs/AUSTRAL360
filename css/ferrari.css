@@ -1313,13 +1313,13 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   background: rgba(255, 59, 48, 0.1);
 }
 
-/* ─── MODO ESPECTADOR · Glassmorphism (mismo token que f-weather.css) ─── */
+/* ─── MODO ESPECTADOR · Glassmorphism (Ubicación en lado Izquierdo para no colisionar con el Chatbot) ─── */
 .kpk-lote-panel.spectator-mode {
   top: 96px !important;
-  right: 24px !important;
-  left: auto !important;
+  left: 24px !important;
+  right: auto !important;
   bottom: auto !important;
-  transform: translateX(120%) scale(1) !important;
+  transform: translateX(-120%) scale(1) !important;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, width 0.3s ease !important;
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(32px) saturate(180%);
