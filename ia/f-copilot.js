@@ -412,7 +412,16 @@
       window.removeEventListener('click', _playWelcome);
       window.removeEventListener('touchstart', _playWelcome);
       _unlockMobileAudio();
-      speakJarvis(welcomeGreeting);
+      // Reproducir directamente en el mismo contexto del click para preservar la autoplay policy
+      const clean = _cleanTextForTTS(welcomeGreeting);
+      if (clean) {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=es-US&client=tw-ob&q=${encodeURIComponent(clean)}`;
+        _playAudioUrl(url).then(ok => {
+          if (!ok) speakJarvis(welcomeGreeting); // fallback a cascada normal si falla
+        });
+      } else {
+        speakJarvis(welcomeGreeting);
+      }
     }
     window.addEventListener('click', _playWelcome, { once: true, passive: true });
     window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
