@@ -98,6 +98,14 @@
     window.addEventListener('touchstart', _unlockMobileAudio, { passive: true });
     window.addEventListener('click', _unlockMobileAudio, { passive: true });
 
+    // Estilos para el selector de voz
+    const _vsStyle = document.createElement('style');
+    _vsStyle.textContent = `
+      .kpk-voice-opt:hover { background:rgba(255,255,255,0.06) !important; }
+      .kpk-voice-opt:hover span { color:var(--text) !important; }
+    `;
+    document.head.appendChild(_vsStyle);
+
     // Precargar módulo de Edge TTS en segundo plano para eliminar latencia del primer habla
     setTimeout(() => {
       _loadEdgeTTS().catch(() => {});
@@ -182,6 +190,13 @@
             <span class="kpk-ai-header-name">${assistantTitle}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="kpk-ai-action-btn" id="kpk-ai-voice-select" title="Cambiar Voz" style="color: var(--accent); padding: 4px; border: none; background: none; cursor: pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+              </svg>
+            </button>
             <button class="kpk-ai-action-btn ${initialMuteClass}" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: ${initialMuteColor}; padding: 4px; border: none; background: none; cursor: pointer;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="kpk-voice-icon">
                 ${initialMuteIcon}
@@ -190,6 +205,7 @@
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
+        <div class="kpk-voice-panel" id="kpk-voice-panel" style="display:none;background:rgba(18,18,24,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;max-height:260px;overflow-y:auto;"></div>
 
 
         <div class="kpk-ai-log" id="kpk-ai-log">
@@ -312,6 +328,63 @@
       localStorage.setItem('kpk_voice_mode', defaultMode);
     }
 
+
+    // ─── Selector interactivo de voz ───
+    const VOICE_OPTIONS = [
+      { id: 'stream_gigi',       label: '⭐ Gigi Mia MX', group: 'StreamElements' },
+      { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
+      { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
+      { id: 'elevenlabs_gigi',   label: '🏆 ElevenLabs Gigi', group: 'ElevenLabs' },
+      { id: 'elevenlabs_daniel', label: '🏆 ElevenLabs Daniel', group: 'ElevenLabs' },
+      { id: 'gemini_tts',        label: '🤖 Gemini TTS Kore', group: 'Gemini' },
+      { id: 'edge_dalia',        label: 'Dalia Neural MX', group: 'Edge TTS' },
+      { id: 'edge_elvira',       label: 'Elvira Neural ES', group: 'Edge TTS' },
+      { id: 'edge_jorge',        label: 'Jorge Neural MX', group: 'Edge TTS' },
+      { id: 'edge_alvaro',       label: 'Álvaro Neural ES', group: 'Edge TTS' },
+      { id: 'edge_ryan',         label: 'Ryan Neural UK', group: 'Edge TTS' },
+      { id: 'webspeech',         label: 'Web Speech', group: 'Navegador' }
+    ];
+    const voicePanel = document.getElementById('kpk-voice-panel');
+    const voiceSelectBtn = document.getElementById('kpk-ai-voice-select');
+    function _renderVoicePanel() {
+      if (!voicePanel) return;
+      const current = _getVoiceMode();
+      let html = '';
+      let lastGroup = '';
+      for (const v of VOICE_OPTIONS) {
+        if (v.group !== lastGroup) { html += `<div style="font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;${lastGroup?';border-top:1px solid rgba(255,255,255,0.06);margin-top:4px':''}">${v.group}</div>`; lastGroup = v.group; }
+        html += `<div class="kpk-voice-opt" data-voice="${v.id}" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:12.5px;${v.id===current?'color:var(--accent);background:rgba(0,180,255,0.1)':'color:var(--text-2)'}" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='${v.id===current?'rgba(0,180,255,0.1)':'transparent'}'">`;
+        html += `<span style="width:14px;height:14px;border-radius:50%;border:2px solid ${v.id===current?'var(--accent)':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${v.id===current?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>':''}</span>`;
+        html += `<span>${v.label}</span></div>`;
+      }
+      voicePanel.innerHTML = html;
+      voicePanel.querySelectorAll('.kpk-voice-opt').forEach(el => {
+        el.addEventListener('click', () => {
+          const voice = el.dataset.voice;
+          localStorage.setItem('kpk_voice_mode', voice);
+          _renderVoicePanel();
+          if (_speechEnabled) {
+            stopAISpeech();
+            const greeting = 'Voz cambiada a ' + _voiceModeLabel(voice);
+            setTimeout(() => speakJarvis(greeting), 200);
+          }
+        });
+      });
+    }
+    if (voiceSelectBtn) {
+      voiceSelectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!voicePanel) return;
+        const isOpen = voicePanel.style.display !== 'none';
+        voicePanel.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) _renderVoicePanel();
+      });
+      document.addEventListener('click', (e) => {
+        if (voicePanel && !voicePanel.contains(e.target) && e.target !== voiceSelectBtn && !voiceSelectBtn.contains(e.target)) {
+          voicePanel.style.display = 'none';
+        }
+      });
+    }
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
     const voiceIcon = document.getElementById('kpk-voice-icon');
@@ -962,6 +1035,43 @@
         appendMessage(vozMsg, 'system');
         playFuturisticSound('success');
       }, 400);
+      return;
+    }
+
+    // Comando /voces — selector interactivo de voces
+    if (lowerPrompt === '/voces') {
+      const current = _getVoiceMode();
+      const VOICE_OPTIONS_LOCAL = [
+        { id: 'stream_gigi',       label: '⭐ Gigi Mia MX', group: 'StreamElements' },
+        { id: 'stream_lucia',      label: 'Lucía ES', group: 'StreamElements' },
+        { id: 'stream_penelope',   label: 'Penelope US', group: 'StreamElements' },
+        { id: 'elevenlabs_gigi',   label: '🏆 Gigi Bella (ElevenLabs)', group: 'ElevenLabs' },
+        { id: 'elevenlabs_daniel', label: '🏆 Daniel (ElevenLabs)', group: 'ElevenLabs' },
+        { id: 'gemini_tts',        label: '🤖 Kore (Gemini TTS)', group: 'Gemini' },
+        { id: 'edge_dalia',        label: 'Dalia MX (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_elvira',       label: 'Elvira ES (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_jorge',        label: 'Jorge MX (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_alvaro',       label: 'Álvaro ES (Edge TTS)', group: 'Edge TTS' },
+        { id: 'edge_ryan',         label: 'Ryan UK (Edge TTS)', group: 'Edge TTS' },
+        { id: 'webspeech',         label: 'Web Speech (Navegador)', group: 'Navegador' }
+      ];
+      let msg = '🎙️ <b>Selecciona una voz:</b><br><br><div style="display:flex;flex-direction:column;gap:6px;">';
+      for (const v of VOICE_OPTIONS_LOCAL) {
+        const isActive = v.id === current;
+        msg += `<div onclick="(function(){localStorage.setItem('kpk_voice_mode','${v.id}');window._kpkRefreshVoice?.();})()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid ${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'};background:${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'};transition:all 0.15s;" onmouseenter="this.style.borderColor='rgba(0,180,255,0.3)';this.style.background='rgba(0,180,255,0.05)'" onmouseleave="this.style.borderColor='${isActive?'rgba(0,180,255,0.4)':'rgba(255,255,255,0.06)'}';this.style.background='${isActive?'rgba(0,180,255,0.08)':'rgba(255,255,255,0.02)'}'">`;
+        msg += `<span style="width:16px;height:16px;border-radius:50%;border:2px solid ${isActive?'var(--accent)':'rgba(255,255,255,0.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${isActive?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>':''}</span>`;
+        msg += `<span style="font-size:13px;font-weight:${isActive?'700':'500'};color:${isActive?'var(--accent)':'var(--text)'};">${v.label}</span>`;
+        if (isActive) msg += `<span style="margin-left:auto;font-size:10px;color:var(--accent);font-weight:700;">ACTIVA</span>`;
+        msg += `</div>`;
+      }
+      msg += `</div><br><i>Haz clic en una voz para cambiarla al instante.</i>`;
+      appendMessage(msg, 'system');
+      // Exponer funcion de refresco para los onclick
+      window._kpkRefreshVoice = () => {
+        _renderVoicePanel?.();
+        const greeting = 'Voz cambiada';
+        if (_speechEnabled) speakJarvis(greeting);
+      };
       return;
     }
 
