@@ -449,31 +449,27 @@
 
     _recognition.onstart = () => {
       _isListening = true;
-      _btnMic.classList.add('is-active');
+      // Panel grande
+      if (_btnMic) { _btnMic.classList.add('is-active'); _btnMic.style.color = '#FF2D8A'; }
+      if (_input) _input.placeholder = '🔴 Escuchando... Habla ahora';
+      // Burbuja móvil
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
-      if (popupMic) popupMic.classList.add('is-active');
+      if (popupMic) { popupMic.classList.add('is-active'); popupMic.title = 'Detener micrófono'; }
       const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
       if (popupMicInline) popupMicInline.classList.add('is-active');
-
-      if (_jarvisMode) {
-        _btnMic.style.color = '#39FF14'; // Verde neón para modo Jarvis
-        _input.placeholder = "Jarvis Activo - Escuchando...";
-      } else {
-        _btnMic.style.color = '#FF2D8A'; // Rosado neón para manual
-        _input.placeholder = "Escuchando...";
-      }
     };
 
     _recognition.onend = () => {
       _isListening = false;
-      _btnMic.classList.remove('is-active');
-      _btnMic.style.removeProperty('color');
-      _input.placeholder = "Pregunta algo aquí...";
+      // Panel grande
+      if (_btnMic) { _btnMic.classList.remove('is-active', 'is-recording'); _btnMic.style.removeProperty('color'); }
+      if (_input) _input.placeholder = 'Pregunta algo aquí...';
+      // Burbuja móvil
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
-      if (popupMic) popupMic.classList.remove('is-active');
+      if (popupMic) { popupMic.classList.remove('is-active'); popupMic.title = 'Hablar'; }
       const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
       if (popupMicInline) popupMicInline.classList.remove('is-active');
-      
+
       // Auto-reiniciar si estamos en modo Jarvis y no se ha detenido a propósito
       if (_jarvisMode && _shouldRestartMic) {
         setTimeout(() => {
@@ -485,14 +481,14 @@
     };
 
     _recognition.onerror = (e) => {
-      console.warn('[Ferrari/IA] Error reconocimiento de voz:', e.error);
+      _isListening = false;
       const popupMic = document.getElementById('kpk-mbp-mic-toggle');
-      if (popupMic) popupMic.classList.remove('is-active');
+      if (popupMic) { popupMic.classList.remove('is-active'); }
       const popupMicInline = document.getElementById('kpk-mbp-mic-inline-btn');
       if (popupMicInline) popupMicInline.classList.remove('is-active');
-
-      if (e.error === 'aborted') return;
-      if (e.error === 'no-speech' && _jarvisMode) return; // Ignorar silencio temporal en Jarvis
+      if (_btnMic) { _btnMic.classList.remove('is-active', 'is-recording'); _btnMic.style.removeProperty('color'); }
+      console.warn('[Gigi/Mic] Error de reconocimiento:', e.error);
+      if (e.error === 'aborted' || e.error === 'no-speech') return;
       _jarvisMode = false;
       _shouldRestartMic = false;
     };
@@ -542,32 +538,19 @@
     };
 
     // Alternar grabación por micrófono (Clic para hablar / Clic para terminar)
-    function _toggleMicRecording(e) {
+    // Esta función es compartida por el botón del panel grande Y el botón de la burbuja móvil
+    window._kpkToggleMic = function(e) {
       if (e) e.preventDefault();
-      if (!_recognition) {
-        if (window.FerrariUI && window.FerrariUI.showToast) {
-          window.FerrariUI.showToast('Reconocimiento de voz no soportado en este navegador.', 'warning');
-        }
-        return;
-      }
+      if (!_recognition) return;
 
       if (_isListening) {
-        _isListening = false;
-        if (_btnMic) {
-          _btnMic.classList.remove('is-active', 'is-recording');
-          _btnMic.style.removeProperty('color');
-        }
-        if (_input) _input.placeholder = "Pregunta algo aquí...";
+        // Apagar micrófono
         playFuturisticSound('click');
         try { _recognition.stop(); } catch(err) {}
+        // El estado _isListening = false lo actualiza onend automáticamente
       } else {
+        // Encender micrófono
         _unlockMobileAudio();
-        _isListening = true;
-        if (_btnMic) {
-          _btnMic.classList.add('is-active', 'is-recording');
-          _btnMic.style.color = '#FF2D8A';
-        }
-        if (_input) _input.placeholder = "🔴 Escuchando... Habla ahora";
         playFuturisticSound('start');
         try {
           _recognition.continuous = false;
@@ -576,10 +559,10 @@
           console.warn('[Gigi/Voz] No se pudo iniciar el micrófono:', err.message);
         }
       }
-    }
+    };
 
     if (_btnMic) {
-      _btnMic.addEventListener('click', _toggleMicRecording);
+      _btnMic.addEventListener('click', window._kpkToggleMic);
     }
   }
 
@@ -3500,6 +3483,13 @@
   }
 
   function appendMessage(text, role) {
+    // ── En móvil: redirigir respuestas del asistente a la burbuja popup ──────
+    const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobileDevice && role === 'system') {
+      showMobileBubblePopup(text, true);
+      return;
+    }
+
     const msg = document.createElement('div');
     msg.className = `kpk-ai-msg msg-${role}`;
     
@@ -3519,8 +3509,10 @@
     timeNode.textContent = `Enviado a las ${timeStr} hrs`;
     msg.appendChild(timeNode);
 
-    _log.appendChild(msg);
-    _log.scrollTop = _log.scrollHeight;
+    if (_log) {
+      _log.appendChild(msg);
+      _log.scrollTop = _log.scrollHeight;
+    }
   }
 
   function showTypingIndicator() {
@@ -4522,34 +4514,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (e.key === 'Enter') sendInputText();
     });
 
-    const toggleMic = () => {
-      if (_isListening) {
-        _jarvisMode = false;
-        _shouldRestartMic = false;
-        _speechEnabled = false;
-        stopAISpeech();
-        _updateMuteUI(false);
-        if (_recognition) _recognition.stop();
-        if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-        _bubblePopupTimeout = setTimeout(() => {
-          closeMobileBubblePopup();
-        }, 5000);
-      } else {
-        _jarvisMode = true;
-        _shouldRestartMic = true;
-        _speechEnabled = true;
-        _updateMuteUI(true);
-        _loadEdgeTTS();
-        if (_recognition) {
-          try {
-            _recognition.start();
-          } catch(e) {}
-        }
-      }
-    };
-
-    if (popupMicBtn) popupMicBtn.addEventListener('click', toggleMic);
-    if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', toggleMic);
+    // El micrófono de la burbuja móvil usa la misma función compartida que el panel grande
+    const _sharedToggleMic = window._kpkToggleMic || function() {};
+    if (popupMicBtn) popupMicBtn.addEventListener('click', _sharedToggleMic);
+    if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', _sharedToggleMic);
 
     if (isMinimal) {
       popup.classList.add('kpk-mbp-minimal');
