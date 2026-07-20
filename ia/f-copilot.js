@@ -2278,6 +2278,7 @@
       case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
       case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
       case 'edge_ryan':         return 'Ryan Neural (Edge TTS • British)';
+      case 'gemini_tts':        return 'Gemini TTS Kore (Google AI • voz humana premium)';
       case 'webspeech':         return 'Voz del navegador (estándar)';
       default:                  return 'Voz activa';
     }
