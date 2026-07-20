@@ -208,14 +208,7 @@
 
 
         <div class="kpk-ai-log" id="kpk-ai-log">
-          <div class="kpk-ai-msg msg-system">
-            ¡Hola! Soy <b>${assistantName}</b>, tu asesora de ventas en este tour 360°. ¿En qué te puedo ayudar?
-            ${(window.innerWidth <= 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) ? `
-            <div class="kpk-ai-msg-hint" style="margin-top:8px;font-size:11px;color:rgba(0,180,255,0.9);border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;display:flex;align-items:center;gap:4px;">
-              <span>🎙️</span> <i>Te sugiero pulsar el micrófono para hablar y ver el tour a pantalla completa sin el teclado.</i>
-            </div>
-            ` : ''}
-          </div>
+          <!-- El saludo lo escribe el onboarding (una sola vez) -->
         </div>
         <!-- Previsualización de Archivo Adjunto -->
         <div class="kpk-ai-attachment-bar" id="kpk-ai-attachment-bar" style="display: none;">
@@ -537,33 +530,27 @@
     };
   }
 
-  /** Dos primeras interacciones: saludo + pedir nombre (o bienvenida de vuelta) */
+  /** Un solo mensaje de bienvenida (texto + voz una sola vez) */
   function _buildWelcomePack() {
     const { projectName, assistantName, isGigi } = _getAssistantMeta();
 
     if (_clientName) {
-      const greet = isGigi
-        ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantName} 😊`
-        : `Bienvenido de nuevo, ${_clientName}. Soy ${assistantName}.`;
-      const follow = isGigi
-        ? `¿Hacemos el tour panorámico o buscas un lote en específico?`
-        : `¿Desea un tour panorámico o analizar un lote en particular?`;
+      const text = isGigi
+        ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantName}. ¿Hacemos el tour o buscas un lote en específico?`
+        : `Bienvenido de nuevo, ${_clientName}. Soy ${assistantName}. ¿Desea un tour o analizar un lote?`;
       return {
-        messages: [greet, follow],
-        speakText: `${greet} ${follow}`,
+        messages: [text],
+        speakText: text,
         waitingName: false
       };
     }
 
-    const greet = isGigi
-      ? `¡Hola! Bienvenido a ${projectName}. Soy ${assistantName}, tu asesora virtual ✨`
-      : `Bienvenido a ${projectName}. Soy ${assistantName}, su asesor inmobiliario.`;
-    const askName = isGigi
-      ? `Antes de mostrarte los lotes más lindos… ¿cómo te gustaría que te llame?`
-      : `Para asistirle mejor: ¿cómo desea que lo llame?`;
+    const text = isGigi
+      ? `¡Hola! Bienvenido a ${projectName}. Soy ${assistantName}, tu asesora virtual. ¿Cómo te gustaría que te llame?`
+      : `Bienvenido a ${projectName}. Soy ${assistantName}. ¿Cómo desea que lo llame?`;
     return {
-      messages: [greet, askName],
-      speakText: `${greet} ${askName}`,
+      messages: [text],
+      speakText: text,
       waitingName: true
     };
   }
@@ -574,6 +561,8 @@
       _isWaitingForName = pack.waitingName;
       _hasGreeted = true;
 
+      // Un solo mensaje en el chat (nada más)
+      if (_log) _log.innerHTML = '';
       pack.messages.forEach((msg) => appendMessage(msg, 'system'));
 
       if (_input) {
@@ -585,25 +574,28 @@
         }
       }
 
-      // Desktop: abrir panel completo siempre
       if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
         _panel.classList.add('is-open');
       }
 
-      // Móvil: tarjeta completa (saludo + pedir nombre + input)
       if (isMobile) {
-        showMobileBubblePopup(pack.messages.join('<br><br>'), true);
+        showMobileBubblePopup(pack.messages[0], true);
       }
 
-      function _playWelcome() {
+      // Precargar Edge TTS para que el saludo no caiga a voz robótica
+      _loadEdgeTTS().catch(() => {});
+
+      function _playWelcome(e) {
+        // Evita doble disparo click+touchstart en el mismo toque
+        if (_welcomeSpoken) return;
+        _welcomeSpoken = true;
         window.removeEventListener('click', _playWelcome);
         window.removeEventListener('touchstart', _playWelcome);
         _unlockMobileAudio();
-        _welcomeSpoken = true;
         speakJarvis(pack.speakText);
       }
-      window.addEventListener('click', _playWelcome, { once: true, passive: true });
-      window.addEventListener('touchstart', _playWelcome, { once: true, passive: true });
+      window.addEventListener('click', _playWelcome, { passive: true });
+      window.addEventListener('touchstart', _playWelcome, { passive: true });
     } catch (err) {
       console.error('[Ferrari/IA] Error en onboarding:', err);
       if (_panel) _panel.classList.add('is-open');
@@ -2715,6 +2707,7 @@
     clean = clean.replace(/`+/g, '');
     clean = clean.replace(/^[-*+]\s+/gm, '');
     clean = clean.replace(/[#_*~[\]()]/g, '');
+    clean = clean.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '');
     clean = clean.replace(/\s+/g, ' ').trim();
     return clean.substring(0, 1000);
   }
@@ -3058,7 +3051,7 @@
       if (_speakWebSpeech(text)) { _lastUsedVoiceEngine = 'webspeech'; return; }
     }
 
-    // ─── FALLBACK final ───
+    // ─── FALLBACK final: Edge Dalia primero (evitar Google/WebSpeech robótico) ───
     if (await _speakEdgeTTS(text, EDGE_TTS_VOICE_DALIA)) {
       _lastUsedVoiceEngine = 'edge_tts';
       return;
@@ -3067,10 +3060,7 @@
       _lastUsedVoiceEngine = 'streamelements';
       return;
     }
-    if (await _speakGoogleTranslate(text)) {
-      _lastUsedVoiceEngine = 'google_translate';
-      return;
-    }
+    // Solo si todo lo neural falló
     if (_speakWebSpeech(text)) {
       _lastUsedVoiceEngine = 'webspeech';
     }
