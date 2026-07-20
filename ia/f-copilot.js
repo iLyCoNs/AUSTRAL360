@@ -2127,10 +2127,10 @@
 
       const mode = _getVoiceMode();
       let voice;
-      if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';
-      else if (mode === 'stream_penelope')                           voice = 'Penelope';
-      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';
-      else                                                           voice = 'Mia';      // MX femenina (Gigi por defecto)
+      if (mode === 'stream_lucia' || mode === 'edge_alvaro' || mode === 'edge_elvira') voice = 'Lucia';
+      else if (mode === 'stream_penelope')                                              voice = 'Penelope';
+      else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan' || mode === 'edge_jorge') voice = 'Miguel';
+      else                                                                              voice = 'Mia';      // MX femenina (Gigi por defecto)
 
       const MAX = 460;
       const fragments = [];
