@@ -185,7 +185,6 @@
                 ${initialMuteIcon}
               </svg>
             </button>
-            <button id="kpk-ai-test-voice" title="Probar voz de Gigi" style="padding:3px 7px;font-size:10px;background:rgba(0,180,255,0.15);border:1px solid rgba(0,180,255,0.35);color:rgba(0,180,255,0.9);border-radius:6px;cursor:pointer;line-height:1.4;">🔊 Test</button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
@@ -293,24 +292,7 @@
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
 
-    // Botón de prueba de voz — fuerza speechSynthesis en Windows/Mac con un gesto del usuario
-    const testVoiceBtn = document.getElementById('kpk-ai-test-voice');
-    if (testVoiceBtn) {
-      testVoiceBtn.addEventListener('click', () => {
-        _loadVoicesWhenReady((voices) => {
-          const names = voices.filter(v => v.lang.startsWith('es')).map(v => v.name).join(', ') || 'Ninguna en español';
-          console.log('[Gigi/Test] Voces disponibles en español:', names);
-          const ok = _speakWebSpeech('¡Hola! Soy Gigi, tu asistente de ventas. ¡Te escucho perfectamente!');
-          if (!ok) {
-            testVoiceBtn.textContent = '❌ Sin voz';
-            testVoiceBtn.title = 'No hay voces en español en este navegador. Prueba Chrome o Edge.';
-          } else {
-            testVoiceBtn.textContent = '✅ OK';
-            setTimeout(() => { testVoiceBtn.textContent = '🔊 Test'; }, 3000);
-          }
-        });
-      });
-    }
+
 
     // Sincronizar lote activo ante clicks manuales en el mapa
     document.addEventListener('kpkLoteSelected', (e) => {
@@ -1153,14 +1135,8 @@
       appendMessage(data.text, 'system');
       playFuturisticSound('success');
       
-      // Hablar respuesta (con voz de Charon nativa si está disponible, sino sintetizador Jarvis)
-      if (!audioData && _speechEnabled) {
-        audioData = await fetchCharonAudio(data.text);
-      }
-
-      if (audioData && _speechEnabled) {
-        playAudioBase64(audioData, data.text);
-      } else {
+      // Hablar respuesta mediante el motor de voz de Gigi
+      if (_speechEnabled) {
         speakJarvis(data.text);
       }
       
