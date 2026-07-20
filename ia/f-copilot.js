@@ -374,6 +374,12 @@
         });
       });
     }
+    // Exponer funcion de refresco para comandos inline (/voces)
+    window._kpkRefreshVoice = function() {
+      const panel = document.getElementById('kpk-voice-panel');
+      if (panel && panel.style.display !== 'none') _renderVoicePanel();
+    };
+
     if (voiceSelectBtn) {
       voiceSelectBtn.addEventListener('click', (e) => {
         e.stopPropagation();
