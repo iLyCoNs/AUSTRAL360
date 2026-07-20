@@ -942,6 +942,7 @@
         const modeLabel = _voiceModeLabel(mode);
         const lastEngine = _lastUsedVoiceEngine || 'aún no usado';
         const engineLabels = {
+          gemini_tts: 'Gemini TTS — Kore (Google AI • voz humana premium)',
           streamelements: 'StreamElements AWS Polly (Mia es-MX)',
           google_translate: 'Google Translate TTS (español femenina)',
           edge_tts: 'Edge TTS Neural — Dalia/Elvira/Jorge (voz HUMANA MX/ES)',
@@ -955,7 +956,7 @@
           `• <b>Nombre:</b> ${modeLabel}<br>` +
           `• <b>Motor usado:</b> <code>${engineName}</code><br>` +
           `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br>` +
-          `• <b>Cascada:</b> StreamElements → Google TTS → Edge TTS → WebSpeech → ElevenLabs<br><br>` +
+          `• <b>Cascada:</b> Gemini TTS → Edge TTS → StreamElements → Google TTS → WebSpeech → ElevenLabs<br><br>` +
           `<i>Escríbele algo a Gigi y te responderá con esa voz.</i>`;
 
         appendMessage(vozMsg, 'system');
@@ -2055,12 +2056,14 @@
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  MOTOR DE VOZ GIGI — CASCADA 4 NIVELES
+  //  MOTOR DE VOZ GIGI — CASCADA 6 NIVELES
   //
-  //  Nivel 1: StreamElements TTS  (gratis, sin key, voz latina AWS Polly)
-  //  Nivel 2: ElevenLabs          (clave opcional en admin, calidad premium)
-  //  Nivel 3: Web Speech API      (navegador, instantáneo, sin red)
-  //  Nivel 4: Microsoft Edge TTS  (fallback adicional va esm.sh)
+  //  Tier 0: Gemini TTS           (Google AI API, si hay key configurada)
+  //  Tier 1: Edge TTS Neural      (Microsoft, vía esm.sh, gratis)
+  //  Tier 2: StreamElements TTS   (AWS Polly, sin key, gratis)
+  //  Tier 3: Google Translate TTS (gratis, funciona siempre)
+  //  Tier 4: Web Speech API       (navegador, instantáneo, sin red)
+  //  Tier 5: ElevenLabs           (clave opcional en admin, calidad premium)
   // ══════════════════════════════════════════════════════════════════════════
 
   let _speechEnabled = true;
@@ -2494,6 +2497,89 @@
     }
   }
 
+  // ─── Gemini TTS (Google AI API, Tier 0 — requiere API key) ────────────
+  function _getGeminiKey() {
+    const cfg = window.KPK_CONFIG || {};
+    let brandKeys = null;
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        brandKeys = window.FerrariBrandDock.getBrand().aiKeys || null;
+      }
+    } catch(e) {}
+    const raw = localStorage.getItem('ferrari_ai_key_gemini')
+      || (brandKeys && brandKeys.gemini)
+      || (cfg.aiKeys && cfg.aiKeys.gemini)
+      || '';
+    return _deobfuscateKey(raw);
+  }
+
+  function _pcmToWav(pcmData, sampleRate) {
+    const numChannels = 1, bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    const blockAlign = numChannels * bitsPerSample / 8;
+    const dataSize = pcmData.length;
+    const buf = new ArrayBuffer(44 + dataSize);
+    const v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true);
+    w(8, 'WAVE'); w(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+    v.setUint16(22, numChannels, true); v.setUint32(24, sampleRate, true);
+    v.setUint32(28, byteRate, true); v.setUint16(32, blockAlign, true);
+    v.setUint16(34, bitsPerSample, true); w(36, 'data');
+    v.setUint32(40, dataSize, true);
+    new Uint8Array(buf, 44).set(pcmData);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  async function _speakGeminiTTS(text) {
+    const key = _getGeminiKey();
+    if (!key) return false;
+    const clean = _cleanTextForTTS(text);
+    if (!clean) return false;
+    try {
+      const model = 'gemini-3.1-flash-tts-preview';
+      const body = JSON.stringify({
+        contents: [{ parts: [{ text: clean }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' }
+            }
+          }
+        }
+      });
+
+      // Try AI Studio first (AQ/AIza keys), fallback to Agent Platform Express (Vertex AI)
+      let res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body }
+      );
+      if (!res.ok) {
+        res = await fetch(
+          `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+        );
+      }
+      if (!res.ok) return false;
+      const data = await res.json();
+      const part = data.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      if (!part?.data) return false;
+      const binary = atob(part.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const mime = part.mimeType || 'audio/pcm';
+      const blob = (mime === 'audio/pcm' || mime === 'audio/L16')
+        ? _pcmToWav(bytes, 24000)
+        : new Blob([bytes], { type: mime });
+      return _playAudioBlob(blob, text);
+    } catch(e) {
+      console.warn('[Gigi/GeminiTTS] Error:', e.message);
+      return false;
+    }
+  }
+
   // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
   async function speakJarvis(text) {
     if (!text) return;
@@ -2507,6 +2593,10 @@
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch(e) {} _activeJarvisAudio = null; }
 
     const mode = _getVoiceMode();
+
+    // ─── TIER 0: Gemini TTS — Voz premium humana (Google AI, si hay key) ───
+    const okGemini = await _speakGeminiTTS(text);
+    if (okGemini) { _lastUsedVoiceEngine = 'gemini_tts'; return; }
 
     // ─── TIER 1: Edge TTS Neural — Voz HUMANA y natural (gratis vía esm.sh) ───
     // Voces neuronales de Microsoft — suenan como humanos reales, no robóticas
