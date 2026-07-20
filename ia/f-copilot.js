@@ -73,13 +73,12 @@
         _primedAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
         _primedAudio.play().then(() => {
           _audioUnlocked = true;
-          console.log('[Ferrari/IA] 🔊 Audio HTML5 y AudioContext desbloqueados exitosamente.');
+          console.log('[Ferrari/IA] 🔊 Audio HTML5 desbloqueado exitosamente.');
         }).catch(() => {});
       }
-      // Desbloquear Web Speech API (speechSynthesis) para reproducción asíncrona posterior
+      // Precargar lista de voces del navegador (SIN hablar, para no cancelar audio posterior)
       if ('speechSynthesis' in window) {
-        const silentUtterance = new SpeechSynthesisUtterance('');
-        window.speechSynthesis.speak(silentUtterance);
+        _cachedVoices = window.speechSynthesis.getVoices();
       }
     } catch(e) {}
   }
@@ -180,6 +179,7 @@
                 ${initialMuteIcon}
               </svg>
             </button>
+            <button id="kpk-ai-test-voice" title="Probar voz de Gigi" style="padding:3px 7px;font-size:10px;background:rgba(0,180,255,0.15);border:1px solid rgba(0,180,255,0.35);color:rgba(0,180,255,0.9);border-radius:6px;cursor:pointer;line-height:1.4;">🔊 Test</button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
@@ -286,6 +286,25 @@
     document.getElementById('kpk-ai-close').addEventListener('click', togglePanel);
     document.getElementById('kpk-ai-send').addEventListener('click', handleSend);
     _input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+
+    // Botón de prueba de voz — fuerza speechSynthesis en Windows/Mac con un gesto del usuario
+    const testVoiceBtn = document.getElementById('kpk-ai-test-voice');
+    if (testVoiceBtn) {
+      testVoiceBtn.addEventListener('click', () => {
+        _loadVoicesWhenReady((voices) => {
+          const names = voices.filter(v => v.lang.startsWith('es')).map(v => v.name).join(', ') || 'Ninguna en español';
+          console.log('[Gigi/Test] Voces disponibles en español:', names);
+          const ok = _speakWebSpeech('¡Hola! Soy Gigi, tu asistente de ventas. ¡Te escucho perfectamente!');
+          if (!ok) {
+            testVoiceBtn.textContent = '❌ Sin voz';
+            testVoiceBtn.title = 'No hay voces en español en este navegador. Prueba Chrome o Edge.';
+          } else {
+            testVoiceBtn.textContent = '✅ OK';
+            setTimeout(() => { testVoiceBtn.textContent = '🔊 Test'; }, 3000);
+          }
+        });
+      });
+    }
 
     // Sincronizar lote activo ante clicks manuales en el mapa
     document.addEventListener('kpkLoteSelected', (e) => {
@@ -2237,66 +2256,95 @@
     });
   }
 
+  // ─── Caché de voces del navegador — cargada de forma diferida y robusta ────
   let _cachedVoices = [];
-  function _initVoiceCache() {
-    if ('speechSynthesis' in window) {
-      _cachedVoices = window.speechSynthesis.getVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = () => {
+  let _voiceCacheReady = false;
+
+  function _loadVoicesWhenReady(callback) {
+    if (!('speechSynthesis' in window)) { if (callback) callback([]); return; }
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      _cachedVoices = voices;
+      _voiceCacheReady = true;
+      if (callback) callback(voices);
+    } else {
+      // En Chrome/Edge/Brave las voces se cargan de forma asíncrona
+      window.speechSynthesis.onvoiceschanged = () => {
+        _cachedVoices = window.speechSynthesis.getVoices();
+        _voiceCacheReady = true;
+        window.speechSynthesis.onvoiceschanged = null;
+        if (callback) callback(_cachedVoices);
+      };
+      // Segundo intento manual tras 500ms por si onvoiceschanged nunca dispara
+      setTimeout(() => {
+        if (!_voiceCacheReady) {
           _cachedVoices = window.speechSynthesis.getVoices();
-        };
-      }
+          _voiceCacheReady = true;
+          if (callback) callback(_cachedVoices);
+        }
+      }, 500);
     }
   }
-  _initVoiceCache();
 
-  // ─── Nivel 3: Web Speech API (fallback universal instantáneo) ──────────────
+  // Iniciar carga de voces al momento de definir el módulo
+  _loadVoicesWhenReady(() => {
+    console.log('[Gigi/Voz] ✓ Voces cargadas:', _cachedVoices.filter(v => v.lang.startsWith('es')).map(v => v.name).join(', ') || '(ninguna en español)');
+  });
+
+  function _pickFemaleSpanishVoice() {
+    const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
+    // Prioridad: voces femeninas con nombre conocido → cualquier voz en español → null
+    return voices.find(v => v.lang.startsWith('es') && (v.name.includes('Sabina') || v.name.includes('Dalia') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Monica') || v.name.includes('Paulina') || v.name.includes('Luciana') || v.name.includes('Google esp') || v.name.includes('Spanish Female')))
+        || voices.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('male'))
+        || voices.find(v => v.lang.startsWith('es'))
+        || null;
+  }
+
+  // ─── Nivel 2 (en desktop): Web Speech API — instantánea, sin red, sin CORS ──
   function _speakWebSpeech(text) {
     if (!('speechSynthesis' in window)) return false;
     try {
       window.speechSynthesis.cancel();
       const cleanText = _cleanTextForTTS(text);
       if (!cleanText) return false;
-      _synthUtterance = new SpeechSynthesisUtterance(cleanText);
 
-      const voices = (_cachedVoices && _cachedVoices.length) ? _cachedVoices : window.speechSynthesis.getVoices();
-      const mode = _getVoiceMode();
+      _synthUtterance = new SpeechSynthesisUtterance(cleanText);
+      _synthUtterance.rate  = 1.0;
+      _synthUtterance.pitch = 1.05;  // Voz femenina por defecto
+
+      const mode   = _getVoiceMode();
       const isGigi = mode.includes('gigi') || mode.includes('dalia');
 
-      let voiceMatch = null;
-      if (isGigi) {
-        voiceMatch =
-          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Sabina') || v.name.includes('Dalia') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Monica') || v.name.includes('Paulina') || v.name.includes('Luciana') || v.name.includes('Google español') || v.name.includes('Spanish'))) ||
-          voices.find(v => v.lang.startsWith('es'));
-        _synthUtterance.pitch = 1.05;
-      } else {
-        voiceMatch =
-          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
-          voices.find(v => v.lang.startsWith('es'));
-        _synthUtterance.pitch = 0.88;
-      }
+      const voiceMatch = isGigi ? _pickFemaleSpanishVoice() :
+        (_cachedVoices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge')))
+          || _pickFemaleSpanishVoice());
 
       if (voiceMatch) {
         _synthUtterance.voice = voiceMatch;
-        // CRÍTICO PARA WINDOWS: Hacer coincidir lang con la voz asignada para evitar cancelación en Chromium
-        _synthUtterance.lang = voiceMatch.lang || 'es-ES';
+        _synthUtterance.lang  = voiceMatch.lang;  // CRÍTICO: debe coincidir con la voz en Windows
       } else {
-        _synthUtterance.lang = 'es-ES';
+        _synthUtterance.lang  = 'es-ES';  // Fallback seguro sin voz explícita
       }
 
-      _synthUtterance.rate = 1.0;
+      if (!isGigi) _synthUtterance.pitch = 0.90;
+
+      console.log('[Gigi/Voz] WebSpeech →', voiceMatch ? voiceMatch.name : 'sin voz explícita', '/', _synthUtterance.lang);
+
       _synthUtterance.onstart = () => {
+        setAISpeaking(true);
         _shouldRestartMic = false;
         if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
-        setAISpeaking(true);
       };
-      _synthUtterance.onend = () => { setAISpeaking(false); };
-      _synthUtterance.onerror = (err) => { console.warn('[Gigi/Voz] Error WebSpeech:', err); setAISpeaking(false); };
-      
-      setAISpeaking(true);
+      _synthUtterance.onend   = () => { setAISpeaking(false); };
+      _synthUtterance.onerror = (ev) => {
+        console.warn('[Gigi/Voz] Error WebSpeech:', ev.error);
+        setAISpeaking(false);
+      };
+
       window.speechSynthesis.speak(_synthUtterance);
       return true;
     } catch(e) {
+      console.warn('[Gigi/Voz] _speakWebSpeech excepción:', e);
       setAISpeaking(false);
       return false;
     }
