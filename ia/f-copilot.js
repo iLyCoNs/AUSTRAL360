@@ -51,7 +51,7 @@
   let _aiSpeechStartTime = 0;
   let _globalAudio = null;
 
-  function _unlockMobileAudio() {
+  async function _unlockMobileAudio() {
     try {
       if (!_globalAudio) {
         _globalAudio = new Audio();
@@ -73,7 +73,7 @@
           _activeAudioCtx = new AudioCtx();
         }
         if (_activeAudioCtx.state === 'suspended') {
-          _activeAudioCtx.resume();
+          try { await _activeAudioCtx.resume(); } catch(e) {}
         }
         const buffer = _activeAudioCtx.createBuffer(1, 1, 22050);
         const source = _activeAudioCtx.createBufferSource();
@@ -303,10 +303,12 @@
       }
     });
 
-    // Inicializar modo de voz por defecto (ElevenLabs Gigi si hay key, de lo contrario Edge Dalia)
-    const globalElKey = _getElevenLabsKey();
-    const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'edge_dalia';
-    localStorage.setItem('kpk_voice_mode', defaultMode);
+    // Inicializar modo de voz solo si no hay preferencia guardada
+    if (!localStorage.getItem('kpk_voice_mode')) {
+      const globalElKey = _getElevenLabsKey();
+      const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'stream_gigi';
+      localStorage.setItem('kpk_voice_mode', defaultMode);
+    }
 
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
@@ -2190,15 +2192,15 @@
   const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
-    let mode = localStorage.getItem('kpk_voice_mode');
-    if (mode) return mode;
-
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
         if (brandMode) return brandMode;
       }
     } catch(e) {}
+
+    let mode = localStorage.getItem('kpk_voice_mode');
+    if (mode) return mode;
 
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
@@ -2392,6 +2394,9 @@
   function _speakWebSpeech(text) {
     if (!('speechSynthesis' in window)) return false;
     try {
+      const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
+      if (!voices.length) return false;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
       const cleanText = _cleanTextForTTS(text);
@@ -2446,31 +2451,32 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: StreamElements AWS Polly Mia (POR DEFECTO GLOBAL — Voz latina neuronal ultra realista, gratis) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+    // ─── TIER 1: Google Translate TTS (Gratis, voz femenina español, sin API key) ───
+    const okGoogle = await _speakGoogleTranslate(text);
+    if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
 
-    // ─── TIER 2: ElevenLabs (solo si el usuario ingresó una clave nueva activa en admin.html) ───
+    // ─── TIER 2: Edge TTS Neural — Dalia (es-MX, gratis, alta calidad) ───
+    let edgeVoice = EDGE_TTS_VOICE_DALIA;
+    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
+    else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
+    const okEdge = await _speakEdgeTTS(text, edgeVoice);
+    if (okEdge) { console.log('[Gigi/Voz] ✔ Edge TTS Neural'); return; }
+
+    // ─── TIER 3: Web Speech API (Nativa del navegador, depende del SO) ───
+    const okWeb = _speakWebSpeech(text);
+    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
+
+    // ─── TIER 4: StreamElements TTS (antiguo Tier 1, ahora requiere auth) ───
+    const okStream = await _speakStreamElements(text);
+    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements'); return; }
+
+    // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
     const elevenKey = _getElevenLabsKey();
     if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
-
-    // ─── TIER 3: Web Speech API (Nativa del navegador) ───
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
-
-    // ─── TIER 4: Google Translate TTS (Voz femenina en español) ───
-    const okGoogle = await _speakGoogleTranslate(text);
-    if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
-
-    // ─── TIER 5: Edge TTS Neural (fallback final) ───
-    let edgeVoice = EDGE_TTS_VOICE_DALIA;
-    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
-    else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
-    await _speakEdgeTTS(text, edgeVoice);
   }
 
   function playFuturisticSound(type) {
