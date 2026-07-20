@@ -377,53 +377,60 @@
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // ── WELCOME TOUR: Jarvis saluda al usuario 4 segundos después de cargar
-    const sessionKey = 'kpk_jarvis_welcomed_' + new Date().toDateString();
-    if (!sessionStorage.getItem(sessionKey)) {
-      sessionStorage.setItem(sessionKey, '1');
-      setTimeout(() => {
-        const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
-          ? window.FerrariBrandDock.getBrand() : {};
-        const projectName = brand.projectName || 'Austral 360';
-        const totalLotes = (window.allDrawnLines || []).filter(l => l.tipo === 'lote-libre' || l.tipo === 'lote-organico').length;
-        const disponibles = (window.allDrawnLines || []).filter(l => (l.tipo === 'lote-libre' || l.tipo === 'lote-organico') && (l.estado === 'disponible' || !l.estado)).length;
-        
-        const assistantGreetingName = isGigi ? 'Gigi, su asesora virtual' : 'Jarvis, su guía virtual';
-        
-        let welcomeText = "";
-        const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
-        if (isMobile) {
-          if (_clientName) {
-            welcomeText = `¡Hola, ${_clientName}! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Te muestro un tour o buscas algún lote en específico?`;
-          } else {
-            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
-            _isWaitingForName = true;
-          }
+    // ── WELCOME TOUR: Gigi / Jarvis saluda al usuario inmediatamente al cargar la página (1.2s)
+    let welcomeTimer = setTimeout(_triggerWelcomeGreeting, 1200);
+
+    // Si el usuario toca o hace clic en la pantalla antes de 1.2s, disparar el saludo inmediatamente
+    const _firstTouchHandler = () => {
+      clearTimeout(welcomeTimer);
+      _triggerWelcomeGreeting();
+      window.removeEventListener('pointerdown', _firstTouchHandler);
+    };
+    window.addEventListener('pointerdown', _firstTouchHandler, { once: true });
+
+    function _triggerWelcomeGreeting() {
+      if (_hasGreeted) return;
+      _hasGreeted = true;
+
+      const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
+        ? window.FerrariBrandDock.getBrand() : {};
+      const projectName = brand.projectName || 'Austral 360';
+      const mode = _getVoiceMode();
+      const isGigi = mode.includes('gigi') || mode.includes('dalia');
+      const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
+
+      let welcomeText = "";
+      if (isMobile) {
+        if (_clientName) {
+          welcomeText = `¡Hola, ${_clientName}! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Te muestro un tour o buscas algún lote en específico?`;
         } else {
-          if (_clientName) {
-            welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantShortName}. ¿Hacemos el tour o buscas un lote en específico?`;
-          } else {
-            welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
-            _isWaitingForName = true;
-          }
+          welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+          _isWaitingForName = true;
         }
-
-        // Mostrar burbuja con pulso de atención
-        if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
-
-        if (isMobile) {
-          // En móvil NO abrimos el panel completo, mostramos el popup translúcido
-          showMobileBubblePopup(welcomeText, true);
+      } else {
+        if (_clientName) {
+          welcomeText = `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantShortName}. ¿Hacemos el tour o buscas un lote en específico?`;
         } else {
-          // En escritorio, abrir panel y entregar el saludo normal
-          if (!_panel.classList.contains('is-open')) togglePanel();
-          appendMessage(welcomeText, 'system');
+          welcomeText = `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+          _isWaitingForName = true;
         }
+      }
 
-        speakJarvis(welcomeText);
-        _hasGreeted = true;
-        setTimeout(() => _bubble && _bubble.classList.remove('kpk-bubble-pulse'), 3000);
-      }, 4200);
+      // Mostrar burbuja con pulso de atención
+      if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
+
+      if (isMobile) {
+        // En móvil mostramos la burbuja flotante translúcida
+        showMobileBubblePopup(welcomeText, true);
+      } else {
+        // En escritorio, abrir panel y entregar el saludo normal
+        if (!_panel.classList.contains('is-open')) togglePanel();
+        appendMessage(welcomeText, 'system');
+      }
+
+      _unlockMobileAudio();
+      speakJarvis(welcomeText);
+      setTimeout(() => _bubble && _bubble.classList.remove('kpk-bubble-pulse'), 3000);
     }
   }
 
