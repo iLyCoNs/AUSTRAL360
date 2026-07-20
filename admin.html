@@ -1145,14 +1145,25 @@
           <div class="efield full">
             <label>Voz Predeterminada del Copiloto</label>
             <select id="brand-ai-voice" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
-              <option value="elevenlabs_gigi">🏆 ElevenLabs Gigi (Voz Bella - Vendedora premium)</option>
-              <option value="elevenlabs_daniel">🏆 ElevenLabs Daniel (Hombre · Jarvis británico premium)</option>
-              <option value="edge_dalia">🆓 Edge Neural Dalia (Mujer latina · México gratis)</option>
-              <option value="edge_alvaro">🆓 Edge Neural Álvaro (Hombre · España gratis)</option>
-              <option value="edge_ryan">🆓 Edge Neural Ryan (Hombre · Inglés británico gratis)</option>
-              <option value="webspeech">🔄 Navegador — Web Speech API (Voz local básica)</option>
+              <optgroup label="🆓 StreamElements TTS — Gratis, sin API Key">
+                <option value="stream_gigi">⭐ Gigi &quot;Mia&quot; MX — Mujer latina mexicana (recomendada)</option>
+                <option value="stream_lucia">🆓 Gigi &quot;Lucía&quot; ES — Mujer española</option>
+                <option value="stream_penelope">🆓 Gigi &quot;Penelope&quot; US — Mujer español americano</option>
+              </optgroup>
+              <optgroup label="🏆 ElevenLabs — Premium (requiere API Key)">
+                <option value="elevenlabs_gigi">🏆 ElevenLabs Gigi — Voz Bella, locutora latina premium</option>
+                <option value="elevenlabs_daniel">🏆 ElevenLabs Daniel — Hombre, Jarvis británico premium</option>
+              </optgroup>
+              <optgroup label="🆓 Edge Neural TTS — Gratis (requiere internet)">
+                <option value="edge_dalia">🆓 Edge Neural Dalia — Mujer latina · México</option>
+                <option value="edge_alvaro">🆓 Edge Neural Álvaro — Hombre · España</option>
+                <option value="edge_ryan">🆓 Edge Neural Ryan — Hombre · Inglés británico</option>
+              </optgroup>
+              <optgroup label="🔄 Navegador">
+                <option value="webspeech">🔄 Web Speech API — Voz local del sistema</option>
+              </optgroup>
             </select>
-            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Selecciona la voz que usará Jarvis al hablar. Las opciones ElevenLabs requieren configurar una API Key de ElevenLabs.</span>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Las opciones <b>StreamElements</b> son completamente gratuitas y no requieren ninguna clave. Las opciones <b>ElevenLabs</b> son de calidad superior pero requieren créditos.</span>
           </div>
 
           <div>
@@ -2101,7 +2112,7 @@ function _normalizeBrand(raw) {
   if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
   if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
   if (b.aiProvider == null) b.aiProvider = 'openrouter';
-  if (b.voiceMode == null) b.voiceMode = 'elevenlabs_gigi';
+  if (b.voiceMode == null) b.voiceMode = 'stream_gigi';
   if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
@@ -2551,7 +2562,7 @@ async function loadBrandFromGitHub() {
   }
   const voiceEl = document.getElementById('brand-ai-voice');
   if (voiceEl) {
-    voiceEl.value = _brand.voiceMode || 'elevenlabs_gigi';
+    voiceEl.value = _brand.voiceMode || 'stream_gigi';
   }
   onAIProviderChange();
 
