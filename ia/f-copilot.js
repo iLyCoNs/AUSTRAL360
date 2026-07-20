@@ -2020,13 +2020,13 @@
   window.FerrariUI.injectBotMessage = function(text) {
     if (!text) return;
     try {
-      _appendMessage('assistant', text);
-      if (typeof speakText === 'function') speakText(text);
+      appendMessage(text, 'system');
+      speakJarvis(text);
     } catch(e) {}
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  MOTOR DE VOZ JARVIS — CASCADA 3 NIVELES
+  //  MOTOR DE VOZ GIGI / JARVIS — CASCADA 3 NIVELES
   //
   //  Nivel 1: ElevenLabs (clave configurada en admin)
   //  Nivel 2: Microsoft Edge TTS Neural (gratis, sin key)
@@ -2035,14 +2035,7 @@
 
   let _speechEnabled = true;
   let _synthUtterance = null;
-  let _edgeTTSModule = null;      // módulo cargado dinámicamente
-  let _edgeTTSLoading = false;
-  let _activeJarvisAudio = null;  // HTMLAudioElement activo
 
-  // Inicializar voces del navegador
-  if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
-
-  // ─── Nivel 1: ElevenLabs TTS ───────────────────────────────────────────────
   // Voice IDs oficiales:
   const ELEVENLABS_VOICE_GIGI   = 'hpp4J3VqNfWAUOO0d1Us'; // Gigi (Bella) — Locutora/vendedora latina premium
   const ELEVENLABS_VOICE_DANIEL = 'onwK4e9ZLuTAKqWW03F9'; // Daniel — Mayordomo británico grave
@@ -2064,7 +2057,7 @@
     try {
       const clean = _cleanTextForTTS(text);
       if (!clean) return false;
-      const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI; // Gigi por defecto
+      const activeVoice = voiceId || ELEVENLABS_VOICE_GIGI; // Gigi (Bella) por defecto
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoice}`, {
         method: 'POST',
         headers: {
@@ -2078,11 +2071,14 @@
           voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true }
         })
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        console.warn('[Gigi/Voz] ⚠️ Respuesta ElevenLabs no OK (' + res.status + '). Activando respaldo de voz Dalia Neural...');
+        return false;
+      }
       const blob = await res.blob();
       return _playAudioBlob(blob, text);
     } catch(e) {
-      console.warn('[Jarvis/Voz] ElevenLabs falló:', e.message);
+      console.warn('[Gigi/Voz] ElevenLabs no disponible:', e.message);
       return false;
     }
   }
@@ -2093,11 +2089,9 @@
   const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
-    // 1) Leer del localStorage si el usuario lo cambió localmente
     let mode = localStorage.getItem('kpk_voice_mode');
     if (mode) return mode;
 
-    // 2) Leer de la identidad del proyecto (brand.json de GitHub)
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
@@ -2105,7 +2099,6 @@
       }
     } catch(e) {}
 
-    // 3) Leer del archivo de configuración global (config.js)
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
 
@@ -2114,35 +2107,34 @@
 
   function _voiceModeLabel(mode) {
     switch(mode) {
-      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" (Voz Bella - Vendedora premium)';
-      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" (Jarvis británico premium)';
-      case 'edge_dalia':        return 'Edge Neural "Dalia" activa (Vendedora latina gratis).';
-      case 'edge_alvaro':       return 'Edge Neural "Álvaro" activo (Hombre España gratis).';
-      case 'edge_ryan':         return 'Edge Neural "Ryan" activo (Jarvis británico gratis).';
-      case 'webspeech':         return 'Síntesis de navegador activa (básica).';
-      default:                  return 'Voz actualizada.';
+      case 'elevenlabs_gigi':   return 'ElevenLabs "Gigi" (Bella - Locutora Latina)';
+      case 'elevenlabs_daniel': return 'ElevenLabs "Daniel" (Mayordomo británico)';
+      case 'edge_dalia':        return 'Edge Neural "Dalia" (Vendedora latina alta calidad)';
+      case 'edge_alvaro':       return 'Edge Neural "Álvaro" (España)';
+      case 'edge_ryan':         return 'Edge Neural "Ryan" (Jarvis británico)';
+      case 'webspeech':         return 'Síntesis de navegador (estándar)';
+      default:                  return 'Voz activa';
     }
   }
+
+  let _edgeTTSModule = null;
+  let _edgeTTSLoading = false;
 
   async function _loadEdgeTTS() {
     if (_edgeTTSModule) return _edgeTTSModule;
     if (_edgeTTSLoading) {
-      // Esperar hasta que cargue
-      await new Promise(resolve => {
-        const check = setInterval(() => {
-          if (!_edgeTTSLoading) { clearInterval(check); resolve(); }
-        }, 100);
-      });
+      while (_edgeTTSLoading) {
+        await new Promise(r => setTimeout(r, 50));
+      }
       return _edgeTTSModule;
     }
     _edgeTTSLoading = true;
     try {
-      // Importar dinámicamente desde esm.sh (no requiere bundler)
       const mod = await import('https://esm.sh/@andresaya/edge-tts@latest');
       _edgeTTSModule = mod;
-      console.log('[Jarvis/Voz] ✓ Edge TTS Neural cargado (es-ES-AlvaroNeural)');
+      console.log('[Gigi/Voz] ✓ Módulo Edge TTS Neural cargado con éxito');
     } catch(e) {
-      console.warn('[Jarvis/Voz] Edge TTS no disponible:', e.message);
+      console.warn('[Gigi/Voz] Edge TTS no disponible:', e.message);
       _edgeTTSModule = null;
     }
     _edgeTTSLoading = false;
@@ -2152,25 +2144,19 @@
   function _cleanTextForTTS(text) {
     if (!text) return '';
     let clean = text;
-    // Quitar etiquetas HTML
     clean = clean.replace(/<[^>]*>/g, '');
-    // Quitar JSON remanente de acciones si lo hubiera
     clean = clean.replace(/\{.*?\}/g, '');
-    // Reemplazar abreviaciones y símbolos para modulación por voz perfecta
     clean = clean.replace(/\bkm\b/gi, 'kilómetros');
     clean = clean.replace(/\bm²\b/gi, 'metros cuadrados');
     clean = clean.replace(/\bUF\b/g, 'U Efe');
     clean = clean.replace(/\bSAG\b/g, 'Ese A Ge');
     clean = clean.replace(/\$/g, 'pesos ');
-    // Quitar markdown (asteriscos de negrita, cursiva, guiones de lista, backticks)
     clean = clean.replace(/\*\*+/g, '');
     clean = clean.replace(/\*+/g, '');
     clean = clean.replace(/`+/g, '');
-    clean = clean.replace(/^[-*+]\s+/gm, ''); // viñetas al inicio de línea
-    clean = clean.replace(/[#_*~[\]()]/g, ''); // caracteres markdown
-    // Quitar excesos de espacios en blanco
+    clean = clean.replace(/^[-*+]\s+/gm, '');
+    clean = clean.replace(/[#_*~[\]()]/g, '');
     clean = clean.replace(/\s+/g, ' ').trim();
-    // Limitar longitud para evitar cortes abruptos y sobrecarga del TTS
     return clean.substring(0, 1000);
   }
 
@@ -2182,13 +2168,12 @@
       if (!clean) return false;
       const tts = new mod.EdgeTTS();
       const chunks = [];
-      // Voz: usar la forzada o leer el modo del selector
       let voice = forceVoice;
       if (!voice) {
         const mode = _getVoiceMode();
         if (mode === 'edge_dalia') voice = EDGE_TTS_VOICE_DALIA;
         else if (mode === 'edge_alvaro') voice = EDGE_TTS_VOICE_ES;
-        else voice = EDGE_TTS_VOICE_RYAN; // default
+        else voice = EDGE_TTS_VOICE_RYAN;
       }
       for await (const chunk of tts.synthesizeStream(clean, voice)) {
         chunks.push(chunk);
@@ -2197,7 +2182,7 @@
       const blob = new Blob(chunks, { type: 'audio/mpeg' });
       return _playAudioBlob(blob, text);
     } catch(e) {
-      console.warn('[Jarvis/Voz] Edge TTS falló:', e.message);
+      console.warn('[Gigi/Voz] Edge TTS falló:', e.message);
       return false;
     }
   }
