@@ -2073,7 +2073,7 @@
       if (mode === 'stream_lucia' || mode === 'edge_alvaro')       voice = 'Lucia';
       else if (mode === 'stream_penelope')                           voice = 'Penelope';
       else if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') voice = 'Miguel';
-      else                                                           voice = 'Mia';
+      else                                                           voice = 'Mia';      // MX femenina (Gigi por defecto)
 
       const MAX = 460;
       const fragments = [];
@@ -2103,6 +2103,40 @@
       return true;
     } catch(e) {
       console.warn('[Gigi/StreamTTS] Error:', e.message);
+      return false;
+    }
+  }
+
+  // ─── Utilidad: Google Translate TTS — Voz femenina suave en español gratis ────
+  async function _speakGoogleTranslate(text) {
+    try {
+      const clean = _cleanTextForTTS(text);
+      if (!clean) return false;
+
+      const MAX = 180;
+      const fragments = [];
+      let remaining = clean;
+      while (remaining.length > 0) {
+        if (remaining.length <= MAX) {
+          fragments.push(remaining);
+          break;
+        }
+        let cut = remaining.lastIndexOf('.', MAX);
+        if (cut < 40) cut = remaining.lastIndexOf(',', MAX);
+        if (cut < 40) cut = remaining.lastIndexOf(' ', MAX);
+        if (cut < 1)  cut = MAX;
+        fragments.push(remaining.substring(0, cut + 1));
+        remaining = remaining.substring(cut + 1).trim();
+      }
+
+      for (const frag of fragments) {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=es-US&client=tw-ob&q=${encodeURIComponent(frag)}`;
+        const ok = await _playAudioUrl(url);
+        if (!ok) return false;
+      }
+      return true;
+    } catch(e) {
+      console.warn('[Gigi/GoogleTTS] Error:', e.message);
       return false;
     }
   }
@@ -2430,15 +2464,19 @@
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
 
-    // ─── TIER 2: Web Speech API (Nativa del navegador — instantánea, voz femenina local) ───
+    // ─── TIER 2: StreamElements AWS Polly Mia (Voz latina neuronal ultra realista, gratis) ───
+    const okStream = await _speakStreamElements(text);
+    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
+
+    // ─── TIER 3: Google Translate TTS (Voz femenina en español, gratis) ───
+    const okGoogle = await _speakGoogleTranslate(text);
+    if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
+
+    // ─── TIER 4: Web Speech API (Nativa del navegador — voz femenina local) ───
     const okWeb = _speakWebSpeech(text);
     if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
 
-    // ─── TIER 3: StreamElements TTS (Voz latina de red AWS Polly) ───
-    const okStream = await _speakStreamElements(text);
-    if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements TTS'); return; }
-
-    // ─── TIER 4: Edge TTS Neural ───
+    // ─── TIER 5: Edge TTS Neural (fallback final) ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
     else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
