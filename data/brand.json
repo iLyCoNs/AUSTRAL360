@@ -11,7 +11,7 @@
   "loteFillOnHoverOnly": false,
   "loteHoverColor": "neon-green",
   "aiProvider": "lightning",
-  "voiceMode": "elevenlabs_gigi",
+  "voiceMode": "stream_gigi",
   "aiKeys": {
     "openrouter": "",
     "groq": "",
@@ -31,5 +31,5 @@
     "waAlertsPhone": "",
     "waAlertsKey": ""
   },
-  "updatedAt": 1784527729076
+  "updatedAt": 1784528923867
 }
