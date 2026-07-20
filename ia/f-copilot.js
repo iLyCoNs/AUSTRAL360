@@ -51,7 +51,7 @@
   let _aiSpeechStartTime = 0;
   let _globalAudio = null;
 
-  async function _unlockMobileAudio() {
+  function _unlockMobileAudio() {
     try {
       if (!_globalAudio) {
         _globalAudio = new Audio();
@@ -73,7 +73,7 @@
           _activeAudioCtx = new AudioCtx();
         }
         if (_activeAudioCtx.state === 'suspended') {
-          try { await _activeAudioCtx.resume(); } catch(e) {}
+          _activeAudioCtx.resume();
         }
         const buffer = _activeAudioCtx.createBuffer(1, 1, 22050);
         const source = _activeAudioCtx.createBufferSource();
@@ -303,12 +303,10 @@
       }
     });
 
-    // Inicializar modo de voz solo si no hay preferencia guardada
-    if (!localStorage.getItem('kpk_voice_mode')) {
-      const globalElKey = _getElevenLabsKey();
-      const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'stream_gigi';
-      localStorage.setItem('kpk_voice_mode', defaultMode);
-    }
+    // Inicializar modo de voz por defecto (ElevenLabs Gigi si hay key, de lo contrario Edge Dalia)
+    const globalElKey = _getElevenLabsKey();
+    const defaultMode = globalElKey ? 'elevenlabs_gigi' : 'edge_dalia';
+    localStorage.setItem('kpk_voice_mode', defaultMode);
 
 
     const btnVoice = document.getElementById('kpk-ai-toggle-voice');
@@ -2192,15 +2190,15 @@
   const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
+    let mode = localStorage.getItem('kpk_voice_mode');
+    if (mode) return mode;
+
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
         if (brandMode) return brandMode;
       }
     } catch(e) {}
-
-    let mode = localStorage.getItem('kpk_voice_mode');
-    if (mode) return mode;
 
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
@@ -2394,9 +2392,6 @@
   function _speakWebSpeech(text) {
     if (!('speechSynthesis' in window)) return false;
     try {
-      const voices = _cachedVoices.length ? _cachedVoices : window.speechSynthesis.getVoices();
-      if (!voices.length) return false; // Sin voces disponibles, saltar WebSpeech
-
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
       const cleanText = _cleanTextForTTS(text);
