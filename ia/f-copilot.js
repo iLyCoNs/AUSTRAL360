@@ -2398,6 +2398,7 @@
     if (!('speechSynthesis' in window)) return false;
     try {
       window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
       const cleanText = _cleanTextForTTS(text);
       if (!cleanText) return false;
 
@@ -2405,23 +2406,16 @@
       _synthUtterance.rate  = 1.0;
       _synthUtterance.pitch = 1.05;  // Voz femenina por defecto
 
-      const mode   = _getVoiceMode();
-      const isGigi = mode.includes('gigi') || mode.includes('dalia');
-
-      const voiceMatch = isGigi ? _pickFemaleSpanishVoice() :
-        (_cachedVoices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge')))
-          || _pickFemaleSpanishVoice());
+      const voiceMatch = _pickFemaleSpanishVoice();
 
       if (voiceMatch) {
         _synthUtterance.voice = voiceMatch;
-        _synthUtterance.lang  = voiceMatch.lang;  // CRÍTICO: debe coincidir con la voz en Windows
+        _synthUtterance.lang  = voiceMatch.lang;
       } else {
-        _synthUtterance.lang  = 'es-ES';  // Fallback seguro sin voz explícita
+        _synthUtterance.lang  = 'es-MX';
       }
 
-      if (!isGigi) _synthUtterance.pitch = 0.90;
-
-      console.log('[Gigi/Voz] WebSpeech →', voiceMatch ? voiceMatch.name : 'sin voz explícita', '/', _synthUtterance.lang);
+      console.log('[Gigi/Voz] WebSpeech →', voiceMatch ? voiceMatch.name : 'voz femenina por defecto (es-MX)');
 
       _synthUtterance.onstart = () => {
         setAISpeaking(true);
@@ -2464,17 +2458,17 @@
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
 
-    // ─── TIER 2: StreamElements AWS Polly Mia (Voz latina neuronal ultra realista, gratis) ───
+    // ─── TIER 2: Web Speech API (Nativa del navegador — instantánea, voz femenina local Dalia/Sabina/Google) ───
+    const okWeb = _speakWebSpeech(text);
+    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
+
+    // ─── TIER 3: StreamElements AWS Polly Mia (Voz latina neuronal de red) ───
     const okStream = await _speakStreamElements(text);
     if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements AWS Polly Mia'); return; }
 
-    // ─── TIER 3: Google Translate TTS (Voz femenina en español, gratis) ───
+    // ─── TIER 4: Google Translate TTS (Voz femenina en español) ───
     const okGoogle = await _speakGoogleTranslate(text);
     if (okGoogle) { console.log('[Gigi/Voz] ✔ Google Translate TTS'); return; }
-
-    // ─── TIER 4: Web Speech API (Nativa del navegador — voz femenina local) ───
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
 
     // ─── TIER 5: Edge TTS Neural (fallback final) ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
