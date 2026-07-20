@@ -1156,14 +1156,13 @@
   100% { border-color: rgba(0, 180, 255, 0.3); box-shadow: 0 0 8px rgba(0, 180, 255, 0.2); }
 }
 
-/* Ocultar el panel de chat grande en móvil por defecto si no está explícitamente abierto */
-@media (max-width: 576px) {
-  .kpk-ai-panel {
-    /* Evitar que robe espacio de clicks cuando está cerrado */
-    pointer-events: none;
-  }
+/* Ocultar el panel de chat grande en móvil de forma absoluta (solo se muestra la tarjeta flotante pequeña) */
+@media (max-width: 767px) {
+  .kpk-ai-panel,
   .kpk-ai-panel.is-open {
-    pointer-events: auto;
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 }
 

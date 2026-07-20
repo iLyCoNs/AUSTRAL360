@@ -412,8 +412,9 @@
         _isWaitingForName = true;
       }
 
+      const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (_bubble) _bubble.classList.add('kpk-bubble-pulse');
-      if (_panel && !_panel.classList.contains('is-open')) {
+      if (!isMobileDevice && _panel && !_panel.classList.contains('is-open')) {
         _panel.classList.add('is-open');
       }
       appendMessage(welcomeText, 'system');
@@ -427,6 +428,22 @@
   let _hasGreeted = false;
 
   function togglePanel() {
+    const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobileDevice) {
+      let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+      if (popup && popup.classList.contains('is-visible') && popup.style.display !== 'none') {
+        closeMobileBubblePopup(true);
+      } else {
+        const mode = _getVoiceMode();
+        const isGigi = mode.includes('gigi') || mode.includes('dalia');
+        const assistantShortName = isGigi ? 'Gigi' : 'Jarvis';
+        const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') ? window.FerrariBrandDock.getBrand() : {};
+        const projectName = brand.projectName || 'Austral 360';
+        const txt = _clientName ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta. Soy ${assistantShortName}. ¿En qué te puedo ayudar hoy?` : `¡Hola! Te doy la bienvenida a ${projectName}. Soy ${assistantShortName}. ¿Cómo te gustaría que te llame?`;
+        showMobileBubblePopup(txt, true);
+      }
+      return;
+    }
     if (!_panel) return;
     const isOpen = _panel.classList.toggle('is-open');
     if (isOpen) {
@@ -681,64 +698,67 @@
     throw lastError || new Error('Todos los niveles de cascada de IA fallaron.');
   }
 
+  function _sanitizeDisplayText(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    let txt = raw;
+
+    // 1. Si el texto contiene `"text": "..."`, extraer solo el contenido del campo de texto
+    const textPropMatch = txt.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (textPropMatch && textPropMatch[1]) {
+      txt = textPropMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+    }
+
+    // 2. Quitar bloques de código ```json ... ```
+    txt = txt.replace(/```(?:json)?[\s\S]*?```/gi, '');
+
+    // 3. Quitar cualquier objeto o array JSON remanente {...} o [...]
+    txt = txt.replace(/\{[\s\S]*?\}/g, '');
+    txt = txt.replace(/\[[\s\S]*?\]/g, '');
+
+    // 4. Quitar fugas de prompt del sistema o instrucciones del TTS
+    txt = txt.replace(/\*\*\s*Refine\s+Text\s+for\s+TTS[\s\S]*/gi, '');
+    txt = txt.replace(/\*\*\s*System\s*Prompt[\s\S]*/gi, '');
+    txt = txt.replace(/-?\d+\.\d+,\s*"?lng"?:\s*-?\d+\.\d+/gi, '');
+
+    // 5. Quitar marcas de formato markdown pesadas
+    txt = txt.replace(/\*\*+/g, '').replace(/\*+/g, '').replace(/`+/g, '');
+    txt = txt.replace(/^[-*+]\s+/gm, '');
+
+    // 6. Limpiar caracteres JSON y comillas sobrantes en extremos
+    txt = txt.replace(/^[{\s"']+|[}\s"']+$/g, '').trim();
+
+    return txt;
+  }
+
   function _parseAIResponse(rawText) {
     if (!rawText || typeof rawText !== 'string') {
       return { text: 'Lo siento, no pude procesar la respuesta del servidor.' };
     }
 
     let cleaned = rawText.trim();
+    let mainText = '';
+    let actions = [];
 
-    // 1) Limpiar prefijos basura previos al bloque JSON (ej. "Answering... ```json")
-    const jsonStartIndex = cleaned.indexOf('{');
-    if (jsonStartIndex !== -1) {
-      cleaned = cleaned.substring(jsonStartIndex);
-    }
-
-    // 2) Eliminar bloques de código markdown ```json ... ```
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-
-    // 3) Intentar parseo directo
+    // 1) Intentar parseo directo si la respuesta es JSON puro
     try {
-      const parsed = JSON.parse(cleaned);
-      if (parsed && typeof parsed.text === 'string') {
-        return parsed;
-      }
-      if (parsed && typeof parsed === 'object') {
-        return { text: JSON.stringify(parsed), actions: parsed.actions || [] };
-      }
-    } catch (e1) {
-      // 4) Si falla, buscar la estructura {"text": "..."} dentro del texto usando Regex (incluso si está incompleto)
-      const jsonMatch = cleaned.match(/"text"\s*:\s*"([\s\S]*?)"/);
-      let textContent = '';
-      if (jsonMatch && jsonMatch[1]) {
-        textContent = jsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
-      } else {
-        // Fallback agresivo: limpiar llaves y comillas
-        textContent = cleaned
-          .replace(/^[{\s]*"text"\s*:\s*"?/, '')
-          .replace(/["}\s]*$/, '')
-          .replace(/\\"/g, '"')
-          .replace(/\\n/g, '\n');
-      }
-
-      // Evitar que el texto final quede con pedazos de llaves JSON si la respuesta fue muy corrupta
-      if (textContent.startsWith('{"text":')) {
-        textContent = textContent.replace(/^[{\s]*"text"\s*:\s*"?/, '').replace(/["}\s]*$/, '');
-      }
-
-      // Buscar si alcanzaron a venir acciones
-      const actions = [];
-      try {
-        const actionMatches = cleaned.matchAll(/"type"\s*:\s*"([^"]+)"/g);
-        for (const act of actionMatches) {
-          if (act[1]) actions.push({ type: act[1] });
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        const jsonCandidate = cleaned.substring(firstBrace, lastBrace + 1);
+        const parsed = JSON.parse(jsonCandidate);
+        if (parsed) {
+          if (typeof parsed.text === 'string') mainText = parsed.text;
+          if (Array.isArray(parsed.actions)) actions = parsed.actions;
         }
-      } catch(e) {}
+      }
+    } catch (e1) {}
 
-      return { text: textContent || rawText, actions: actions };
-    }
+    // 2) Desinfección completa del texto extraído o del texto plano
+    mainText = _sanitizeDisplayText(mainText || cleaned);
 
-    return { text: rawText };
+    if (!mainText) mainText = 'Entendido. ¿En qué más te puedo ayudar sobre este proyecto?';
+
+    return { text: mainText, actions: actions };
   }
 
   // ─── ENVIAR Y COMUNICAR CON GEMINI ──────────────────────────────────
@@ -2217,51 +2237,61 @@
     });
   }
 
+  let _cachedVoices = [];
+  function _initVoiceCache() {
+    if ('speechSynthesis' in window) {
+      _cachedVoices = window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          _cachedVoices = window.speechSynthesis.getVoices();
+        };
+      }
+    }
+  }
+  _initVoiceCache();
+
   // ─── Nivel 3: Web Speech API (fallback) ────────────────────────────────────
   function _speakWebSpeech(text) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const cleanText = _cleanTextForTTS(text);
-    if (!cleanText) return;
-    _synthUtterance = new SpeechSynthesisUtterance(cleanText);
-    _synthUtterance.lang = 'es-MX';
-    const voices = window.speechSynthesis.getVoices();
-    const mode = _getVoiceMode();
-    const isGigi = mode.includes('gigi') || mode.includes('dalia');
+    if (!('speechSynthesis' in window)) return false;
+    try {
+      window.speechSynthesis.cancel();
+      const cleanText = _cleanTextForTTS(text);
+      if (!cleanText) return false;
+      _synthUtterance = new SpeechSynthesisUtterance(cleanText);
+      _synthUtterance.lang = 'es-MX';
+      const voices = (_cachedVoices && _cachedVoices.length) ? _cachedVoices : window.speechSynthesis.getVoices();
+      const mode = _getVoiceMode();
+      const isGigi = mode.includes('gigi') || mode.includes('dalia');
 
-    let voiceMatch = null;
-    if (isGigi) {
-      voiceMatch =
-        voices.find(v => v.lang.startsWith('es') && (v.name.includes('Dalia') || v.name.includes('Monica') || v.name.includes('Sabina') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Luciana') || v.name.includes('Google español'))) ||
-        voices.find(v => v.lang.startsWith('es'));
-      _synthUtterance.pitch = 1.05;
-    } else {
-      voiceMatch =
-        voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
-        voices.find(v => v.lang.startsWith('es'));
-      _synthUtterance.pitch = 0.88;
-    }
-
-    if (voiceMatch) _synthUtterance.voice = voiceMatch;
-    _synthUtterance.rate = 1.0;
-    _synthUtterance.onstart = () => {
-      _shouldRestartMic = false;
-      if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
-      setAISpeaking(true);
-    };
-    _synthUtterance.onend = () => {
-      setAISpeaking(false);
-      if (_jarvisMode) {
-        _shouldRestartMic = true;
-        setTimeout(() => {
-          if (_jarvisMode && !_isListening && !_bubble.classList.contains('is-loading')) {
-            try { _recognition.start(); } catch(e) {}
-          }
-        }, 300);
+      let voiceMatch = null;
+      if (isGigi) {
+        voiceMatch =
+          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Dalia') || v.name.includes('Monica') || v.name.includes('Sabina') || v.name.includes('Paulina') || v.name.includes('Helena') || v.name.includes('Laura') || v.name.includes('Luciana') || v.name.includes('Google español') || v.name.includes('Spanish'))) ||
+          voices.find(v => v.lang.startsWith('es'));
+        _synthUtterance.pitch = 1.05;
+      } else {
+        voiceMatch =
+          voices.find(v => v.lang.startsWith('es') && (v.name.includes('Alvaro') || v.name.includes('Pablo') || v.name.includes('Jorge') || v.name.includes('Diego') || v.name.includes('Raul'))) ||
+          voices.find(v => v.lang.startsWith('es'));
+        _synthUtterance.pitch = 0.88;
       }
-    };
-    _synthUtterance.onerror = _synthUtterance.onend;
-    window.speechSynthesis.speak(_synthUtterance);
+
+      if (voiceMatch) _synthUtterance.voice = voiceMatch;
+      _synthUtterance.rate = 1.0;
+      _synthUtterance.onstart = () => {
+        _shouldRestartMic = false;
+        if (_recognition && _isListening && !_jarvisMode) try { _recognition.stop(); } catch(e) {}
+        setAISpeaking(true);
+      };
+      _synthUtterance.onend = () => { setAISpeaking(false); };
+      _synthUtterance.onerror = () => { setAISpeaking(false); };
+      setAISpeaking(true);
+      window.speechSynthesis.speak(_synthUtterance);
+      return true;
+    } catch(e) {
+      setAISpeaking(false);
+      return false;
+    }
   }
 
   // ─── speakJarvis: respeta el modo elegido por el usuario ————————————
