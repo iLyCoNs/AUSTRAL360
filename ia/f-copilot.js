@@ -88,96 +88,7 @@
   }
 
   // Inicializar UI al cargar la página
-  // ══════════════════════════════════════════════════════════════════════════
-  //  BANNER DE BIENVENIDA — Gigi habla al primer clic del usuario nuevo
-  //  NOTA: Los navegadores bloquean audio sin gesto del usuario. Esta es
-  //  la forma legítima de activarlo desde la primera interacción.
-  // ══════════════════════════════════════════════════════════════════════════
-  function _injectGigiWelcomeBanner() {
-    // Solo para usuarios nuevos (sin historial en esta sesión)
-    const isNew = !sessionStorage.getItem('kpk_session_started');
-    if (!isNew) return;
-    sessionStorage.setItem('kpk_session_started', '1');
 
-    const GIGI_MSG = '¡Hola! Soy Gigi, tu asesora virtual en este tour exclusivo. ¿En qué te puedo ayudar hoy?';
-
-    // Inyectar estilos del banner
-    const style = document.createElement('style');
-    style.textContent = `
-      #kpk-gigi-banner {
-        position: fixed; bottom: 90px; right: 24px; z-index: 99999;
-        display: flex; align-items: center; gap: 12px;
-        background: linear-gradient(135deg, rgba(0,15,40,0.97) 0%, rgba(0,30,70,0.97) 100%);
-        border: 1px solid rgba(0,180,255,0.45);
-        border-radius: 18px; padding: 14px 20px;
-        box-shadow: 0 8px 40px rgba(0,180,255,0.25), 0 2px 8px rgba(0,0,0,0.6);
-        cursor: pointer; max-width: 320px;
-        animation: kpkBannerIn 0.5s cubic-bezier(.22,1,.36,1) both;
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        user-select: none;
-      }
-      #kpk-gigi-banner:hover { border-color: rgba(0,180,255,0.85); transform: translateY(-2px); transition: all 0.2s; }
-      #kpk-gigi-banner .kpk-gb-avatar {
-        width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-        background: linear-gradient(135deg, #00b4ff 0%, #0066cc 100%);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; position: relative;
-        box-shadow: 0 0 0 0 rgba(0,180,255,0.6);
-        animation: kpkPulse 2s infinite;
-      }
-      #kpk-gigi-banner .kpk-gb-text { flex: 1; }
-      #kpk-gigi-banner .kpk-gb-name { font-size: 13px; font-weight: 700; color: rgba(0,180,255,1); letter-spacing: 0.5px; }
-      #kpk-gigi-banner .kpk-gb-hint { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 3px; line-height: 1.4; }
-      #kpk-gigi-banner .kpk-gb-tap {
-        font-size: 10px; background: rgba(0,180,255,0.2); border: 1px solid rgba(0,180,255,0.4);
-        color: rgba(0,180,255,0.95); border-radius: 20px; padding: 4px 10px;
-        white-space: nowrap; font-weight: 600; letter-spacing: 0.5px; flex-shrink: 0;
-        animation: kpkBlink 1.5s ease-in-out infinite;
-      }
-      @keyframes kpkBannerIn { from { opacity:0; transform: translateY(20px) scale(0.9); } to { opacity:1; transform: translateY(0) scale(1); } }
-      @keyframes kpkPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,180,255,0.5); } 50% { box-shadow: 0 0 0 10px rgba(0,180,255,0); } }
-      @keyframes kpkBlink { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-    `;
-    document.head.appendChild(style);
-
-    // Crear el banner
-    const banner = document.createElement('div');
-    banner.id = 'kpk-gigi-banner';
-    banner.innerHTML = `
-      <div class="kpk-gb-avatar">🎙️</div>
-      <div class="kpk-gb-text">
-        <div class="kpk-gb-name">GIGI · Asesora Virtual</div>
-        <div class="kpk-gb-hint">Toca para escuchar mi bienvenida en audio</div>
-      </div>
-      <div class="kpk-gb-tap">▶ ESCUCHAR</div>
-    `;
-
-    let _bannerFired = false;
-    function _fireBannerVoice() {
-      if (_bannerFired) return;
-      _bannerFired = true;
-      if (banner) {
-        banner.style.transition = 'all 0.4s';
-        banner.style.opacity = '0';
-        banner.style.transform = 'translateY(10px) scale(0.9)';
-        setTimeout(() => { try { banner.remove(); } catch(e) {} }, 400);
-      }
-      _unlockMobileAudio();
-      speakJarvis(GIGI_MSG);
-    }
-
-    banner.addEventListener('click', _fireBannerVoice);
-
-    function _onFirstPageGesture() {
-      document.removeEventListener('click', _onFirstPageGesture, true);
-      document.removeEventListener('touchstart', _onFirstPageGesture, true);
-      _fireBannerVoice();
-    }
-    document.addEventListener('click', _onFirstPageGesture, { capture: true, once: true, passive: true });
-    document.addEventListener('touchstart', _onFirstPageGesture, { capture: true, once: true, passive: true });
-
-    document.body.appendChild(banner);
-  }
 
   function init() {
     if (document.getElementById('kpk-ai-root')) return;
@@ -496,8 +407,7 @@
     console.log('[Ferrari/IA] ✓ Copiloto Inicializado en Cliente');
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // ── WELCOME TOUR: Banner de bienvenida que dispara la voz de Gigi al primer gesto del usuario
-    // (Los navegadores bloquean audio sin gesto — esta es la forma correcta y confiable)
+    // ── WELCOME TOUR: Gigi saluda al usuario inmediatamente en texto y voz al cargar la página
     const brand2 = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
       ? window.FerrariBrandDock.getBrand() : {};
     const projectName2 = brand2.projectName || 'Austral 360';
@@ -513,8 +423,10 @@
       _panel.classList.add('is-open');
     }
 
-    // Mostrar el banner de voz e inyectar el listener del primer gesto
-    _injectGigiWelcomeBanner();
+    setTimeout(() => {
+      _unlockMobileAudio();
+      speakJarvis(welcomeGreeting);
+    }, 800);
   }
 
 
@@ -2535,22 +2447,22 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: ElevenLabs (solo si hay clave activa y se eligió en el admin) ───
+    // ─── TIER 1: ElevenLabs (solo si hay clave activa) ───
     if (_getElevenLabsKey() && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
       const ok = await _speakElevenLabs(text, activeVoice);
       if (ok) { console.log('[Gigi/Voz] ✔ ElevenLabs'); return; }
     }
 
-    // ─── TIER 2: StreamElements TTS (GRATIS, sin key, voz latina AWS Polly) ───
+    // ─── TIER 2: Web Speech API (Nativa del navegador — instantánea, voz femenina local) ───
+    const okWeb = _speakWebSpeech(text);
+    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech (nativa)'); return; }
+
+    // ─── TIER 3: StreamElements TTS (Voz latina de red AWS Polly) ───
     const okStream = await _speakStreamElements(text);
     if (okStream) { console.log('[Gigi/Voz] ✔ StreamElements TTS'); return; }
 
-    // ─── TIER 3: Web Speech API (navegador, instantáneo) ────────────────────
-    const okWeb = _speakWebSpeech(text);
-    if (okWeb) { console.log('[Gigi/Voz] ✔ WebSpeech'); return; }
-
-    // ─── TIER 4: Edge TTS Neural (fallback final vía esm.sh) ───────────────
+    // ─── TIER 4: Edge TTS Neural ───
     let edgeVoice = EDGE_TTS_VOICE_DALIA;
     if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
     else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
