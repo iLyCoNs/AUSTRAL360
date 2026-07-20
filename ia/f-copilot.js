@@ -2363,6 +2363,11 @@
   const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
+    // 1. localStorage tiene prioridad (cambio manual del usuario via selector o /voces)
+    let mode = localStorage.getItem('kpk_voice_mode');
+    if (mode) return mode;
+
+    // 2. brand.json (configuracion del admin)
     try {
       if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
         const brandMode = window.FerrariBrandDock.getBrand().voiceMode;
@@ -2370,13 +2375,11 @@
       }
     } catch(e) {}
 
-    let mode = localStorage.getItem('kpk_voice_mode');
-    if (mode) return mode;
-
+    // 3. config.js por defecto
     const cfg = window.KPK_CONFIG || {};
     if (cfg.voiceMode) return cfg.voiceMode;
 
-    return 'stream_gigi'; // Gigi (Mia MX) por defecto global
+    return 'stream_gigi';
   }
 
   function _voiceModeLabel(mode) {
