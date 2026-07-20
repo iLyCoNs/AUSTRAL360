@@ -523,29 +523,20 @@
       const resultIdx = e.results.length - 1;
       const txt = e.results[resultIdx][0].transcript.trim();
       if (txt) {
-        // Filtrado de Eco Acústico (Software-based AEC)
-        if (_lastSpokenText) {
-          const cleanLast = _lastSpokenText.toLowerCase();
-          const cleanTxt = txt.toLowerCase();
-          if (cleanLast.includes(cleanTxt) || cleanTxt.includes(cleanLast) || calculateSimilarity(cleanTxt, cleanLast) > 0.5) {
-            console.log('[Ferrari/IA] Eco detectado (la IA se escuchó a sí misma). Ignorando transcripción:', txt);
-            return;
-          }
-        }
+        console.log('[Gigi/Voz] Transcripción de voz recibida:', txt);
 
-        // Mostrar feedback visual de transcripción en la burbuja móvil
-        let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
-        if (!popup || popup.style.display === 'none' || !popup.classList.contains('is-visible')) {
-          showMobileBubblePopup('', false);
-          popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        if (_input) _input.value = txt;
+        const mbpInput = document.getElementById('kpk-mbp-text-input');
+        if (mbpInput) mbpInput.value = txt;
+
+        _isListening = false;
+        if (_btnMic) {
+          _btnMic.classList.remove('is-active', 'is-recording');
+          _btnMic.style.removeProperty('color');
         }
-        if (popup) {
-          const pText = popup.querySelector('#kpk-mbp-text');
-          if (pText) {
-            pText.innerHTML = `<span style="color: rgba(255, 255, 255, 0.65); font-style: italic; font-weight: 500;">Escuchado: "${txt}"</span>`;
-          }
-        }
-        _input.value = txt;
+        if (_input) _input.placeholder = "Pregunta algo aquí...";
+
+        // Enviar inmediatamente la transcripción al chat y a la IA
         handleSend();
       }
     };
