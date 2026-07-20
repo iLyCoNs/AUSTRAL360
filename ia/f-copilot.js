@@ -50,6 +50,7 @@
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
   let _globalAudio = null;
+  let _activeJarvisAudio = null;
 
   async function _unlockMobileAudio() {
     try {
