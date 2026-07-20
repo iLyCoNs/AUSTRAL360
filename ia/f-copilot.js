@@ -3626,25 +3626,8 @@
   }
 
   function checkIframeVisibility() {
-    const inIframe = window.self !== window.top;
-    if (!inIframe) {
-      if (_bubble) _bubble.style.display = 'flex';
-      return;
-    }
-
-    const isFs = !!(document.fullscreenElement ||
-                    document.webkitFullscreenElement ||
-                    document.mozFullScreenElement ||
-                    document.msFullscreenElement ||
-                    document.body.classList.contains('is-pseudo-fullscreen') ||
-                    document.getElementById('panorama-container')?.classList.contains('is-pseudo-fullscreen'));
-
-    if (_bubble) {
-      _bubble.style.display = isFs ? 'flex' : 'none';
-    }
-    if (_panel && !isFs) {
-      _panel.classList.remove('is-open');
-    }
+    // El chatbot y la IA de Gigi deben estar SIEMPRE visibles y disponibles para todos los usuarios
+    if (_bubble) _bubble.style.display = 'flex';
   }
 
   // Genera el Prompt de sistema con los lotes en tiempo real y directrices
