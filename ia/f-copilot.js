@@ -326,9 +326,9 @@
       btnVoice.addEventListener('click', () => {
         _speechEnabled = !_speechEnabled;
         if (!_speechEnabled) {
-          // Detener todo audio activo
+          // Detener TODO el audio activo (audio element, speechSynthesis, edge tts, audio context)
+          stopAISpeech();
           if (window.speechSynthesis) window.speechSynthesis.cancel();
-          if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
           btnVoice.style.color = 'rgba(255,255,255,0.25)';
           btnVoice.classList.remove('kpk-mute-glow');
           voiceIcon.innerHTML = `
@@ -944,9 +944,9 @@
         const engineLabels = {
           streamelements: 'StreamElements AWS Polly (Mia es-MX)',
           google_translate: 'Google Translate TTS (español femenina)',
-          edge_tts: 'Edge TTS Neural (Dalia es-MX)',
+          edge_tts: 'Edge TTS Neural — Dalia/Elvira/Jorge (voz HUMANA MX/ES)',
           webspeech: 'Web Speech API (voz del sistema)',
-          elevenlabs: 'ElevenLabs (Gigi premium)'
+          elevenlabs: 'ElevenLabs (Gigi premium — voz ultra humana)'
         };
         const engineName = engineLabels[lastEngine] || lastEngine;
 
@@ -2239,9 +2239,12 @@
   }
 
   // ─── Nivel 2: Microsoft Edge TTS Neural (sin key, gratis) ─────────────────
-  const EDGE_TTS_VOICE_DALIA = 'es-MX-DaliaNeural';   // Vendedora latina (gratis)
-  const EDGE_TTS_VOICE_ES    = 'es-ES-AlvaroNeural';   // Álvaro (España)
-  const EDGE_TTS_VOICE_RYAN  = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
+  // Voces neuronales en español — suenan humanas y naturales (gratis vía esm.sh)
+  const EDGE_TTS_VOICE_DALIA  = 'es-MX-DaliaNeural';   // Dalia — Mexicana (vendedora latina, la más natural)
+  const EDGE_TTS_VOICE_ELVIRA = 'es-ES-ElviraNeural';  // Elvira — Española (femenina, muy natural)
+  const EDGE_TTS_VOICE_JORGE  = 'es-MX-JorgeNeural';    // Jorge — Mexicano (masculino)
+  const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';   // Álvaro (España)
+  const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';     // Ryan (Jarvis británico)
 
   function _getVoiceMode() {
     try {
@@ -2267,9 +2270,11 @@
       case 'stream_penelope':   return 'Gigi "Penelope" US (StreamElements • gratis)';
       case 'elevenlabs_gigi':   return 'Gigi "Bella" (ElevenLabs • premium)';
       case 'elevenlabs_daniel': return 'Daniel (ElevenLabs • premium)';
-      case 'edge_dalia':        return 'Dalia Neural (Edge TTS • gratis)';
-      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • gratis)';
-      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • gratis)';
+      case 'edge_dalia':        return 'Dalia Neural (Edge TTS • humana MX)';
+      case 'edge_elvira':       return 'Elvira Neural (Edge TTS • humana ES)';
+      case 'edge_jorge':        return 'Jorge Neural (Edge TTS • humano MX)';
+      case 'edge_alvaro':       return 'Álvaro Neural (Edge TTS • ES)';
+      case 'edge_ryan':         return 'Ryan Neural (Edge TTS • British)';
       case 'webspeech':         return 'Voz del navegador (estándar)';
       default:                  return 'Voz activa';
     }
@@ -2503,26 +2508,29 @@
 
     const mode = _getVoiceMode();
 
-    // ─── TIER 1: StreamElements AWS Polly Mia (Voz latina neuronal, gratis, sin API key) ───
+    // ─── TIER 1: Edge TTS Neural — Voz HUMANA y natural (gratis vía esm.sh) ───
+    // Voces neuronales de Microsoft — suenan como humanos reales, no robóticas
+    let edgeVoice = EDGE_TTS_VOICE_DALIA; // Dalia (es-MX) por defecto — vendedora latina natural
+    if (mode === 'edge_elvira' || mode === 'stream_lucia')            edgeVoice = EDGE_TTS_VOICE_ELVIRA; // Elvira (España)
+    else if (mode === 'edge_jorge' || mode === 'elevenlabs_daniel')   edgeVoice = EDGE_TTS_VOICE_JORGE;  // Jorge (MX)
+    else if (mode === 'edge_alvaro')                                 edgeVoice = EDGE_TTS_VOICE_ES;    // Álvaro (ES)
+    else if (mode === 'edge_ryan')                                   edgeVoice = EDGE_TTS_VOICE_RYAN;  // Ryan (UK)
+    const okEdge = await _speakEdgeTTS(text, edgeVoice);
+    if (okEdge) { _lastUsedVoiceEngine = 'edge_tts'; return; }
+
+    // ─── TIER 2: StreamElements AWS Polly Mia (Voz latina, gratis, sin API key) ───
     const okStream = await _speakStreamElements(text);
     if (okStream) { _lastUsedVoiceEngine = 'streamelements'; return; }
 
-    // ─── TIER 2: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
+    // ─── TIER 3: Google Translate TTS (Voz femenina español, gratis, funciona siempre) ───
     const okGoogle = await _speakGoogleTranslate(text);
     if (okGoogle) { _lastUsedVoiceEngine = 'google_translate'; return; }
-
-    // ─── TIER 3: Edge TTS Neural — Dalia (es-MX, alta calidad, requiere CDN) ───
-    let edgeVoice = EDGE_TTS_VOICE_DALIA;
-    if (mode === 'elevenlabs_daniel' || mode === 'edge_ryan') edgeVoice = EDGE_TTS_VOICE_RYAN;
-    else if (mode === 'edge_alvaro')                          edgeVoice = EDGE_TTS_VOICE_ES;
-    const okEdge = await _speakEdgeTTS(text, edgeVoice);
-    if (okEdge) { _lastUsedVoiceEngine = 'edge_tts'; return; }
 
     // ─── TIER 4: Web Speech API (sistema local, fallback si no hay red) ───
     const okWeb = _speakWebSpeech(text);
     if (okWeb) { _lastUsedVoiceEngine = 'webspeech'; return; }
 
-    // ─── TIER 5: ElevenLabs (solo si hay API key activa) ───
+    // ─── TIER 5: ElevenLabs (solo si hay API key activa — voz premium ultra humana) ───
     const elevenKey = _getElevenLabsKey();
     if (elevenKey && (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel')) {
       const activeVoice = (mode === 'elevenlabs_daniel') ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
