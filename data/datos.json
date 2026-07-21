@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1784598345843,
+  "updatedAt": 1784599727371,
   "lotes": [
     {
       "tipo": "lote-libre",
@@ -1471,7 +1471,7 @@
   ],
   "geo": {
     "version": 1,
-    "updatedAt": 1784598338989,
+    "updatedAt": 1784599720160,
     "droneOrigin": {
       "lat": -41.87585,
       "lng": -72.748294,
@@ -1792,19 +1792,6 @@
         "createdAt": 1784598208729
       },
       {
-        "id": "d4485f39-c056-4213-b187-5c0e499531a9",
-        "tipo": "horizonte",
-        "categoria": "ciudad",
-        "titulo": "Hualaihué",
-        "pitch": -5.492436192219296,
-        "yaw": -17.4615983088623,
-        "lat": -41.9194078,
-        "lng": -72.8469159,
-        "notas": "",
-        "lockYaw": true,
-        "createdAt": 1784598236862
-      },
-      {
         "id": "70760b61-d11e-425e-96ea-f9b6bb04e0fd",
         "tipo": "horizonte",
         "categoria": "ciudad",
@@ -1816,6 +1803,32 @@
         "notas": "",
         "lockYaw": true,
         "createdAt": 1784598320081
+      },
+      {
+        "id": "94bb3064-1091-42c6-8a0c-bd22e9e7841d",
+        "tipo": "horizonte",
+        "categoria": "ciudad",
+        "titulo": "HORNOPIRÉN",
+        "pitch": -0.2931280101760441,
+        "yaw": -133.807962737404,
+        "lat": -41.9666795,
+        "lng": -72.4710153,
+        "notas": "",
+        "lockYaw": true,
+        "createdAt": 1784599596731
+      },
+      {
+        "id": "28607121-ba10-47f8-bf3d-5adcbaf67a2f",
+        "tipo": "horizonte",
+        "categoria": "ciudad",
+        "titulo": "COCHAMÓ",
+        "pitch": 1.5370847585992256,
+        "yaw": 139.1007937872429,
+        "lat": -41.4923629,
+        "lng": -72.3079195,
+        "notas": "",
+        "lockYaw": true,
+        "createdAt": 1784599691319
       }
     ]
   }
