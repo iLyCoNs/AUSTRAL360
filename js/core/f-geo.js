@@ -287,6 +287,53 @@
     return m ? `${h} h ${m} min` : `${h} h`;
   }
 
+  /**
+   * Horizonte = landmark visual, pero si tiene GPS (ej. Chaitén) sí conviene
+   * ruta OSRM real. La UI debe etiquetar "línea recta" vs "ruta en auto"
+   * para que el ETA no parezca “cambiar solo”.
+   */
+  function usesDrivingRoute(pin) {
+    return !!(pin && pin.lat != null && pin.lng != null);
+  }
+
+  /** Texto Distancia / ETA para UI (pins, editor, dock) */
+  function formatPinDistanceEta(pin) {
+    if (!pin) return '—';
+    const routeDist = pin._routeDistM != null ? pin._routeDistM : pin.routeDistM;
+    const routeSec = pin._routeSec != null ? pin._routeSec : pin.routeSec;
+    const hasRoute = routeDist != null && routeSec != null;
+    const hasAir = pin._distM != null;
+    const srcLabel = 'Ruta';
+    if (hasRoute && hasAir && pin.tipo === 'horizonte') {
+      return `${srcLabel} ${formatDistance(routeDist)} · ${formatEtaSeconds(routeSec)} · aire ≈ ${formatDistance(pin._distM)}`;
+    }
+    if (hasRoute) {
+      return `${srcLabel} ${formatDistance(routeDist)} · ${formatEtaSeconds(routeSec)}`;
+    }
+    if (hasAir) {
+      const base = `≈ ${formatDistance(pin._distM)} · ${formatEtaMinutes(pin._distM)}`;
+      return pin.tipo === 'horizonte' ? `${base} (línea recta · calculando ruta…)` : base;
+    }
+    return '—';
+  }
+
+  function _clearDrivingRoute(pin) {
+    if (!pin) return;
+    pin._routeDistM = null;
+    pin._routeSec = null;
+    pin._routeSource = null;
+    if (pin._routeDurationS != null) pin._routeDurationS = null;
+  }
+
+  function _syncRouteRuntime(pin) {
+    if (!pin) return;
+    if (pin.routeDistM != null && pin.routeSec != null) {
+      pin._routeDistM = pin.routeDistM;
+      pin._routeSec = pin.routeSec;
+      pin._routeSource = pin.routeSource || 'osrm';
+    }
+  }
+
   // ─── Rutas reales (OSRM / OpenStreetMap: calles + ferries mapeados) ──
   const _routeCache = new Map();
   let _routeQueue = Promise.resolve();
@@ -335,15 +382,26 @@
 
   async function enrichPinRoutes(force) {
     if (!state.droneOrigin) return;
-    const pins = state.pins.filter(p => p.lat != null && p.lng != null);
+    const pins = state.pins.filter(p =>
+      p.lat != null && p.lng != null && usesDrivingRoute(p)
+    );
     let changed = false;
     for (const pin of pins) {
-      if (!force && pin._routeDistM != null && pin._routeSec != null) continue;
+      // Ignorar overrides viejos (Google/manual): siempre recalcular OSRM
+      if (pin.routeManual || pin.routeSource === 'google') {
+        pin.routeManual = false;
+        pin.routeSource = null;
+      }
+      if (!force && pin._routeDistM != null && pin._routeSec != null && pin._routeSource === 'osrm') continue;
       const route = await fetchDrivingRoute(pin.lat, pin.lng);
       if (route) {
         pin._routeDistM = route.distM;
         pin._routeSec = route.durationSec;
         pin._routeSource = route.source;
+        pin.routeDistM = route.distM;
+        pin.routeSec = route.durationSec;
+        pin.routeSource = route.source;
+        pin.routeManual = false;
         changed = true;
       }
     }
@@ -458,15 +516,23 @@
       if (data && data.autoYaw !== false) {
         pin.yaw = bearingToYaw(brg);
       }
-      fetchDrivingRoute(pin.lat, pin.lng).then(route => {
-        if (!route) return;
-        pin._routeDistM = route.distM;
-        pin._routeSec = route.durationSec;
-        pin._routeSource = route.source;
-        if (window.FerrariGeoPins && window.FerrariGeoPins.markDirty) {
-          window.FerrariGeoPins.markDirty();
-        }
-      }).catch(() => {});
+      if (usesDrivingRoute(pin)) {
+        fetchDrivingRoute(pin.lat, pin.lng).then(route => {
+          if (!route) return;
+          pin._routeDistM = route.distM;
+          pin._routeSec = route.durationSec;
+          pin._routeSource = route.source;
+          pin.routeDistM = route.distM;
+          pin.routeSec = route.durationSec;
+          pin.routeSource = route.source;
+          pin.routeManual = false;
+          if (window.FerrariGeoPins && window.FerrariGeoPins.markDirty) {
+            window.FerrariGeoPins.markDirty();
+          }
+        }).catch(() => {});
+      } else {
+        _clearDrivingRoute(pin);
+      }
     }
 
     state.pins.push(pin);
@@ -484,7 +550,10 @@
     if (pin.lat != null && pin.lng != null && state.droneOrigin) {
       pin._distM = distanceFromOrigin(pin.lat, pin.lng);
       pin._bearing = bearingDeg(state.droneOrigin.lat, state.droneOrigin.lng, pin.lat, pin.lng);
-      if (patch.lat != null || patch.lng != null) {
+      if (!usesDrivingRoute(pin)) {
+        _clearDrivingRoute(pin);
+      } else if (patch.lat != null || patch.lng != null || patch.tipo != null) {
+        pin.routeManual = false;
         pin._routeDistM = null;
         pin._routeSec = null;
         fetchDrivingRoute(pin.lat, pin.lng).then(route => {
@@ -492,11 +561,21 @@
           pin._routeDistM = route.distM;
           pin._routeSec = route.durationSec;
           pin._routeSource = route.source;
+          pin.routeDistM = route.distM;
+          pin.routeSec = route.durationSec;
+          pin.routeSource = route.source;
+          pin.routeManual = false;
           if (window.FerrariGeoPins && window.FerrariGeoPins.markDirty) {
             window.FerrariGeoPins.markDirty();
           }
         }).catch(() => {});
+      } else {
+        _syncRouteRuntime(pin);
       }
+    } else {
+      pin._distM = null;
+      pin._bearing = null;
+      _clearDrivingRoute(pin);
     }
     _touch();
     _markDirty();
@@ -525,6 +604,7 @@
       if (pin.lat != null && pin.lng != null && state.droneOrigin) {
         pin._distM = distanceFromOrigin(pin.lat, pin.lng);
         pin._bearing = bearingDeg(state.droneOrigin.lat, state.droneOrigin.lng, pin.lat, pin.lng);
+        _syncRouteRuntime(pin);
       } else {
         pin._distM = null;
         pin._bearing = null;
@@ -572,7 +652,12 @@
         lng: p.lng,
         notas: p.notas || '',
         lockYaw: !!p.lockYaw,
-        createdAt: p.createdAt
+        createdAt: p.createdAt,
+        // Ruta persistida (Google/manual/OSRM) — sobrevive a recargas
+        routeDistM: p.routeDistM != null ? p.routeDistM : (p._routeDistM != null ? p._routeDistM : null),
+        routeSec: p.routeSec != null ? p.routeSec : (p._routeSec != null ? p._routeSec : null),
+        routeSource: p.routeSource || p._routeSource || null,
+        routeManual: !!p.routeManual
       }))
     };
   }
@@ -697,6 +782,8 @@
     formatDistance,
     formatEtaMinutes,
     formatEtaSeconds,
+    formatPinDistanceEta,
+    usesDrivingRoute,
     fetchDrivingRoute,
     enrichPinRoutes,
     distanceFromOrigin,

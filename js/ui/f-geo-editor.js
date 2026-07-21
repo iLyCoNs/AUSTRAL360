@@ -226,8 +226,8 @@
       `<option value="${k}" ${k === pin.categoria ? 'selected' : ''}>${cats[k].emoji} ${cats[k].label}</option>`
     ).join('');
 
-    const dist = pin._routeDistM != null && pin._routeSec != null
-      ? `${window.FerrariGeo.formatDistance(pin._routeDistM)} · ${window.FerrariGeo.formatEtaSeconds(pin._routeSec)}`
+    const dist = window.FerrariGeo.formatPinDistanceEta
+      ? window.FerrariGeo.formatPinDistanceEta(pin)
       : (pin._distM != null
         ? `≈ ${window.FerrariGeo.formatDistance(pin._distM)} · ${window.FerrariGeo.formatEtaMinutes(pin._distM)}`
         : 'Define origen dron + lugar');
@@ -411,7 +411,10 @@
     document.getElementById('fge-save').style.display = 'none';
 
     let metric = meta.label;
-    if (pin._routeDistM != null && pin._routeSec != null) {
+    if (window.FerrariGeo.formatPinDistanceEta) {
+      const m = window.FerrariGeo.formatPinDistanceEta(pin);
+      if (m && m !== '—') metric = m;
+    } else if (pin._routeDistM != null && pin._routeSec != null) {
       metric = `${window.FerrariGeo.formatDistance(pin._routeDistM)} · ${window.FerrariGeo.formatEtaSeconds(pin._routeSec)}`;
     } else if (pin._distM != null) {
       metric = `≈ ${window.FerrariGeo.formatDistance(pin._distM)} · ${window.FerrariGeo.formatEtaMinutes(pin._distM)}`;
@@ -458,7 +461,13 @@
       return;
     }
     const d = window.FerrariGeo.distanceFromOrigin(la, ln);
-    m.textContent = `${window.FerrariGeo.formatDistance(d)} · ${window.FerrariGeo.formatEtaMinutes(d)}`;
+    const tipoEl = document.getElementById('fge-tipo');
+    const tipo = (tipoEl && tipoEl.value) || (_pinId && window.FerrariGeo.getPin(_pinId) || {}).tipo || '';
+    if (tipo === 'horizonte') {
+      m.textContent = `≈ ${window.FerrariGeo.formatDistance(d)} · ${window.FerrariGeo.formatEtaMinutes(d)} (línea recta · la ruta en auto se calcula al guardar)`;
+    } else {
+      m.textContent = `${window.FerrariGeo.formatDistance(d)} · ${window.FerrariGeo.formatEtaMinutes(d)}`;
+    }
   }
 
   function _updateLinks(pin) {
