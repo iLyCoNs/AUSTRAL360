@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
@@ -93,6 +93,7 @@
       "lng": -72.45,
       "wiki": { "lang": "es", "title": "Termas_de_Pichicolo" },
       "commonsSearch": "Termas de Pichicolo",
+      "youtubeSearch": "Termas de Pichicolo Hornopirén Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Termas_de_Pichicolo_-_panoramio.jpg/1280px-Termas_de_Pichicolo_-_panoramio.jpg",
         "https://upload.wikimedia.org/wikipedia/commons/8/81/Termas_de_Pichicolo_-_panoramio.jpg"
@@ -131,6 +132,7 @@
       "lng": -72.28,
       "wiki": { "lang": "es", "title": "Volcán_Yates" },
       "commonsSearch": "Volcán Yates Reloncaví",
+      "youtubeSearch": "Termas del Sol Puelo Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/2/25/Yate_volcano_seen_from_huar_island_chile_x_region.jpg"
       ],
@@ -214,6 +216,7 @@
       "lng": -72.44683,
       "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
       "youtubeCandidates": ["xpt794jxa1A"],
+      "youtubeSearch": "Saltos del Petrohué Volcán Osorno",
       "tags": ["finde", "naturaleza", "fotos"]
     },
     {
@@ -225,6 +228,7 @@
       "lng": -72.44888889,
       "wiki": { "lang": "es", "title": "Parque_nacional_Vicente_Pérez_Rosales" },
       "youtubeCandidates": ["xpt794jxa1A"],
+      "youtubeSearch": "Parque Vicente Pérez Rosales Chile",
       "tags": ["finde", "trekking"]
     },
     {
@@ -236,6 +240,7 @@
       "lng": -72.44683,
       "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
       "commonsSearch": "Rafting Petrohué",
+      "youtubeSearch": "Rafting Río Petrohué Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Saltos_del_Petrohue._%282010%29.JPG/1280px-Saltos_del_Petrohue._%282010%29.JPG"
       ],
@@ -307,6 +312,7 @@
       "lng": -72.3080889,
       "wiki": { "lang": "en", "title": "Aguas_Calientes_Hot_Springs" },
       "commonsSearch": "Aguas Calientes Puyehue",
+      "youtubeSearch": "Termas Aguas Calientes Puyehue Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Vista_aerea_Aguas_Calientes.jpg/1280px-Vista_aerea_Aguas_Calientes.jpg"
       ],
@@ -347,6 +353,7 @@
       "lat": -39.501659,
       "lng": -71.874697,
       "wiki": { "lang": "es", "title": "Termas_Geométricas" },
+      "youtubeSearch": "Termas Geométricas Coñaripe Chile",
       "youtubeCandidates": [],
       "tags": ["termas", "lejos"]
     },
@@ -358,6 +365,7 @@
       "lat": -39.5679,
       "lng": -72.0075,
       "wiki": { "lang": "es", "title": "Coñaripe" },
+      "youtubeSearch": "Coñaripe termas Chile",
       "youtubeCandidates": [],
       "tags": ["termas", "lejos"]
     }

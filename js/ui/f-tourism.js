@@ -6,7 +6,7 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=5';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=6';
   const EARTH_R_M = 6371000;
   const DEFAULT_BANDS = [
     { id: 'muy_cerca', label: 'Muy cerca', emoji: '🟢', maxKm: 40 },
@@ -250,9 +250,94 @@
     return hit >= 1 && (hit / Math.max(1, wordsA.length) >= 0.4 || b.split(' ').some((w) => w.length > 4 && a.includes(w)));
   }
 
+  /** Base del puente Node (mismo que TTS). Vacío si no hay. */
+  function _mediaProxyBase() {
+    try {
+      const cfg = window.KPK_CONFIG || {};
+      if (cfg.ttsProxyUrl) return String(cfg.ttsProxyUrl).trim().replace(/\/$/, '');
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        const b = window.FerrariBrandDock.getBrand();
+        if (b && b.ttsProxyUrl) return String(b.ttsProxyUrl).trim().replace(/\/$/, '');
+      }
+    } catch (e) {}
+    // Localhost solo en http (GitHub HTTPS bloquea)
+    if (location.protocol === 'http:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      return 'http://127.0.0.1:8787';
+    }
+    return '';
+  }
+
+  function _youtubeQueryForPoi(poi) {
+    if (poi.youtubeSearch) return String(poi.youtubeSearch).trim();
+    const bits = [poi.title, 'Chile'];
+    if (poi.category === 'termas') bits.push('termas');
+    if (poi.category === 'rafting') bits.push('rafting');
+    if (poi.category === 'trekking') bits.push('parque');
+    return bits.filter(Boolean).join(' ');
+  }
+
+  /**
+   * Busca el video correcto en YouTube vía proxy Node (scraping resultados YT + oEmbed).
+   * El navegador NO puede scrapear Google/YouTube directo (CORS).
+   */
+  async function _searchYoutubeLive(poi) {
+    const base = _mediaProxyBase();
+    if (!base) return null;
+    const q = _youtubeQueryForPoi(poi);
+    if (!q) return null;
+    try {
+      const url =
+        base +
+        '/yt-search?q=' +
+        encodeURIComponent(q) +
+        '&limit=5&minScore=30';
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const t = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+      const r = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-store',
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      if (t) clearTimeout(t);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const results = (j && j.results) || [];
+      for (const item of results) {
+        if (!item || !item.id) continue;
+        // Re-validar oEmbed desde el cliente (doble filtro)
+        const ok = await _validateYoutube(item.id);
+        if (ok) {
+          return {
+            id: ok.id,
+            title: ok.title,
+            thumb: ok.thumb,
+            score: item.score,
+            source: 'yt_search'
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[Tourism] yt-search falló:', e.message || e);
+    }
+    return null;
+  }
+
   async function resolveMedia(poi) {
     if (!poi) return null;
-    if (_mediaCache.has(poi.id)) return _mediaCache.get(poi.id);
+    if (_mediaCache.has(poi.id)) {
+      const cached = _mediaCache.get(poi.id);
+      // Si había foto pero no video, reintentar búsqueda YT (proxy pudo estar caído)
+      if (cached && cached.ok && !cached.youtube && !cached._ytTriedLive) {
+        const live = await _searchYoutubeLive(poi);
+        cached._ytTriedLive = true;
+        if (live) {
+          cached.youtube = live;
+          _mediaCache.set(poi.id, cached);
+        }
+      }
+      return _mediaCache.get(poi.id);
+    }
 
     // 1) Fotos curadas en catálogo (Commons/URL) — se validan al momento
     let imageUrl = null;
@@ -285,17 +370,25 @@
       }
     }
 
-    // 4) YouTube: solo IDs curados + oEmbed OK (nunca inventados)
+    // 4) YouTube: IDs curados → búsqueda en vivo (proxy → YouTube results → oEmbed)
     let youtube = null;
     const candidates = Array.isArray(poi.youtubeCandidates) ? poi.youtubeCandidates : [];
     for (const id of candidates) {
       youtube = await _validateYoutube(id);
-      if (youtube) break;
+      if (youtube) {
+        youtube.source = 'catalog';
+        break;
+      }
+    }
+    let ytTriedLive = false;
+    if (!youtube) {
+      ytTriedLive = true;
+      youtube = await _searchYoutubeLive(poi);
     }
 
     // Sin foto NI video verificados → no servir el POI
     if (!imageUrl && !youtube) {
-      const empty = { ok: false, imageUrl: null, youtube: null, wikiExtract: null };
+      const empty = { ok: false, imageUrl: null, youtube: null, wikiExtract: null, _ytTriedLive: ytTriedLive };
       _mediaCache.set(poi.id, empty);
       return empty;
     }
@@ -313,9 +406,9 @@
       wikiExtract,
       wikiTitle: wiki && wiki.title ? wiki.title : poi.title,
       wikiPageUrl: wiki && wiki.pageUrl ? wiki.pageUrl : null,
-      // Coords del catálogo (origen del proyecto), no las de una página wiki cercana
       lat: poi.lat,
-      lng: poi.lng
+      lng: poi.lng,
+      _ytTriedLive: ytTriedLive
     };
     _mediaCache.set(poi.id, resolved);
     return resolved;
@@ -401,7 +494,13 @@
     if (media.imageSource === 'wikipedia' || media.wikiPageUrl) srcBits.push('foto Wikipedia');
     else if (media.imageSource === 'commons') srcBits.push('foto Wikimedia Commons');
     else if (media.imageSource === 'catalog') srcBits.push('foto verificada');
-    if (media.youtube) srcBits.push('video YouTube verificado');
+    if (media.youtube) {
+      srcBits.push(
+        media.youtube.source === 'yt_search' || media.youtube.source === 'youtube_search'
+          ? 'video buscado en YouTube'
+          : 'video YouTube verificado'
+      );
+    }
     el.querySelector('#kpk-tw-meta').textContent =
       (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
       _formatDist(distM) +

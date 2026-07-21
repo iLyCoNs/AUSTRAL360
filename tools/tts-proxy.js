@@ -1,16 +1,18 @@
 /**
- * Proxy local TTS — Dalia Neural (Edge) + Mia (StreamElements vía servidor).
- * El navegador recibe 401 de StreamElements; Node no.
+ * Proxy local TTS — Dalia Neural (Edge) + Mia (StreamElements vía servidor)
+ * + búsqueda YouTube para Jarvis Turismo.
  *
  *   npm run tts
  *   GET http://127.0.0.1:8787/tts?text=Hola&voice=es-MX-DaliaNeural
  *   GET http://127.0.0.1:8787/se?text=Hola&voice=Mia
+ *   GET http://127.0.0.1:8787/yt-search?q=Termas+Pichicolo+Chile&limit=5
  */
 'use strict';
 
 const http = require('http');
 const { URL } = require('url');
 const { EdgeTTS } = require('edge-tts-universal');
+const { searchYoutube } = require('./lib/yt-search');
 
 // 127.0.0.1 = solo PC local. 0.0.0.0 = VPS/internet (Hetzner).
 const HOST = process.env.KPK_TTS_HOST || '127.0.0.1';
@@ -95,7 +97,6 @@ function sendMp3(res, buf) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'OPTIONS') {
-      // Chrome Private Network Access preflight (páginas HTTPS → localhost)
       res.writeHead(204, cors(res, {
         'Access-Control-Allow-Private-Network': 'true'
       }));
@@ -109,7 +110,38 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         voice: DEFAULT_VOICE,
         engine: 'edge-tts-universal',
-        also: ['/tts (Dalia)', '/se (Mia StreamElements)']
+        also: ['/tts (Dalia)', '/se (Mia StreamElements)', '/yt-search (YouTube turismo)']
+      });
+    }
+
+    // ─── YouTube search (Jarvis Turismo) ───
+    if (u.pathname === '/yt-search' || u.pathname === '/youtube-search') {
+      let q = u.searchParams.get('q') || u.searchParams.get('query') || '';
+      let limit = Number(u.searchParams.get('limit') || 5);
+      let minScore = Number(u.searchParams.get('minScore') || 35);
+      if (req.method === 'POST') {
+        const raw = await readBody(req);
+        if (raw) {
+          try {
+            const j = JSON.parse(raw);
+            if (j.q || j.query) q = j.q || j.query;
+            if (j.limit != null) limit = Number(j.limit);
+            if (j.minScore != null) minScore = Number(j.minScore);
+          } catch (_) {}
+        }
+      }
+      if (!String(q).trim()) {
+        return sendJson(res, 400, { ok: false, error: 'q requerido', results: [] });
+      }
+      const results = await searchYoutube(String(q).trim(), {
+        limit: Math.min(10, Math.max(1, limit || 5)),
+        minScore: isNaN(minScore) ? 35 : minScore
+      });
+      return sendJson(res, 200, {
+        ok: true,
+        query: String(q).trim(),
+        count: results.length,
+        results
       });
     }
 
@@ -143,7 +175,10 @@ const server = http.createServer(async (req, res) => {
       return sendMp3(res, audio);
     }
 
-    return sendJson(res, 404, { error: 'not_found', paths: ['/health', '/tts', '/se'] });
+    return sendJson(res, 404, {
+      error: 'not_found',
+      paths: ['/health', '/tts', '/se', '/yt-search']
+    });
   } catch (e) {
     console.error('[tts-proxy]', e.message || e);
     sendJson(res, 500, { error: String(e.message || e) });
@@ -151,7 +186,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`[tts-proxy] Dalia → http://${HOST}:${PORT}/tts`);
-  console.log(`[tts-proxy] Mia   → http://${HOST}:${PORT}/se`);
-  console.log(`[tts-proxy] health http://${HOST}:${PORT}/health`);
+  console.log(`[tts-proxy] Dalia     → http://${HOST}:${PORT}/tts`);
+  console.log(`[tts-proxy] Mia       → http://${HOST}:${PORT}/se`);
+  console.log(`[tts-proxy] YT search → http://${HOST}:${PORT}/yt-search?q=Termas+Pichicolo`);
+  console.log(`[tts-proxy] health    → http://${HOST}:${PORT}/health`);
 });

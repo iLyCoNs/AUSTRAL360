@@ -8,7 +8,7 @@
 
 (function() {
   window.KPK_CONFIG = {
-    configVersion: 13,
+    configVersion: 14,
 
     // Proveedor predeterminado prioritario (Gemini 3.5 Flash vía Lightning.ai con puente CORS)
     aiProvider: 'lightning',
@@ -16,8 +16,9 @@
   // Voz: jarvis_charon = Gemini Charon (doc Voz_Charon_JARVIS); auto_gigi = Bella/Mia/Dalia
   voiceMode: 'jarvis_charon',
 
-    // Puente TTS por internet (Hetzner/VPS). Vacío = solo localhost:8787 (no sirve en GitHub HTTPS).
-    // Ejemplo: 'https://tts.tudominio.com'  → debe exponer /health y /tts
+    // Puente TTS + búsqueda YouTube por internet (Hetzner/VPS). Vacío = solo localhost:8787.
+    // Debe exponer /health, /tts y /yt-search
+    // Ejemplo: 'https://tts.tudominio.com'
     ttsProxyUrl: '',
 
     // Salida de voz del copiloto (hablar). false = solo texto; admin.html lo activa.
