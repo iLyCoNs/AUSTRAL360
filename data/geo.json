@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1784597647761,
+  "updatedAt": 1784599720160,
   "droneOrigin": {
     "lat": -41.87585,
     "lng": -72.748294,
@@ -272,9 +272,9 @@
       "id": "24255a77-26d5-4521-8909-666bfd71c094",
       "tipo": "horizonte",
       "categoria": "ciudad",
-      "titulo": "Puerto Montt",
-      "pitch": 0.5597916040471909,
-      "yaw": 84.91904090444395,
+      "titulo": "PUERTO MONTT",
+      "pitch": -0.2590831075715987,
+      "yaw": 84.7450907131173,
       "lat": -41.471798,
       "lng": -72.9395915,
       "notas": "",
@@ -293,6 +293,71 @@
       "notas": "",
       "lockYaw": true,
       "createdAt": 1784597599946
+    },
+    {
+      "id": "93df9ffc-b794-4739-b011-6584bce3f41e",
+      "tipo": "horizonte",
+      "categoria": "ciudad",
+      "titulo": "CALETA AULEN",
+      "pitch": -7.256419277362511,
+      "yaw": 33.16161470026839,
+      "lat": -41.8747229,
+      "lng": -72.8107536,
+      "notas": "",
+      "lockYaw": true,
+      "createdAt": 1784598166963
+    },
+    {
+      "id": "f900d667-e1ba-4a3f-8088-ef764a683eab",
+      "tipo": "horizonte",
+      "categoria": "ciudad",
+      "titulo": "TENTELHUE",
+      "pitch": -7.864499475406113,
+      "yaw": 4.047791277825848,
+      "lat": -41.9029298,
+      "lng": -72.8462158,
+      "notas": "",
+      "lockYaw": true,
+      "createdAt": 1784598208729
+    },
+    {
+      "id": "70760b61-d11e-425e-96ea-f9b6bb04e0fd",
+      "tipo": "horizonte",
+      "categoria": "ciudad",
+      "titulo": "CHAITÉN",
+      "pitch": 0.8859034959790528,
+      "yaw": -117.71676671478602,
+      "lat": -42.9165335,
+      "lng": -72.7084192,
+      "notas": "",
+      "lockYaw": true,
+      "createdAt": 1784598320081
+    },
+    {
+      "id": "94bb3064-1091-42c6-8a0c-bd22e9e7841d",
+      "tipo": "horizonte",
+      "categoria": "ciudad",
+      "titulo": "HORNOPIRÉN",
+      "pitch": -0.2931280101760441,
+      "yaw": -133.807962737404,
+      "lat": -41.9666795,
+      "lng": -72.4710153,
+      "notas": "",
+      "lockYaw": true,
+      "createdAt": 1784599596731
+    },
+    {
+      "id": "28607121-ba10-47f8-bf3d-5adcbaf67a2f",
+      "tipo": "horizonte",
+      "categoria": "ciudad",
+      "titulo": "COCHAMÓ",
+      "pitch": 1.5370847585992256,
+      "yaw": 139.1007937872429,
+      "lat": -41.4923629,
+      "lng": -72.3079195,
+      "notas": "",
+      "lockYaw": true,
+      "createdAt": 1784599691319
     }
   ]
 }
