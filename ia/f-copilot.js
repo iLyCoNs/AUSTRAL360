@@ -3125,27 +3125,54 @@
     'gemini-2.0-flash'
   ];
 
-  /** Charon = JARVIS (grave). Kore = Gigi alternativa. */
+  // Cuota TTS Gemini: tras 429/403, enfriar y usar Dalia (no robot)
+  let _geminiTtsCooldownUntil = 0;
+  let _geminiTtsPreferredModel = '';
+  const GEMINI_TTS_COOLDOWN_MS = 3 * 60 * 1000; // 3 min tras rate-limit
+
+  function _geminiTtsOnCooldown() {
+    return Date.now() < _geminiTtsCooldownUntil;
+  }
+
+  function _tripGeminiTtsCooldown(reason) {
+    _geminiTtsCooldownUntil = Date.now() + GEMINI_TTS_COOLDOWN_MS;
+    console.warn('[Gigi/Voz] Gemini TTS en pausa', Math.round(GEMINI_TTS_COOLDOWN_MS / 1000) + 's → Dalia. Motivo:', reason);
+    try {
+      if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+        window.FerrariUI.showToast('Charon en límite → Dalia neural', 'warning');
+      }
+    } catch (e) {}
+  }
+
+  /** Charon = JARVIS vendedor. Kore = Gigi. */
   async function _speakGeminiVoice(text, voiceName) {
     const key = _getGeminiKey();
     if (!key) {
       console.warn('[Gigi/Voz] Sin key Gemini → no Charon/Kore');
       return false;
     }
+    if (_geminiTtsOnCooldown()) {
+      console.log('[Gigi/Voz] Gemini TTS en cooldown → saltando a Dalia');
+      return false;
+    }
+
     const clean = _cleanTextForTTS(text);
     if (!clean) return false;
     const voice = voiceName || 'Charon';
 
-    // Gemini TTS acepta "director notes" en el prompt (ritmo, energía, estilo).
-    // Charon = vendedor inmobiliario rápido y con punch comercial.
+    // Prompt corto = menos tokens de entrada (más turnos antes del rate-limit)
     const speakPrompt = voice === 'Charon'
-      ? `Audio Profile: JARVIS, asesor inmobiliario chileno masculino, voz grave pero comercial.\n` +
-        `Director's Notes: Habla RÁPIDO, con mucha energía y seguridad de vendedor real. Ritmo ágil, frases cortas, entusiasmo contenido (no grites). Tono persuasivo, cercano y profesional. Sin pausas largas ni solemnidad de mayordomo.\n` +
-        `Say exactly, at a brisk energetic sales pace, without adding anything else:\n"${clean}"`
-      : `Say in a warm, clear, natural tone:\n"${clean}"`;
+      ? `Say briskly with energetic Chilean real-estate salesman energy (fast, confident, no butler tone):\n"${clean}"`
+      : `Say warmly and clearly:\n"${clean}"`;
 
-    // A) generateContent clásico (generateContent + AUDIO) — el del archivo Voz_Charon_JARVIS
-    for (const model of GEMINI_TTS_MODELS) {
+    // Preferir el último modelo que funcionó
+    const models = _geminiTtsPreferredModel
+      ? [_geminiTtsPreferredModel].concat(GEMINI_TTS_MODELS.filter(m => m !== _geminiTtsPreferredModel))
+      : GEMINI_TTS_MODELS.slice();
+
+    let sawRateLimit = false;
+
+    for (const model of models) {
       try {
         const body = JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: speakPrompt }] }],
@@ -3168,6 +3195,11 @@
             { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
           );
         }
+        if (res.status === 429 || res.status === 403) {
+          console.warn('[Gigi/Voz] Gemini', model, 'HTTP', res.status, '(cuota)');
+          sawRateLimit = true;
+          continue;
+        }
         if (!res.ok) {
           console.warn('[Gigi/Voz] Gemini', model, 'HTTP', res.status);
           continue;
@@ -3177,6 +3209,7 @@
         const inline = parts.find(p => p.inlineData && p.inlineData.data)?.inlineData;
         const blob2 = _geminiAudioPartToBlob(inline);
         if (blob2 && blob2.size > 100) {
+          _geminiTtsPreferredModel = model;
           _lastUsedVoiceEngine = voice === 'Charon' ? 'jarvis_charon' : 'gemini_tts';
           console.log('[Gigi/Voz] ✓ Gemini', voice, 'vía', model);
           return _playAudioBlob(blob2, text);
@@ -3186,10 +3219,10 @@
       }
     }
 
-    // B) Interactions API nueva (speech_config: [{ voice: "Charon" }])
+    // Interactions API (otra cuota / ruta)
     try {
       const body = JSON.stringify({
-        model: 'gemini-3.1-flash-tts-preview',
+        model: _geminiTtsPreferredModel || 'gemini-2.5-flash-preview-tts',
         input: speakPrompt,
         response_format: { type: 'audio' },
         generation_config: {
@@ -3201,7 +3234,9 @@
         headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
         body
       });
-      if (res.ok) {
+      if (res.status === 429 || res.status === 403) {
+        sawRateLimit = true;
+      } else if (res.ok) {
         const data = await res.json();
         const b64 = data.output_audio?.data || data.outputAudio?.data;
         if (b64) {
@@ -3218,6 +3253,7 @@
       console.warn('[Gigi/Voz] interactions error:', e.message);
     }
 
+    if (sawRateLimit) _tripGeminiTtsCooldown('HTTP 429/403');
     return false;
   }
 
@@ -3229,8 +3265,23 @@
     return _speakGeminiVoice(text, 'Charon');
   }
 
-  // ─── speakJarvis: Dalia local (proxy) → ElevenLabs → Mia → Google → WebSpeech ───
-  // La voz robótica = WebSpeech. Prioridad absoluta: proxy local Dalia Neural (npm run tts).
+  /** Siempre intentar Dalia local (proxy) — fallback humano obligatorio */
+  async function _tryDaliaFallback(text, wantsMale) {
+    const proxyUp = await _probeLocalTtsProxy(true); // force: no cachear "apagado"
+    if (!proxyUp) {
+      console.warn('[Gigi/Voz] Proxy Dalia apagado (npm run tts). Sin fallback humano local.');
+      return false;
+    }
+    const localVoice = wantsMale ? EDGE_TTS_VOICE_JORGE : EDGE_TTS_VOICE_DALIA;
+    if (await _speakLocalDalia(text, localVoice)) {
+      _lastUsedVoiceEngine = 'local_dalia';
+      console.log('[Gigi/Voz] ✓ Dalia Neural LOCAL (fallback humano)');
+      return true;
+    }
+    return false;
+  }
+
+  // ─── speakJarvis: Charon → Dalia SIEMPRE → resto → WebSpeech último ───
   async function speakJarvis(text) {
     if (!text) return;
     _lastSpokenText = _cleanTextForTTS(text);
@@ -3246,88 +3297,67 @@
     let mode = await _resolveVoiceModeAsync();
     const isWebSpeechOnly = preferred === 'webspeech' || mode === 'webspeech';
 
-    // Edge TTS directo en Chrome/Firefox → no. Usamos proxy local o Mia.
     if (String(mode).startsWith('edge_') && !_isMicrosoftEdgeBrowser()) {
       mode = 'local_dalia';
     }
 
-    const wantsMale = preferred.includes('daniel') || mode.includes('daniel') || mode.includes('jorge') || mode.includes('alvaro') || mode.includes('ryan') || mode.includes('miguel');
+    const wantsMale = preferred.includes('daniel') || mode.includes('daniel') || mode.includes('jorge')
+      || mode.includes('alvaro') || mode.includes('ryan') || mode.includes('miguel')
+      || preferred.includes('jarvis') || preferred.includes('charon');
     let streamVoice = wantsMale ? 'Miguel' : 'Mia';
     if (mode === 'stream_lucia') streamVoice = 'Lucia';
     else if (mode === 'stream_penelope') streamVoice = 'Penelope';
     else if (mode === 'stream_gigi' || mode === 'auto_gigi') streamVoice = 'Mia';
 
-    console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode);
+    console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode,
+      _geminiTtsOnCooldown() ? '(Gemini TTS en cooldown)' : '');
 
     if (isWebSpeechOnly) {
       if (_speakWebSpeech(text)) _lastUsedVoiceEngine = 'webspeech';
       return;
     }
 
-    // 0) JARVIS CHARON (Gemini) — voz del archivo Voz_Charon_JARVIS.txt
     const wantsCharon = preferred === 'jarvis_charon' || preferred === 'gemini_charon' || mode === 'jarvis_charon'
       || preferred === 'gemini_tts' || mode === 'gemini_tts';
-    if (wantsCharon || (preferred === 'auto_gigi' && _getGeminiKey() && (preferred.includes('jarvis') || mode.includes('charon')))) {
+    const wantsDaliaFirst = preferred === 'local_dalia' || mode === 'local_dalia'
+      || preferred === 'edge_dalia' || mode === 'edge_dalia';
+
+    // 1) Dalia primero si el usuario la eligió, o si Gemini está en cooldown
+    if (wantsDaliaFirst || (_geminiTtsOnCooldown() && wantsCharon)) {
+      if (await _tryDaliaFallback(text, wantsMale)) return;
+    }
+
+    // 2) JARVIS Charon / Kore (Gemini TTS)
+    if (wantsCharon && !_geminiTtsOnCooldown()) {
       const vName = (preferred === 'gemini_tts' || mode === 'gemini_tts') ? 'Kore' : 'Charon';
       if (await _speakGeminiVoice(text, vName)) {
         console.log('[Gigi/Voz] ✓', vName === 'Charon' ? 'JARVIS Charon' : 'Gemini Kore');
         return;
       }
-    }
-    // Si el usuario eligió Charon explícitamente, insistir antes de Dalia
-    if (preferred === 'jarvis_charon' || preferred === 'gemini_charon') {
-      if (await _speakCharonJarvis(text)) return;
-    }
-
-    // 0b) DALIA NEURAL vía proxy local (npm run tts)
-    const proxyUp = await _probeLocalTtsProxy(false);
-    if (proxyUp || mode === 'local_dalia' || mode === 'edge_dalia' || preferred === 'local_dalia' || preferred === 'auto_gigi' || preferred === 'stream_gigi') {
-      let localVoice = EDGE_TTS_VOICE_DALIA;
-      if (wantsMale) localVoice = EDGE_TTS_VOICE_JORGE;
-      if (mode === 'edge_elvira') localVoice = EDGE_TTS_VOICE_ELVIRA;
-      else if (mode === 'edge_jorge') localVoice = EDGE_TTS_VOICE_JORGE;
-      else if (mode === 'edge_alvaro') localVoice = EDGE_TTS_VOICE_ES;
-      else if (mode === 'edge_ryan') localVoice = EDGE_TTS_VOICE_RYAN;
-      if (await _speakLocalDalia(text, localVoice)) {
-        _lastUsedVoiceEngine = 'local_dalia';
-        console.log('[Gigi/Voz] ✓ Dalia Neural LOCAL (proxy · humana)');
-        return;
-      }
+      // Gemini falló → Dalia OBLIGATORIA (nunca saltar a robot)
+      console.warn('[Gigi/Voz] Charon/Gemini falló → forzando Dalia');
+      if (await _tryDaliaFallback(text, wantsMale)) return;
     }
 
-    // 0c) Charon como fallback humano si hay key Gemini (antes de robot)
-    if (_getGeminiKey() && preferred !== 'stream_gigi') {
-      if (await _speakCharonJarvis(text)) {
-        console.log('[Gigi/Voz] ✓ JARVIS Charon (fallback Gemini)');
-        return;
-      }
+    // 3) Dalia para cualquier otro modo (auto, stream, etc.) si aún no se intentó
+    if (!wantsDaliaFirst || _geminiTtsOnCooldown()) {
+      if (await _tryDaliaFallback(text, wantsMale)) return;
     }
 
-    // 1) ElevenLabs si hay créditos
-    if (mode === 'elevenlabs_gigi' || mode === 'elevenlabs_daniel' || preferred === 'auto_gigi' || preferred === 'elevenlabs_gigi' || preferred === 'elevenlabs_daniel') {
+    // 4) ElevenLabs si hay créditos
+    if (preferred === 'auto_gigi' || preferred.startsWith('elevenlabs') || mode.startsWith('elevenlabs')) {
       const wantDaniel = preferred.includes('daniel') || mode.includes('daniel');
-      const tryEl = preferred === 'auto_gigi' || preferred.startsWith('elevenlabs') || mode.startsWith('elevenlabs');
-      if (tryEl) {
-        const elOk = await _probeElevenLabs(false);
-        if (elOk) {
-          const v = wantDaniel ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
-          if (await _speakElevenLabs(text, v)) {
-            _lastUsedVoiceEngine = 'elevenlabs';
-            return;
-          }
+      const elOk = await _probeElevenLabs(false);
+      if (elOk) {
+        const v = wantDaniel ? ELEVENLABS_VOICE_DANIEL : ELEVENLABS_VOICE_GIGI;
+        if (await _speakElevenLabs(text, v)) {
+          _lastUsedVoiceEngine = 'elevenlabs';
+          return;
         }
       }
     }
 
-    // 2) Gemini Kore si quedó pendiente
-    if (preferred === 'gemini_tts' || mode === 'gemini_tts') {
-      if (await _speakGeminiTTS(text)) {
-        _lastUsedVoiceEngine = 'gemini_tts';
-        return;
-      }
-    }
-
-    // 3) Edge directo solo en Microsoft Edge
+    // 5) Edge directo solo en Microsoft Edge
     if (String(mode).startsWith('edge_') && _isMicrosoftEdgeBrowser()) {
       let ev = EDGE_TTS_VOICE_DALIA;
       if (mode === 'edge_elvira') ev = EDGE_TTS_VOICE_ELVIRA;
@@ -3340,26 +3370,24 @@
       }
     }
 
-    // 4) StreamElements Mia (AWS Polly) — gratis; a veces la bloquean adblockers
+    // 6) StreamElements (vía proxy /se si está arriba)
     if (await _speakStreamElements(text, streamVoice)) {
       _lastUsedVoiceEngine = 'streamelements';
-      console.log('[Gigi/Voz] ✓ StreamElements', streamVoice, '(gratis · AWS Polly)');
+      console.log('[Gigi/Voz] ✓ StreamElements', streamVoice);
       return;
     }
-    console.warn('[Gigi/Voz] StreamElements falló (¿adblocker?). Probando Google…');
 
-    // 5) Google Translate TTS
+    // 7) Google Translate
     if (await _speakGoogleTranslate(text)) {
       _lastUsedVoiceEngine = 'google_tts';
-      console.log('[Gigi/Voz] ✓ Google Translate TTS');
       return;
     }
 
-    // 6) Último recurso robótico — solo si TODO falló
-    console.warn('[Gigi/Voz] ⚠️ Caída a WebSpeech ROBÓTICA. Arranca el proxy: npm run tts');
+    // 8) WebSpeech — solo si TODO humano falló
+    console.warn('[Gigi/Voz] ⚠️ Solo WebSpeech. Arranca: npm run tts');
     try {
       if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
-        window.FerrariUI.showToast('Voz robótica: ejecuta npm run tts para Dalia humana', 'warning');
+        window.FerrariUI.showToast('Sin Dalia/Charon: ejecuta npm run tts', 'warning');
       }
     } catch (e) {}
     if (_speakWebSpeech(text)) {
