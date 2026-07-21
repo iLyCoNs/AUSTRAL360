@@ -32,8 +32,10 @@
       -74.37157030796426,
       -111.39050515399549
     ],
-    "dimensiones": "5000",
-    "valorUF": 1500
+    "dimensiones": "5.000",
+    "valorUF": 1250,
+    "fotos": [],
+    "caracteristicas": "Terreno 100% plano, con árboles nativos (boldos y quillayes), empalme de luz listo en la entrada."
   },
   {
     "tipo": "lote-libre",
@@ -68,8 +70,10 @@
       -86.94367318206338
     ],
     "hasSmartPin": true,
-    "dimensiones": "5000",
-    "valorUF": 1500
+    "dimensiones": "5.150",
+    "valorUF": 1400,
+    "fotos": [],
+    "caracteristicas": "Hermosa vista despejada al valle, pendiente muy suave, excelente asoleamiento por la tarde."
   },
   {
     "tipo": "lote-libre",
@@ -108,8 +112,10 @@
       -78.56620011123945,
       -52.86736369047523
     ],
-    "dimensiones": "5000",
-    "valorUF": 1500
+    "dimensiones": "5.320",
+    "valorUF": 1550,
+    "fotos": [],
+    "caracteristicas": "Orilla de río, bosque nativo denso, ideal para amantes de la naturaleza y cabaña rústica."
   },
   {
     "tipo": "lote-libre",
@@ -144,8 +150,10 @@
       -74.82047380087394,
       -27.545775603955583
     ],
-    "dimensiones": "5000",
-    "valorUF": 1500
+    "dimensiones": "5.480",
+    "valorUF": 1680,
+    "fotos": [],
+    "caracteristicas": "Loma alta con vista panorámica 360°, terreno despejado, suelo firme ideal para construcción rápida."
   },
   {
     "tipo": "lote-libre",
@@ -184,8 +192,9 @@
       -16.48782867089046
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.700",
+    "valorUF": 1850,
+    "caracteristicas": "Cercano al acceso principal del loteo, terreno plano, agua potable instalada en el límite."
   },
   {
     "tipo": "lote-libre",
@@ -216,8 +225,9 @@
       -8.34573446130805
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.050",
+    "valorUF": 1990,
+    "caracteristicas": "Sector muy tranquilo al fondo del condominio, rodeado de vegetación nativa, vertiente natural cercana."
   },
   {
     "tipo": "lote-libre",
@@ -252,8 +262,9 @@
       -2.400085062887073
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.200",
+    "valorUF": 2200,
+    "caracteristicas": "Excelente asoleamiento de mañana, pendiente suave con terraza natural lista para construir."
   },
   {
     "tipo": "lote-libre",
@@ -304,8 +315,9 @@
       3.4842122129223796
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.000",
+    "valorUF": 1250,
+    "caracteristicas": "Terreno mixto con plano y bosque, abundante sombra de árboles centenarios, entorno muy privado."
   },
   {
     "tipo": "lote-libre",
@@ -336,8 +348,9 @@
       17.53394947178661
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.150",
+    "valorUF": 1400,
+    "caracteristicas": "Terreno 100% plano, con árboles nativos (boldos y quillayes), empalme de luz listo en la entrada."
   },
   {
     "tipo": "lote-libre",
@@ -372,8 +385,9 @@
       32.215101756273796
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.320",
+    "valorUF": 1550,
+    "caracteristicas": "Hermosa vista despejada al valle, pendiente muy suave, excelente asoleamiento por la tarde."
   },
   {
     "tipo": "lote-libre",
@@ -428,8 +442,9 @@
       59.90489154557821
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.480",
+    "valorUF": 1680,
+    "caracteristicas": "Orilla de río, bosque nativo denso, ideal para amantes de la naturaleza y cabaña rústica."
   },
   {
     "tipo": "lote-libre",
@@ -464,8 +479,9 @@
       22.750984494510032
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.700",
+    "valorUF": 1850,
+    "caracteristicas": "Loma alta con vista panorámica 360°, terreno despejado, suelo firme ideal para construcción rápida."
   },
   {
     "tipo": "lote-libre",
@@ -496,8 +512,9 @@
       24.01595724270391
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.050",
+    "valorUF": 1990,
+    "caracteristicas": "Cercano al acceso principal del loteo, terreno plano, agua potable instalada en el límite."
   },
   {
     "tipo": "lote-libre",
@@ -528,8 +545,9 @@
       24.021077600563043
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.200",
+    "valorUF": 2200,
+    "caracteristicas": "Sector muy tranquilo al fondo del condominio, rodeado de vegetación nativa, vertiente natural cercana."
   },
   {
     "tipo": "lote-libre",
@@ -560,8 +578,9 @@
       -156.17885865496032
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.000",
+    "valorUF": 1250,
+    "caracteristicas": "Excelente asoleamiento de mañana, pendiente suave con terraza natural lista para construir."
   },
   {
     "tipo": "lote-libre",
@@ -596,8 +615,9 @@
       -76.87292376654847,
       141.5500365617202
     ],
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.150",
+    "valorUF": 1400,
+    "caracteristicas": "Terreno mixto con plano y bosque, abundante sombra de árboles centenarios, entorno muy privado."
   },
   {
     "tipo": "lote-libre",
@@ -628,8 +648,9 @@
       -74.91950693258326,
       73.9045352395369
     ],
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.320",
+    "valorUF": 1550,
+    "caracteristicas": "Terreno 100% plano, con árboles nativos (boldos y quillayes), empalme de luz listo en la entrada."
   },
   {
     "tipo": "lote-libre",
@@ -660,8 +681,9 @@
       50.39038544584845
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.480",
+    "valorUF": 1680,
+    "caracteristicas": "Hermosa vista despejada al valle, pendiente muy suave, excelente asoleamiento por la tarde."
   },
   {
     "tipo": "lote-libre",
@@ -696,8 +718,9 @@
       124.20353301654183
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.700",
+    "valorUF": 1850,
+    "caracteristicas": "Orilla de río, bosque nativo denso, ideal para amantes de la naturaleza y cabaña rústica."
   },
   {
     "tipo": "lote-libre",
@@ -740,8 +763,9 @@
       80.51151468824513
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.050",
+    "valorUF": 1990,
+    "caracteristicas": "Loma alta con vista panorámica 360°, terreno despejado, suelo firme ideal para construcción rápida."
   },
   {
     "tipo": "lote-libre",
@@ -772,8 +796,9 @@
       -58.38225979477504,
       97.66980167093571
     ],
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "6.200",
+    "valorUF": 2200,
+    "caracteristicas": "Cercano al acceso principal del loteo, terreno plano, agua potable instalada en el límite."
   },
   {
     "tipo": "lote-libre",
@@ -820,8 +845,9 @@
       137.19458962110707
     ],
     "hasSmartPin": true,
-    "dimensiones": "",
-    "valorUF": null
+    "dimensiones": "5.000",
+    "valorUF": 1250,
+    "caracteristicas": "Sector muy tranquilo al fondo del condominio, rodeado de vegetación nativa, vertiente natural cercana."
   },
   {
     "tipo": "calle",
@@ -1122,7 +1148,10 @@
         16.90557276274606
       ]
     ],
-    "_pinCentroid": null
+    "_pinCentroid": [
+      -69.86586090328589,
+      -27.636661222681735
+    ]
   },
   {
     "tipo": "calle",
@@ -1195,7 +1224,10 @@
         -109.65159352799996
       ]
     ],
-    "_pinCentroid": null
+    "_pinCentroid": [
+      -59.94397812213055,
+      -102.27791764221539
+    ]
   },
   {
     "tipo": "calle",
@@ -1388,7 +1420,10 @@
         91.85804557483299
       ]
     ],
-    "_pinCentroid": null
+    "_pinCentroid": [
+      -62.36593106999143,
+      58.412328919203745
+    ]
   },
   {
     "tipo": "calle",
@@ -1399,7 +1434,7 @@
       ],
       [
         -61.89597469693709,
-        34.72818676332313
+        34.728186763323144
       ]
     ],
     "anchoAngular": 1.01403790690539,
@@ -1418,12 +1453,16 @@
       ],
       [
         -61.787133716235935,
-        35.777546814131895
+        35.7775468141319
       ],
       [
         -74.89524620390004,
         -179.20461284908856
       ]
+    ],
+    "_pinCentroid": [
+      -81.14903006373703,
+      63.1074274507244
     ]
   }
 ]
