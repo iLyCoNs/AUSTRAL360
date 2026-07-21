@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
@@ -91,7 +91,12 @@
       "blurb": "Pozones naturales (32–42 °C) a ~9 km de Hornopirén, en la Carretera Austral. Las termas más cercanas al proyecto.",
       "lat": -41.92,
       "lng": -72.45,
-      "wiki": { "lang": "es", "title": "Hornopirén" },
+      "wiki": { "lang": "es", "title": "Termas_de_Pichicolo" },
+      "commonsSearch": "Termas de Pichicolo",
+      "imageCandidates": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Termas_de_Pichicolo_-_panoramio.jpg/1280px-Termas_de_Pichicolo_-_panoramio.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/8/81/Termas_de_Pichicolo_-_panoramio.jpg"
+      ],
       "youtubeCandidates": [],
       "tags": ["finde", "termas", "cerca", "relax"]
     },
@@ -121,10 +126,14 @@
       "id": "termas-del-sol",
       "category": "termas",
       "title": "Termas del Sol (Puelo)",
-      "blurb": "Complejo termal volcánico en el fiordo de Reloncaví / Puelo: piscinas 36–45 °C entre bosque nativo.",
+      "blurb": "Complejo termal volcánico en el fiordo de Reloncaví / Puelo: piscinas 36–45 °C entre bosque nativo, a los pies del volcán Yates.",
       "lat": -41.65,
       "lng": -72.28,
-      "wiki": { "lang": "es", "title": "Cochamó" },
+      "wiki": { "lang": "es", "title": "Volcán_Yates" },
+      "commonsSearch": "Volcán Yates Reloncaví",
+      "imageCandidates": [
+        "https://upload.wikimedia.org/wikipedia/commons/2/25/Yate_volcano_seen_from_huar_island_chile_x_region.jpg"
+      ],
       "youtubeCandidates": [],
       "tags": ["finde", "termas", "relax"]
     },
@@ -142,11 +151,12 @@
     {
       "id": "estuario-reloncavi",
       "category": "lagos",
-      "title": "Estuario de Reloncaví",
+      "title": "Fiordo / Estuario de Reloncaví",
       "blurb": "Brazo de mar entre montañas: ferries, playas y acceso a termas por lancha.",
       "lat": -41.7,
       "lng": -72.55,
-      "wiki": { "lang": "es", "title": "Estuario_de_Reloncaví" },
+      "wiki": { "lang": "es", "title": "Fiordo_de_Reloncaví" },
+      "commonsSearch": "Fiordo de Reloncaví",
       "youtubeCandidates": [],
       "tags": ["finde", "fiordo", "cerca"]
     },
@@ -169,7 +179,8 @@
       "lat": -41.33277778,
       "lng": -72.61111111,
       "wiki": { "lang": "es", "title": "Calbuco_(volcán)" },
-      "youtubeCandidates": ["xpt794jxa1A"],
+      "commonsSearch": "Volcán Calbuco",
+      "youtubeCandidates": [],
       "tags": ["volcan", "naturaleza"]
     },
     {
@@ -224,6 +235,10 @@
       "lat": -41.17235,
       "lng": -72.44683,
       "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
+      "commonsSearch": "Rafting Petrohué",
+      "imageCandidates": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Saltos_del_Petrohue._%282010%29.JPG/1280px-Saltos_del_Petrohue._%282010%29.JPG"
+      ],
       "youtubeCandidates": ["xpt794jxa1A"],
       "tags": ["finde", "aventura", "agua"]
     },
@@ -268,7 +283,8 @@
       "lat": -41.1335,
       "lng": -73.0275,
       "wiki": { "lang": "es", "title": "Teatro_del_Lago" },
-      "youtubeCandidates": ["xpt794jxa1A"],
+      "commonsSearch": "Teatro del Lago Frutillar",
+      "youtubeCandidates": [],
       "tags": ["finde", "cultura"]
     },
     {
@@ -290,6 +306,10 @@
       "lat": -40.7354972,
       "lng": -72.3080889,
       "wiki": { "lang": "en", "title": "Aguas_Calientes_Hot_Springs" },
+      "commonsSearch": "Aguas Calientes Puyehue",
+      "imageCandidates": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Vista_aerea_Aguas_Calientes.jpg/1280px-Vista_aerea_Aguas_Calientes.jpg"
+      ],
       "youtubeCandidates": [],
       "tags": ["finde", "termas", "dia"]
     },
@@ -301,6 +321,10 @@
       "lat": -40.71186,
       "lng": -72.328285,
       "wiki": { "lang": "es", "title": "Termas_de_Puyehue" },
+      "commonsSearch": "Termas de Puyehue",
+      "imageCandidates": [
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Parque_Nacional_Puyehue.jpg/1280px-Parque_Nacional_Puyehue.jpg"
+      ],
       "youtubeCandidates": [],
       "tags": ["finde", "termas", "dia"]
     },

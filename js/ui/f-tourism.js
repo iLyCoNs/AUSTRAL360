@@ -6,7 +6,7 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=4';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=5';
   const EARTH_R_M = 6371000;
   const DEFAULT_BANDS = [
     { id: 'muy_cerca', label: 'Muy cerca', emoji: '🟢', maxKm: 40 },
@@ -186,6 +186,31 @@
     }
   }
 
+  /** Busca en Wikimedia Commons (internet en el momento) una foto real del lugar */
+  async function _fetchCommonsImage(query) {
+    if (!query) return null;
+    try {
+      const url =
+        'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=' +
+        encodeURIComponent(query) +
+        '&gsrlimit=6&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=1280&format=json&origin=*';
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const pages = j.query && j.query.pages ? Object.values(j.query.pages) : [];
+      for (const p of pages) {
+        const ii = p.imageinfo && p.imageinfo[0];
+        if (!ii) continue;
+        if (ii.mime && !String(ii.mime).startsWith('image/')) continue;
+        const candidate = ii.thumburl || ii.url;
+        if (!candidate) continue;
+        const ok = await _probeImage(candidate);
+        if (ok) return candidate;
+      }
+    } catch (e) {}
+    return null;
+  }
+
   async function _probeImage(url) {
     if (!url) return false;
     return new Promise((resolve) => {
@@ -207,17 +232,60 @@
     });
   }
 
+  function _titlesRelated(poiTitle, wikiTitle) {
+    if (!poiTitle || !wikiTitle) return false;
+    const norm = (s) =>
+      String(s)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const a = norm(poiTitle);
+    const b = norm(wikiTitle);
+    if (a.includes(b) || b.includes(a)) return true;
+    const wordsA = a.split(' ').filter((w) => w.length > 3);
+    const hit = wordsA.filter((w) => b.includes(w)).length;
+    return hit >= 1 && (hit / Math.max(1, wordsA.length) >= 0.4 || b.split(' ').some((w) => w.length > 4 && a.includes(w)));
+  }
+
   async function resolveMedia(poi) {
     if (!poi) return null;
     if (_mediaCache.has(poi.id)) return _mediaCache.get(poi.id);
 
-    const wiki = await _fetchWiki(poi.wiki);
-    let imageUrl = wiki && wiki.imageUrl ? wiki.imageUrl : null;
-    if (imageUrl) {
-      const okImg = await _probeImage(imageUrl);
-      if (!okImg) imageUrl = null;
+    // 1) Fotos curadas en catálogo (Commons/URL) — se validan al momento
+    let imageUrl = null;
+    let imageSource = null;
+    const curated = Array.isArray(poi.imageCandidates) ? poi.imageCandidates : [];
+    for (const url of curated) {
+      if (await _probeImage(url)) {
+        imageUrl = url;
+        imageSource = 'catalog';
+        break;
+      }
     }
 
+    // 2) Wikipedia (internet al momento)
+    const wiki = await _fetchWiki(poi.wiki);
+    if (!imageUrl && wiki && wiki.imageUrl) {
+      if (await _probeImage(wiki.imageUrl)) {
+        imageUrl = wiki.imageUrl;
+        imageSource = 'wikipedia';
+      }
+    }
+
+    // 3) Búsqueda Commons al momento (si aún no hay foto)
+    if (!imageUrl) {
+      const q = poi.commonsSearch || poi.title;
+      const commonsUrl = await _fetchCommonsImage(q);
+      if (commonsUrl) {
+        imageUrl = commonsUrl;
+        imageSource = 'commons';
+      }
+    }
+
+    // 4) YouTube: solo IDs curados + oEmbed OK (nunca inventados)
     let youtube = null;
     const candidates = Array.isArray(poi.youtubeCandidates) ? poi.youtubeCandidates : [];
     for (const id of candidates) {
@@ -225,21 +293,29 @@
       if (youtube) break;
     }
 
-    // Sin foto NI video verificados → no servir el POI (filtro estricto)
+    // Sin foto NI video verificados → no servir el POI
     if (!imageUrl && !youtube) {
       const empty = { ok: false, imageUrl: null, youtube: null, wikiExtract: null };
       _mediaCache.set(poi.id, empty);
       return empty;
     }
 
+    // Texto: blurb del catálogo siempre; extracto wiki solo si la página es del mismo lugar
+    const wikiRelated = wiki && _titlesRelated(poi.title, wiki.title);
+    const wikiExtract =
+      wikiRelated && wiki.extract ? wiki.extract.slice(0, 280) : null;
+
     const resolved = {
       ok: true,
       imageUrl,
+      imageSource,
       youtube,
-      wikiExtract: wiki && wiki.extract ? wiki.extract.slice(0, 280) : null,
+      wikiExtract,
       wikiTitle: wiki && wiki.title ? wiki.title : poi.title,
-      lat: wiki && wiki.lat != null ? wiki.lat : poi.lat,
-      lng: wiki && wiki.lng != null ? wiki.lng : poi.lng
+      wikiPageUrl: wiki && wiki.pageUrl ? wiki.pageUrl : null,
+      // Coords del catálogo (origen del proyecto), no las de una página wiki cercana
+      lat: poi.lat,
+      lng: poi.lng
     };
     _mediaCache.set(poi.id, resolved);
     return resolved;
@@ -321,12 +397,18 @@
     el.querySelector('#kpk-tw-title').textContent = poi.title;
     el.querySelector('#kpk-tw-blurb').textContent =
       poi.blurb || media.wikiExtract || '';
+    const srcBits = [];
+    if (media.imageSource === 'wikipedia' || media.wikiPageUrl) srcBits.push('foto Wikipedia');
+    else if (media.imageSource === 'commons') srcBits.push('foto Wikimedia Commons');
+    else if (media.imageSource === 'catalog') srcBits.push('foto verificada');
+    if (media.youtube) srcBits.push('video YouTube verificado');
     el.querySelector('#kpk-tw-meta').textContent =
       (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
       _formatDist(distM) +
       ' · ' +
       _formatEta(distM) +
-      ' desde el proyecto';
+      ' desde el proyecto' +
+      (srcBits.length ? ' · ' + srcBits.join(' · ') : '');
 
     const mediaBox = el.querySelector('#kpk-tw-media');
     mediaBox.innerHTML = '';
