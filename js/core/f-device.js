@@ -41,7 +41,7 @@
            /sm-[a-z0-9]+/i.test(navigator.userAgent || '');
   }
 
-  /** Teléfonos Android/iOS (Poco F5, etc.) — NUNCA 8192 */
+  /** Teléfonos Android/iOS (Poco F5, etc.) — info; no se limita a mid */
   function _detectPhone() {
     var ua = _ua();
     try {
@@ -105,16 +105,13 @@
     if (override) {
       _tier = override.tier;
       _limit = override.maxWidth;
-      // En móvil, aunque pidan 8192 por URL, techo 4096 (evita cuelgue)
-      if ((_isPhone || _isTablet) && _limit > LIMITS.mid) {
+      // Solo tablets: techo mid en override (teléfonos potentes sí pueden 8192 / original)
+      if (_isTablet && _limit > LIMITS.mid) {
         _limit = LIMITS.mid;
         _tier = 'mid';
       }
       _maxTexSize = _detectMaxTextureSize();
-      if (_maxTexSize > 0 && _limit > _maxTexSize) {
-        _limit = _maxTexSize;
-        _tier = _limit <= 2048 ? 'low' : (_limit <= 4096 ? 'mid' : 'high');
-      }
+      _limit = _resolveLimitForGpu(_limit, _tier);
       _maxDpr = _tier === 'high' ? 2 : (_tier === 'mid' ? 1.35 : 1.15);
       console.log('[Ferrari/Device] Override URL → Tier:', _tier, '| maxWidth:', _limit,
         '| phone:', _isPhone, '| tablet:', _isTablet);
@@ -157,12 +154,6 @@
       score -= 2;
       if (score >= 6) score = 5; // techo mid
     }
-    // Teléfonos potentes (Poco F5, etc.): GPU reporta 8192 pero el downscale cuelga.
-    if (_isPhone) {
-      score -= 2;
-      if (score >= 6) score = 5;
-    }
-
     if (_maxTexSize > 0) {
       if (_maxTexSize >= 8192)      score += 2;
       else if (_maxTexSize >= 4096) score += 0;
@@ -173,24 +164,19 @@
     else if (score >= 3) { _tier = 'mid'; _limit = LIMITS.mid; }
     else { _tier = 'low'; _limit = LIMITS.low; }
 
-    // Tablet o teléfono: techo mid (4096). El Poco F5 (8 GB / 8 cores) caía en
-    // high→8192 y se colgaba en "Ajustando resolución 360° (8192px)…".
-    if ((_isTablet || _isPhone) && _tier === 'high') {
+    // Solo tablets: techo mid. Teléfonos high (Poco F5) se dejan en high.
+    if (_isTablet && _tier === 'high') {
       _tier = 'mid';
       _limit = LIMITS.mid;
     }
-    if (_isPhone && score >= 6) score = 5;
 
-    // Si la GPU no aguanta el límite elegido, bajar
-    if (_maxTexSize > 0 && _limit > _maxTexSize) {
-      _limit = Math.min(_limit, _maxTexSize);
-      if (_limit <= 2048)      _tier = 'low';
-      else if (_limit <= 4096) _tier = 'mid';
-    }
+    // Si la GPU puede cargar el original, no forzar downscale a 8192
+    // (ese resize es lo que colgaba en "Ajustando resolución…").
+    _limit = _resolveLimitForGpu(_limit, _tier);
 
-    // DPR: móviles/tablets mid/low → menos píxeles de framebuffer = más FPS
+    // DPR: tablets mid/low → menos píxeles de framebuffer = más FPS
     if (_tier === 'high') _maxDpr = 2;
-    else if (_tier === 'mid') _maxDpr = (_isTablet || _isPhone) ? 1.35 : 1.5;
+    else if (_tier === 'mid') _maxDpr = _isTablet ? 1.35 : 1.5;
     else _maxDpr = 1.15;
 
     console.log('[Ferrari/Device] Tier:', _tier, '| maxWidth:', _limit,
@@ -209,6 +195,31 @@
 
   function setMaxTextureSize(size) {
     _externalTexSize = size;
+  }
+
+  /** Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE */
+  function _gpuCanLoadOriginal(maxTex) {
+    if (!maxTex || maxTex <= 0) return false;
+    return Math.max(ORIGINAL_WIDTH / 2, ORIGINAL_HEIGHT) <= maxTex;
+  }
+
+  /**
+   * High + GPU OK → límite = original (sin reescalar en JS).
+   * Si no, respetar tier y no pedir más de lo que aguanta la GPU.
+   */
+  function _resolveLimitForGpu(limit, tier) {
+    if (tier === 'high' && _gpuCanLoadOriginal(_maxTexSize)) {
+      return ORIGINAL_WIDTH;
+    }
+    if (_maxTexSize > 0) {
+      // Equirect: ancho útil hasta ~2*maxTex; height = width/2
+      var gpuCap = _maxTexSize * 2;
+      if (_maxTexSize < 4096) gpuCap = _maxTexSize;
+      limit = Math.min(limit, gpuCap);
+      if (limit <= 2048) _tier = 'low';
+      else if (limit <= 4096 && tier !== 'high') _tier = 'mid';
+    }
+    return limit;
   }
 
   function _detectMaxTextureSize() {

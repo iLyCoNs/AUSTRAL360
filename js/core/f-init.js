@@ -118,14 +118,25 @@
     var tier = info.tier;
     var maxWidth = forcedMaxWidth || info.maxWidth;
     var maxTex = info.maxTextureSize || 0;
-    // Nunca pedir más que MAX_TEXTURE_SIZE (Pannellum usa width/2 vs maxTex en equirect)
-    if (maxTex > 0) {
-      // Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE
+    var origW = window.FerrariDevice.getOriginalWidth();
+    var origH = window.FerrariDevice.getOriginalHeight();
+    // Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE
+    var gpuOkOriginal = maxTex > 0 && Math.max(origW / 2, origH) <= maxTex;
+
+    if (maxTex > 0 && !gpuOkOriginal) {
       maxWidth = Math.min(maxWidth, maxTex * 2);
       if (maxTex < 4096) maxWidth = Math.min(maxWidth, maxTex);
     }
-    var origW = window.FerrariDevice.getOriginalWidth();
-    var needsDl = origW > maxWidth || !!forcedMaxWidth;
+
+    // High + GPU OK: cargar JPG original (como antes en Poco F5 → 60fps sin "Ajustando…")
+    // Solo reescalar si el tier/force lo pide o la GPU no aguanta el original.
+    var needsDl = !!forcedMaxWidth
+      ? (origW > maxWidth)
+      : (!gpuOkOriginal || (tier !== 'high' && origW > maxWidth));
+
+    if (!needsDl) {
+      maxWidth = origW;
+    }
 
     document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
     document.body.classList.add('ferrari-device-' + tier);
@@ -134,6 +145,7 @@
 
     console.log('[Ferrari/Init] Device tier:', tier,
       '| maxWidth:', maxWidth, '| downscale:', needsDl,
+      '| gpuOkOriginal:', gpuOkOriginal,
       '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet);
 
     if (!needsDl) {
@@ -142,7 +154,7 @@
 
     _showLoadingMessage('Ajustando resolución 360° (' + maxWidth + 'px)…');
 
-    // Timeout: en móviles Brave/Chrome el resize a 8K/4K puede colgarse sin reject
+    // Timeout: si el resize cuelga, stepDown y reintenta
     var loadTimeoutMs = (info.isPhone || info.isTablet) ? 12000 : 25000;
     return _withTimeout(_loadAndScaleImage('loteo360.jpg', maxWidth), loadTimeoutMs,
       'Timeout ajustando resolución (' + maxWidth + 'px)'
