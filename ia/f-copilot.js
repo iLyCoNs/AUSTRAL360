@@ -591,6 +591,7 @@
 
       if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
         _panel.classList.add('is-open');
+        _syncAiPanelBodyClass();
       }
 
       if (isMobile) {
@@ -626,6 +627,16 @@
     speakJarvis(pack.speakText);
   }
 
+  function _syncAiPanelBodyClass() {
+    try {
+      if (_panel && _panel.classList.contains('is-open')) {
+        document.body.classList.add('kpk-ai-panel-open');
+      } else {
+        document.body.classList.remove('kpk-ai-panel-open');
+      }
+    } catch (e) {}
+  }
+
   function togglePanel() {
     const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobileDevice) {
@@ -650,6 +661,7 @@
     }
     if (!_panel) return;
     const isOpen = _panel.classList.toggle('is-open');
+    _syncAiPanelBodyClass();
     if (isOpen) {
       if (_input) _input.focus();
       playFuturisticSound('start');

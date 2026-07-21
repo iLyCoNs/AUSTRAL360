@@ -536,11 +536,26 @@
       if (media) media.innerHTML = ''; // corta video
     }
     _openPoiId = null;
+    try {
+      document.body.classList.remove('kpk-tourism-open');
+    } catch (e) {}
   }
 
   function isOpen() {
     const el = document.getElementById('kpk-tourism-widget');
     return !!(el && el.classList.contains('is-open'));
+  }
+
+  /** Ajusta clases de layout (desktop vs móvil, convivencia con chat/mapa). */
+  function _syncTourismLayout() {
+    try {
+      const panel = document.getElementById('kpk-ai-panel');
+      if (panel && panel.classList.contains('is-open')) {
+        document.body.classList.add('kpk-ai-panel-open');
+      } else {
+        document.body.classList.remove('kpk-ai-panel-open');
+      }
+    } catch (e) {}
   }
 
   async function openWidget(poiIdOrOpts) {
@@ -774,6 +789,10 @@
     el.classList.add('is-open');
     _openPoiId = poi.id;
     _pendingOffer = null;
+    try {
+      document.body.classList.add('kpk-tourism-open');
+      _syncTourismLayout();
+    } catch (e) {}
 
     // Aviso al chat (si existe helper)
     try {
