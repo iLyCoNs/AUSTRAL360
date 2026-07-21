@@ -46,6 +46,10 @@
   let _clientName = localStorage.getItem('kpk_client_name') || '';
   let _isWaitingForName = !_clientName;
   let _bubblePopupTimeout = null;
+  /** HUD móvil anclado: no auto-cerrar/minimizar mientras el usuario chatea */
+  let _mobileHudPinned = false;
+  /** Chips de acción (turismo/agenda) activos — no sobrescribir con sugerencias */
+  let _actionChipsActive = false;
   let _isAISpeaking = false;
   let _lastSpokenText = '';
   let _aiSpeechStartTime = 0;
@@ -645,21 +649,36 @@
     const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobileDevice) {
       let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
-      if (popup && popup.classList.contains('is-visible') && popup.style.display !== 'none') {
+      const visible =
+        popup &&
+        popup.classList.contains('is-visible') &&
+        popup.style.display !== 'none';
+
+      if (visible && popup.classList.contains('kpk-mbp-minimal')) {
+        // Estaba minimizado → expandir para poder escribir
+        _mobileHudPinned = true;
+        if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+        expandMobileBubblePopup();
+        return;
+      }
+      if (visible) {
+        // Abierto a tamaño completo → cerrar solo si el usuario lo pide
         closeMobileBubblePopup(true);
-      } else {
-        const pack = _buildWelcomePack();
-        const txt = pack.waitingName
-          ? pack.messages.join('<br><br>')
-          : (_clientName
-            ? pack.messages.join(' ')
-            : pack.speakText);
-        showMobileBubblePopup(txt, true);
-        if (!_welcomeSpoken) {
-          _welcomeSpoken = true;
-          _unlockMobileAudio();
-          speakJarvis(pack.speakText);
-        }
+        return;
+      }
+
+      const pack = _buildWelcomePack();
+      const txt = pack.waitingName
+        ? pack.messages.join('<br><br>')
+        : (_clientName
+          ? pack.messages.join(' ')
+          : pack.speakText);
+      _mobileHudPinned = true;
+      showMobileBubblePopup(txt, true);
+      if (!_welcomeSpoken) {
+        _welcomeSpoken = true;
+        _unlockMobileAudio();
+        speakJarvis(pack.speakText);
       }
       return;
     }
@@ -985,6 +1004,15 @@
   async function handleSend() {
     const prompt = _input.value.trim();
     if (!prompt && !_attachedFile) return;
+
+    // Mantener HUD móvil abierto durante la conversación
+    const isMob =
+      window.innerWidth < 768 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMob) {
+      _mobileHudPinned = true;
+      if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+    }
 
     // Palabras clave que NUNCA deben guardarse como nombre propio de persona
     const NON_NAME_KEYWORDS = /(?:quiero|busco|necesito|deseo|ver|cu[aá]les|d[oó]nde|lote|parcela|precio|terreno|fotos|cu[aá]nto|hay|tienen|mostrar|acerca|dame|me\s+interesa|camino|vista|recorrido|tour|agua|luz|rol)/i;
@@ -1616,56 +1644,144 @@
       }
     } catch (e) {}
 
-    const chips = document.getElementById('kpk-ai-chips-container');
-    if (chips) {
-      chips.innerHTML = '';
-      chips.classList.add('kpk-ai-chips-container--carousel');
-      const mk = (label, onClick, opts) => {
-        opts = opts || {};
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className =
-          'kpk-ai-chip' +
-          (opts.featured ? ' kpk-ai-chip--featured' : '') +
-          (opts.ghost ? ' kpk-ai-chip--ghost' : '');
-        b.textContent = label;
-        b.addEventListener('click', onClick);
-        chips.appendChild(b);
-      };
+    _mobileHudPinned = true;
+    if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
 
-      mk('📍 El más cercano', async () => {
+    const chipActions = [];
+    chipActions.push({
+      label: '📍 El más cercano',
+      featured: true,
+      onClick: async () => {
         if (window.FerrariTourism.selectOfferByPoiId) {
           window.FerrariTourism.selectOfferByPoiId(menu.items[0].poiId);
         }
-        chips.innerHTML = '';
-        chips.classList.remove('kpk-ai-chips-container--carousel');
+        _clearActionChips();
         const ok = await window.FerrariTourism.confirmPendingOffer();
         if (!ok) {
           appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
         }
-      }, { featured: true });
-
-      menu.items.forEach((it) => {
-        mk(it.chipLabel || it.title, async () => {
+      }
+    });
+    menu.items.forEach((it) => {
+      chipActions.push({
+        label: it.chipLabel || it.title,
+        onClick: async () => {
           if (window.FerrariTourism.selectOfferByPoiId) {
             window.FerrariTourism.selectOfferByPoiId(it.poiId);
           }
-          chips.innerHTML = '';
-          chips.classList.remove('kpk-ai-chips-container--carousel');
+          _clearActionChips();
           const ok = await window.FerrariTourism.confirmPendingOffer();
           if (!ok) {
             appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
           }
-        });
+        }
       });
-
-      mk('Ahora no', () => {
+    });
+    chipActions.push({
+      label: 'Ahora no',
+      ghost: true,
+      onClick: () => {
         window.FerrariTourism.clearPendingOffer();
-        chips.innerHTML = '';
-        chips.classList.remove('kpk-ai-chips-container--carousel');
+        _clearActionChips();
         appendMessage('Cuando quieras, pide termas, trekking, lagos o “qué hacer cerca”.', 'system');
-      }, { ghost: true });
+      }
+    });
+    _renderActionChips(chipActions);
+  }
+
+  function _clearActionChips() {
+    _actionChipsActive = false;
+    const chips = document.getElementById('kpk-ai-chips-container');
+    if (chips) {
+      chips.innerHTML = '';
+      chips.classList.remove('kpk-ai-chips-container--carousel');
+    }
+    const mobile = document.getElementById('kpk-mbp-chips-row');
+    if (mobile) {
+      mobile.innerHTML = '';
+      mobile.style.display = 'none';
+    }
+    requestAnimationFrame(_refreshChipsNav);
+  }
+
+  /** Pinta chips de acción en desktop + HUD móvil */
+  function _renderActionChips(actions) {
+    actions = actions || [];
+    _actionChipsActive = actions.length > 0;
+    _mobileHudPinned = true;
+    if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+
+    const chips = document.getElementById('kpk-ai-chips-container');
+    if (chips) {
+      chips.innerHTML = '';
+      chips.classList.add('kpk-ai-chips-container--carousel');
+      actions.forEach((act) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className =
+          'kpk-ai-chip' +
+          (act.featured ? ' kpk-ai-chip--featured' : '') +
+          (act.ghost ? ' kpk-ai-chip--ghost' : '');
+        b.textContent = act.label;
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          _mobileHudPinned = true;
+          if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+          act.onClick();
+        });
+        chips.appendChild(b);
+      });
       requestAnimationFrame(_refreshChipsNav);
+    }
+
+    const isMobile =
+      window.innerWidth < 768 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (popup) {
+      popup.classList.remove('kpk-mbp-minimal');
+      popup.style.display = 'flex';
+      popup.classList.add('is-visible');
+      const inputRow = popup.querySelector('#kpk-mbp-input-row');
+      const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
+      if (inputRow && controlsRow) {
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
+      }
+    }
+    let mobile = document.getElementById('kpk-mbp-chips-row');
+    if (!mobile && popup) {
+      const body = popup.querySelector('.kpk-mbp-body');
+      if (body) {
+        mobile = document.createElement('div');
+        mobile.id = 'kpk-mbp-chips-row';
+        mobile.className = 'kpk-mbp-chips-row';
+        body.appendChild(mobile);
+      }
+    }
+    if (mobile) {
+      mobile.innerHTML = '';
+      mobile.style.display = 'flex';
+      actions.forEach((act) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className =
+          'kpk-mbp-chip' +
+          (act.featured ? ' kpk-mbp-chip--featured' : '') +
+          (act.ghost ? ' kpk-mbp-chip--ghost' : '');
+        b.textContent = act.label;
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          _mobileHudPinned = true;
+          if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+          act.onClick();
+        });
+        mobile.appendChild(b);
+      });
     }
   }
 
@@ -6218,6 +6334,12 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const mobileContainer = document.getElementById('kpk-mbp-chips-row');
     _bindChipsRailOnce();
 
+    // No pisar chips de acción (menú termas / visita, etc.)
+    if (_actionChipsActive) {
+      requestAnimationFrame(_refreshChipsNav);
+      return;
+    }
+
     let chips = [];
     if (_activeLote) {
       chips = [
@@ -6281,6 +6403,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         mobileContainer.querySelectorAll('.kpk-mbp-chip').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            _mobileHudPinned = true;
+            if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
             const query = btn.getAttribute('data-query');
             _input.value = query;
             handleSend();
@@ -6354,7 +6478,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
       const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
       if (inputRow && controlsRow) {
-        if (_isWaitingForName || !_speechEnabled) {
+        if (_isWaitingForName || !_speechEnabled || _mobileHudPinned || keepOpen === true) {
           inputRow.style.display = 'flex';
           controlsRow.style.display = 'none';
         } else {
@@ -6364,11 +6488,22 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       }
       
       if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-      if (!keepOpen && !_isWaitingForName && !_jarvisMode && !_speechEnabled) {
+      // En modo texto o con HUD anclado NO auto-cerrar
+      if (
+        !keepOpen &&
+        !_mobileHudPinned &&
+        !_isWaitingForName &&
+        !_jarvisMode &&
+        !_speechEnabled
+      ) {
         _bubblePopupTimeout = setTimeout(() => {
           closeMobileBubblePopup(false);
         }, 7000);
       }
+      // Refrescar chips sugestivos solo si no hay menú de acción (turismo, etc.)
+      try {
+        if (!_actionChipsActive) _updateSuggestiveChips();
+      } catch (e) {}
       return;
     }
 
@@ -6542,17 +6677,21 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (popupMicBtn) popupMicBtn.addEventListener('click', _sharedToggleMic);
     if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', _sharedToggleMic);
 
-    // Chat completo al pedir nombre / keepOpen; minimal solo mientras habla con voz
-    const isMinimal = !_isWaitingForName && !!_speechEnabled && keepOpen !== true;
+    // Chat completo: minimal SOLO si TTS activo, no anclado y sin keepOpen
+    const isMinimal =
+      !_mobileHudPinned &&
+      !_isWaitingForName &&
+      !!_speechEnabled &&
+      keepOpen !== true;
     if (isMinimal) {
       popup.classList.add('kpk-mbp-minimal');
     } else {
       popup.classList.remove('kpk-mbp-minimal');
     }
 
-    // Mostrar teclado/input si esperamos el nombre o la voz está silenciada
+    // Mostrar teclado/input si esperamos el nombre, TTS off, o HUD anclado (texto)
     if (inputRow && controlsRow) {
-      if (_isWaitingForName || !_speechEnabled) {
+      if (_isWaitingForName || !_speechEnabled || _mobileHudPinned || keepOpen === true) {
         inputRow.style.display = 'flex';
         controlsRow.style.display = 'none';
       } else if (!isMinimal) {
@@ -6564,14 +6703,23 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     popup.style.display = 'flex';
     setTimeout(() => {
       popup.classList.add('is-visible');
-      if (_isWaitingForName) {
+      if (_isWaitingForName || (!_speechEnabled && keepOpen)) {
         const inp = popup.querySelector('#kpk-mbp-text-input');
         if (inp) try { inp.focus(); } catch (e) {}
       }
+      try {
+        if (!_actionChipsActive) _updateSuggestiveChips();
+      } catch (e) {}
     }, 50);
 
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-    if (!keepOpen && !_isWaitingForName && !_jarvisMode && !_speechEnabled) {
+    if (
+      !keepOpen &&
+      !_mobileHudPinned &&
+      !_isWaitingForName &&
+      !_jarvisMode &&
+      !_speechEnabled
+    ) {
       _bubblePopupTimeout = setTimeout(() => {
         closeMobileBubblePopup(false);
       }, 7000);
@@ -6579,9 +6727,15 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   }
 
   function closeMobileBubblePopup(stopSpeech = true) {
+    _mobileHudPinned = false;
+    if (_bubblePopupTimeout) {
+      clearTimeout(_bubblePopupTimeout);
+      _bubblePopupTimeout = null;
+    }
     const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (popup) {
       popup.classList.remove('is-visible');
+      popup.classList.remove('kpk-mbp-minimal');
       if (stopSpeech) {
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         if (_activeJarvisAudio) { _activeJarvisAudio.pause(); _activeJarvisAudio = null; }
@@ -6595,7 +6749,11 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   function expandMobileBubblePopup() {
     const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (popup) {
+      _mobileHudPinned = true;
+      if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
       popup.classList.remove('kpk-mbp-minimal');
+      popup.style.display = 'flex';
+      popup.classList.add('is-visible');
       const inputRow = popup.querySelector('#kpk-mbp-input-row');
       const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
       if (inputRow && controlsRow) {
@@ -6622,15 +6780,18 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       } else {
         bubble.classList.remove('is-speaking');
         const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
+        // No auto-cerrar si el usuario está chateando (HUD anclado) o TTS off
+        if (
+          isMobile &&
+          !_mobileHudPinned &&
+          !_isWaitingForName &&
+          !_jarvisMode &&
+          _speechEnabled
+        ) {
           if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
-          // Si estamos en JarvisMode continuo, NO cerrar el popup automáticamente 
-          // para mantener la interfaz de voz activa y visible (estilo Gemini Live)
-          if (!_isWaitingForName && !_jarvisMode) {
-            _bubblePopupTimeout = setTimeout(() => {
-              closeMobileBubblePopup(false);
-            }, 1500);
-          }
+          _bubblePopupTimeout = setTimeout(() => {
+            if (!_mobileHudPinned) closeMobileBubblePopup(false);
+          }, 1500);
         }
       }
     }

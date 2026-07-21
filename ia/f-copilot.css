@@ -1452,10 +1452,14 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.kpk-mbp-chip:hover, .kpk-mbp-chip:active {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.22);
+.kpk-mbp-chip--featured {
+  background: linear-gradient(145deg, rgba(0, 180, 255, 0.42), rgba(0, 120, 255, 0.28));
+  border-color: rgba(125, 211, 252, 0.55);
   color: #fff;
+  font-weight: 650;
+}
+.kpk-mbp-chip--ghost {
+  opacity: 0.7;
 }
 
 .kpk-mbp-client-badge {
