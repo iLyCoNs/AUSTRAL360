@@ -918,20 +918,70 @@
 }
 
 /* ─── CHIPS / CARRUSEL PREMIUM (turismo + sugerencias) ─── */
-.kpk-ai-chips-container {
+.kpk-ai-chips-rail {
   display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
   background: rgba(0, 0, 0, 0.14);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+  min-height: 0;
+}
+.kpk-ai-chips-rail.is-empty {
+  display: none;
+}
+
+.kpk-ai-chips-nav {
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: background 0.15s, transform 0.15s, opacity 0.15s;
+}
+.kpk-ai-chips-nav:hover {
+  background: rgba(0, 180, 255, 0.35);
+  border-color: rgba(0, 180, 255, 0.5);
+  transform: scale(1.06);
+}
+.kpk-ai-chips-nav[hidden] {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.kpk-ai-chips-rail:not(.is-scrollable) .kpk-ai-chips-nav {
+  display: none;
+}
+
+.kpk-ai-chips-container {
+  display: flex;
+  gap: 8px;
+  padding: 2px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 .kpk-ai-chips-container:empty { display: none; }
 .kpk-ai-chips-container::-webkit-scrollbar { display: none; }
 .kpk-ai-chips-container--carousel {
-  padding-bottom: 12px;
+  padding-bottom: 2px;
   gap: 8px;
 }
 

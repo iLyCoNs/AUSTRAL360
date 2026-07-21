@@ -6,7 +6,7 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=9';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=10';
   const EARTH_R_M = 6371000;
   /** false = solo video si hay youtubeCandidates curado + oEmbed OK (sin búsqueda proxy) */
   const ENABLE_YT_LIVE_SEARCH = false;
@@ -400,8 +400,35 @@
     const wikiExtract =
       wikiRelated && wiki.extract ? wiki.extract.slice(0, 280) : null;
 
+    // Coordenadas: el catálogo es la fuente de verdad (coordsVerified = revisadas a mano).
+    // Wikipedia solo se usa si el POI no trae lat/lng.
+    let outLat = poi.lat;
+    let outLng = poi.lng;
+    if ((outLat == null || outLng == null) && wiki && wiki.lat != null && wiki.lng != null) {
+      outLat = wiki.lat;
+      outLng = wiki.lng;
+    } else if (
+      wiki &&
+      wiki.lat != null &&
+      wiki.lng != null &&
+      outLat != null &&
+      outLng != null &&
+      !poi.coordsVerified
+    ) {
+      // Aviso silencioso si Wikipedia discrepa mucho (>8 km) — no reemplaza catálogo
+      const driftM = _haversineM(outLat, outLng, wiki.lat, wiki.lng);
+      if (driftM > 8000) {
+        console.warn(
+          '[Tourism] Coords catálogo vs Wikipedia difieren',
+          Math.round(driftM / 1000) + ' km ·',
+          poi.id,
+          'usando catálogo'
+        );
+      }
+    }
+
     // Suficiente: coords + descripción (foto/video opcionales)
-    const hasPlace = poi.lat != null && poi.lng != null;
+    const hasPlace = outLat != null && outLng != null;
     const hasDesc = !!(poi.blurb || wikiExtract);
     if (!hasPlace || (!imageUrl && !youtube && !hasDesc)) {
       const empty = {
@@ -423,8 +450,8 @@
       wikiExtract,
       wikiTitle: wiki && wiki.title ? wiki.title : poi.title,
       wikiPageUrl: wiki && wiki.pageUrl ? wiki.pageUrl : null,
-      lat: poi.lat,
-      lng: poi.lng,
+      lat: outLat,
+      lng: outLng,
       _ytTriedLive: ytTriedLive
     };
     _mediaCache.set(poi.id, resolved);

@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
@@ -213,8 +213,10 @@
         "Acceso por Carretera Austral",
         "Ideal para un día de lluvia"
       ],
-      "lat": -41.92,
-      "lng": -72.45,
+      "lat": -41.97047012891607,
+      "lng": -72.55043020189832,
+      "coordsVerified": true,
+      "coordsNote": "Coordenadas de acceso verificadas (Carretera Austral / pozones)",
       "wiki": {
         "lang": "es",
         "title": "Termas_de_Pichicolo"

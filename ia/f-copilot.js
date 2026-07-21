@@ -209,8 +209,12 @@
           <button class="kpk-ai-attachment-clear" id="kpk-ai-attachment-clear" title="Quitar archivo">✕</button>
         </div>
 
-        <!-- Contenedor de Sugerencias Rápidas -->
-        <div class="kpk-ai-chips-container" id="kpk-ai-chips-container"></div>
+        <!-- Contenedor de Sugerencias Rápidas (carrusel con flechas) -->
+        <div class="kpk-ai-chips-rail" id="kpk-ai-chips-rail">
+          <button type="button" class="kpk-ai-chips-nav kpk-ai-chips-nav--prev" id="kpk-ai-chips-prev" title="Anteriores" aria-label="Ver opciones anteriores">‹</button>
+          <div class="kpk-ai-chips-container" id="kpk-ai-chips-container"></div>
+          <button type="button" class="kpk-ai-chips-nav kpk-ai-chips-nav--next" id="kpk-ai-chips-next" title="Más opciones" aria-label="Ver más opciones">›</button>
+        </div>
 
         <div class="kpk-ai-input-zone">
           <div class="kpk-ai-input-wrap">
@@ -1661,6 +1665,7 @@
         chips.classList.remove('kpk-ai-chips-container--carousel');
         appendMessage('Cuando quieras, pide termas, trekking, lagos o “qué hacer cerca”.', 'system');
       }, { ghost: true });
+      requestAnimationFrame(_refreshChipsNav);
     }
   }
 
@@ -6156,10 +6161,62 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     }
   }
 
-  // ─── CHIPS DE SUGERENCIA DINÁMICOS ───
+  // ─── CHIPS DE SUGERENCIA DINÁMICOS (+ carrusel con flechas) ───
+  function _refreshChipsNav() {
+    const rail = document.getElementById('kpk-ai-chips-rail');
+    const container = document.getElementById('kpk-ai-chips-container');
+    const prev = document.getElementById('kpk-ai-chips-prev');
+    const next = document.getElementById('kpk-ai-chips-next');
+    if (!rail || !container || !prev || !next) return;
+
+    const hasChips = container.children.length > 0;
+    rail.classList.toggle('is-empty', !hasChips);
+    if (!hasChips) {
+      prev.hidden = true;
+      next.hidden = true;
+      return;
+    }
+
+    const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth - 2);
+    const canScroll = maxScroll > 8;
+    rail.classList.toggle('is-scrollable', canScroll);
+    prev.hidden = !canScroll || container.scrollLeft <= 4;
+    next.hidden = !canScroll || container.scrollLeft >= maxScroll - 4;
+  }
+
+  function _scrollChips(dir) {
+    const container = document.getElementById('kpk-ai-chips-container');
+    if (!container) return;
+    const step = Math.max(140, Math.floor(container.clientWidth * 0.72));
+    container.scrollBy({ left: dir * step, behavior: 'smooth' });
+    setTimeout(_refreshChipsNav, 280);
+  }
+
+  function _bindChipsRailOnce() {
+    if (_bindChipsRailOnce._done) return;
+    _bindChipsRailOnce._done = true;
+    const prev = document.getElementById('kpk-ai-chips-prev');
+    const next = document.getElementById('kpk-ai-chips-next');
+    const container = document.getElementById('kpk-ai-chips-container');
+    if (prev) prev.addEventListener('click', () => _scrollChips(-1));
+    if (next) next.addEventListener('click', () => _scrollChips(1));
+    if (container) {
+      container.addEventListener('scroll', () => _refreshChipsNav(), { passive: true });
+      // Recalcular al mutar chips
+      try {
+        const mo = new MutationObserver(() => {
+          requestAnimationFrame(_refreshChipsNav);
+        });
+        mo.observe(container, { childList: true, subtree: true });
+      } catch (e) {}
+    }
+    window.addEventListener('resize', () => _refreshChipsNav());
+  }
+
   function _updateSuggestiveChips() {
     const container = document.getElementById('kpk-ai-chips-container');
     const mobileContainer = document.getElementById('kpk-mbp-chips-row');
+    _bindChipsRailOnce();
 
     let chips = [];
     if (_activeLote) {
@@ -6206,6 +6263,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
           handleSend();
         });
       });
+      requestAnimationFrame(_refreshChipsNav);
     }
 
     if (mobileContainer) {
