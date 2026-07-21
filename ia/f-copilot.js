@@ -1881,9 +1881,50 @@
   }
 
   // ─── ACCIONES CLIENT-SIDE ───────────────────────────────────────────
+  /** Completa lookAt ↔ ficha para que el UI siempre acompañe al lote del que se habla */
+  function _enrichSceneActions(actions) {
+    if (!Array.isArray(actions) || !actions.length) return actions || [];
+    const out = actions.slice();
+    const look = out.find((a) => a.type === 'lookAtLote');
+    const panel = out.find((a) => a.type === 'openLotePanel');
+    const gal = out.find((a) => a.type === 'openGallery');
+    const pdf = out.find((a) => a.type === 'downloadPDF');
+    const fin = out.find((a) => a.type === 'openFinanceWidget');
+
+    let focusId =
+      (look && look.loteId) ||
+      (panel && panel.loteId) ||
+      (gal && gal.loteId) ||
+      (pdf && pdf.loteId) ||
+      (fin && fin.loteId) ||
+      null;
+
+    if (!focusId && _activeLote && (gal || pdf || fin || look || panel)) {
+      focusId = _activeLote.id;
+    }
+
+    if (focusId) {
+      if (!out.some((a) => a.type === 'lookAtLote')) {
+        out.unshift({ type: 'lookAtLote', loteId: focusId, hfov: 70 });
+      }
+      if (!out.some((a) => a.type === 'openLotePanel')) {
+        out.push({ type: 'openLotePanel', loteId: focusId });
+      }
+      if (!out.some((a) => a.type === 'highlightLotes')) {
+        out.push({
+          type: 'highlightLotes',
+          loteIds: [focusId],
+          color: 'rgba(0, 255, 128, 0.55)'
+        });
+      }
+    }
+    return out;
+  }
+
   function executeActions(actions) {
-    autoCloseUnusedWidgets(actions);
-    actions.forEach(act => {
+    const enriched = _enrichSceneActions(actions);
+    autoCloseUnusedWidgets(enriched);
+    enriched.forEach(act => {
       try {
         switch (act.type) {
           case 'lookAtLote':
@@ -1892,12 +1933,12 @@
             pulseSmartPin(act.loteId);
             break;
           case 'openLotePanel':
-            // Si hay una acción de zoom/mirar lote en este mismo bloque, retrasamos la apertura de la ficha
-            const hasLookAt = Array.isArray(actions) && actions.some(a => a.type === 'lookAtLote');
+            // Si hay zoom/mirar en el mismo bloque, abrir ficha tras el giro (snappy)
+            const hasLookAt = enriched.some(a => a.type === 'lookAtLote');
             if (hasLookAt) {
               setTimeout(() => {
                 openLotePanel(act.loteId);
-              }, 1300);
+              }, 520);
             } else {
               openLotePanel(act.loteId);
             }
@@ -4648,43 +4689,33 @@
       return { text: text, actions: [openAct] };
     }
     
-    // 2) Lote / Parcela específica (ej: "muéstrame la parcela 15", "acerca el lote 10", "dónde está el lote 10", "haz zoom al 20")
-    // OJO: no usar bare \b — capturaba cualquier número suelto (y chocaba con «Agendar… Lote N»)
+    // 2) Lote / Parcela específica — siempre ficha + pitch comercial + cámara
     const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al|nro|numero|n[ºo°])\s*(\d{1,3})\b/i);
     if (loteMatch) {
       const num = loteMatch[1];
       const lote = findLoteById(num);
       if (lote) {
-        // Actualizar el lote en foco para contexto persistente de la IA
         _activeLote = lote;
         _updateSuggestiveChips();
 
-        const esPreguntaCompleja = /(pendiente|rio|arbol|agua|luz|diferencia|tiene|comparar|por\s+que)/.test(clean);
-        const pideFicha = /(ficha|tarjeta|detalle|precio|valor|abrir|reservar|comprar|foto|galeria|imagenes)/.test(clean);
+        const hfov = /(acercar|zoom|cerca|detalle)/.test(clean) ? 45 : 70;
+        const pideFotos = /(foto|galeria|imagenes|imágenes)/.test(clean);
+        const pidePdf = /(pdf|ficha\s+pdf|folleto|descarg)/.test(clean);
+        const pideFin = /(financi|cuota|pie|credito|crédito|simul)/.test(clean);
 
-        if (!esPreguntaCompleja) {
-          const hfov = /(acercar|zoom|cerca|detalle)/.test(clean) ? 45 : 90;
-          const actions = [
-            { type: 'lookAtLote', loteId: lote.id, hfov: hfov },
-            { type: 'highlightLotes', loteIds: [lote.id], color: 'rgba(0, 255, 128, 0.7)' }
-          ];
-          if (pideFicha) {
-            actions.push({ type: 'openLotePanel', loteId: lote.id });
-          }
+        const actions = [
+          { type: 'lookAtLote', loteId: lote.id, hfov: hfov },
+          { type: 'highlightLotes', loteIds: [lote.id], color: 'rgba(0, 255, 128, 0.65)' },
+          { type: 'openLotePanel', loteId: lote.id }
+        ];
+        if (pideFotos) actions.push({ type: 'openGallery', loteId: lote.id });
+        if (pidePdf) actions.push({ type: 'downloadPDF', loteId: lote.id });
+        if (pideFin) actions.push({ type: 'openFinanceWidget', loteId: lote.id });
 
-          const nameCap = _clientName ? `, ${_clientName}` : '';
-          let textResponse = `¡Excelente elección${nameCap}! He enfocado la cámara 360° directamente en el Lote ${num}. ¿Te gustaría abrir su ficha técnica con las fotos o revisar el financiamiento?`;
-          if (pideFicha) {
-            textResponse = `¡Perfecto${nameCap}! Nos estamos dirigiendo al Lote ${num} y abriendo su ficha técnica comercial en pantalla.`;
-          } else if (lote.valorUF) {
-            textResponse = `¡Entendido${nameCap}! Enfocando la cámara en el Lote ${num} de ${lote.dimensiones || 'cinco mil metros cuadrados'} por ${lote.valorUF} u-efe. ¿Deseas ver sus fotos o ficha completa?`;
-          }
-
-          return {
-            text: textResponse,
-            actions: actions
-          };
-        }
+        return {
+          text: _formatLoteSalesPitch(lote, { fotos: pideFotos, pdf: pidePdf, fin: pideFin }),
+          actions: actions
+        };
       }
     }
 
@@ -5114,6 +5145,74 @@
   }
 
   // ─── HELPERS ────────────────────────────────────────────────────────
+  function _formatLoteSalesPitch(lote, flags) {
+    flags = flags || {};
+    const voiceMode = _getVoiceMode();
+    const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+    const num = lote.titulo || lote.id;
+    const nameCap = _clientName ? (isG ? `, ${_clientName}` : `, ${_clientName}`) : '';
+    const estado = String(lote.estado || 'disponible').toLowerCase();
+    const dims = lote.dimensiones ? String(lote.dimensiones).replace(/\s*m²?/i, '') + ' m²' : null;
+    const uf = lote.valorUF != null && lote.valorUF !== '' ? String(lote.valorUF) + ' UF' : null;
+    let clpStr = '';
+    try {
+      const ufNum = parseFloat(lote.valorUF);
+      const ufValue =
+        window.FerrariUI && typeof window.FerrariUI.getUFValue === 'function'
+          ? window.FerrariUI.getUFValue()
+          : 38000;
+      if (!isNaN(ufNum) && ufNum > 0) {
+        clpStr = new Intl.NumberFormat('es-CL', {
+          style: 'currency',
+          currency: 'CLP',
+          maximumFractionDigits: 0
+        }).format(Math.round(ufNum * ufValue));
+      }
+    } catch (e) {}
+
+    const tags = String(lote.caracteristicas || '')
+      .split(/[,.;|/]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 1)
+      .slice(0, 6);
+
+    const nFotos = Array.isArray(lote.fotos) ? lote.fotos.filter((f) => f && f.src).length : 0;
+
+    let lead = isG
+      ? `¡Claro${nameCap}! Te dejé el <b>Lote ${num}</b> en pantalla`
+      : `Entendido${nameCap}. Enfoco el <b>Lote ${num}</b> y abro su ficha`;
+    lead += ` · <b>${estado}</b>.`;
+
+    const bits = [];
+    if (dims) bits.push(`<b>${dims}</b>`);
+    if (uf) bits.push(`<b>${uf}</b>${clpStr ? ' <span style="opacity:.75">(~' + clpStr + ')</span>' : ''}`);
+    const meta = bits.length ? `<br>${bits.join(' · ')}` : '';
+
+    const tagsLine = tags.length
+      ? `<br><span style="opacity:.9">${tags.map((t) => '#' + t).join(' · ')}</span>`
+      : '';
+
+    let fotosNote = '';
+    if (flags.fotos) {
+      fotosNote = nFotos
+        ? `<br>Galería con <b>${nFotos}</b> foto${nFotos === 1 ? '' : 's'} abierta.`
+        : `<br>Este lote aún no tiene fotos cargadas; la ficha comercial sí está a la vista.`;
+    } else if (!nFotos) {
+      fotosNote = isG
+        ? `<br>Aún sin fotos en galería, pero la ficha ya muestra superficie, valor y detalles.`
+        : `<br>Sin galería aún; ficha con datos comerciales abierta.`;
+    }
+
+    let cta = '<br>';
+    if (flags.fin) cta += 'Simulador de financiamiento listo. ';
+    if (flags.pdf) cta += 'Generando ficha PDF. ';
+    cta += isG
+      ? '¿Seguimos con financiamiento, agendar visita o miramos otro lote?'
+      : '¿Financiamiento, agendar visita u otro lote?';
+
+    return lead + meta + tagsLine + fotosNote + cta;
+  }
+
   function findLoteById(id) {
     if (id === null || id === undefined) return null;
     const rawId = String(id).trim().toLowerCase();
@@ -5326,9 +5425,10 @@ TONO COQUETO-ALEGRE (con clase, nunca vulgar):
 - Cierra SIEMPRE con pregunta de acción de venta (tour, ficha, WhatsApp, reserva, comparar precios).
 
 ACCIONES VISUALES (vende con la pantalla):
-- Hablar de un lote → lookAtLote + openLotePanel (y comenta con emoción que ya lo enfocaste).
+- Hablar de un lote → SIEMPRE lookAtLote + openLotePanel + highlightLotes (reemplaza cualquier ficha anterior). Resume en el chat: superficie, precio, estado y tags.
+- Si cambias a turismo/clima/agenda: NO envíes openLotePanel (el sistema cierra la ficha).
 - Precios/comparar → showPriceComparison. Stats → showStats. Tour → startAutoTour. Disponibles → highlightAvailable.
-- Mapa/servicios → openMapWidget / focusNearbyPOI. Clima → openWeatherWidget. Fotos → openGallery.
+- Mapa/servicios → openMapWidget / focusNearbyPOI. Clima → openWeatherWidget. Fotos → openGallery (+ ficha del lote).
 - Cuando ejecutes acción: "¡Listo! Ya te dejé el lote en pantalla… ¿lo sentiste tuyo o no? 😊"
 
 PRONUNCIACIÓN / TTS (Dalia):
@@ -5345,7 +5445,8 @@ Estilo de venta (OBLIGATORIO):
 
 Estrategia Comercial:
 - Plusvalía, Rol Propio, SAG, conectividad del sector ${envData.mainSector}: véndelo en una frase potente, no en un ensayo.
-- Acciones visuales al instante: lookAtLote + openLotePanel cuando hables de un lote; showStats / startAutoTour cuando aporte.
+- Acciones visuales al instante: al hablar de un lote → lookAtLote + openLotePanel + highlight (reemplaza ficha previa) y resume datos; showStats / startAutoTour cuando aporte.
+- Si el tema cambia a turismo/clima/agenda: no envíes openLotePanel.
 - Si hay interés: explica la reserva en Chile en dos frases y pide el clip (📎) para Cédula/comprobante.
 
 Reglas de estilo:
@@ -5385,7 +5486,7 @@ REQUISITOS LEGALES DE RESERVA Y COMPRA EN CHILE:
 Directriz de Reserva: Cuando un cliente muestre interés firme en reservar o comprar, explícale brevemente la certeza jurídica (SAG, Rol propio), indícale los documentos requeridos en Chile (Nombre, RUT, etc.), y sugiérele proactivamente subir su carnet o comprobante mediante el botón Clip (📎) del chat para agilizar el trámite.
 
 REGLA STRICTA DE HERRAMIENTA CERCANOS Y LOTES:
-- NUNCA abras la herramienta de Cercanos ("openNearbyTab" o "openMapWidget") cuando el usuario pida ver, acercar o enfocar un lote (ejemplo: "acerca el lote 10", "muéstrame el lote 5", "ver el lote 12"). Ante cualquier petición sobre un lote específico, ejecuta SIEMPRE la acción {"type": "lookAtLote", "loteId": "ID", "hfov": 50}.
+- NUNCA abras la herramienta de Cercanos ("openNearbyTab" o "openMapWidget") cuando el usuario pida ver, acercar o enfocar un lote (ejemplo: "acerca el lote 10", "muéstrame el lote 5", "ver el lote 12"). Ante cualquier petición sobre un lote específico, ejecuta SIEMPRE {"type":"lookAtLote"} + {"type":"openLotePanel"} + {"type":"highlightLotes"} del mismo ID, y describe superficie/precio/características en el texto.
 - SOLO ejecuta la herramienta de Cercanos ("openNearbyTab" o "openMapWidget") si el usuario pregunta EXPLICITAMENTE sobre escuelas, colegios, postas, hospitales, carabineros, comisarías, almacenes o la ciudad más cercana. En cualquier otro caso, responde sobre el lote o menciona los servicios cercanos conversacionalmente sin abrir widgets automáticamente.
 
 GUÍA COMERCIAL:
@@ -5435,8 +5536,8 @@ REGLAS TURISMO (ESTRICTAS):
 6. Prioriza siempre lugares del entorno del proyecto (radio ~320 km), ordenados por distancia.
 
 ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
-- {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). Úsala cuando pidan ver, acercar o hacer zoom a un lote.
-- {"type": "openLotePanel", "loteId": "ID"}: Abre ficha con fotos y detalles. SOLO si el cliente pide ver la ficha, fotos, precio o reservar.
+- {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). SIEMPRE con openLotePanel al hablar de un lote concreto.
+- {"type": "openLotePanel", "loteId": "ID"}: Abre/reemplaza la ficha comercial del lote (obligatoria al mencionar un lote). Incluye datos, tags y CTAs.
 - {"type": "highlightLotes", "loteIds": ["ID1","ID2"], "color": "rgba(r,g,b,a)"}: Resalta lotes en el plano SVG.
 - {"type": "clearHighlights"}: Quita resaltados del plano.
 - {"type": "submitLead", "name": "Nombre", "email": "correo", "phone": "fono", "loteId": "ID", "notes": ""}: Envía solicitud de reserva con datos del cliente.
@@ -6112,6 +6213,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
   // ─── AUTO-CIERRE AUTOMATIZADO DE WIDGETS POR CAMBIO DE TEMA ───────────────
   function autoCloseUnusedWidgets(actions) {
+    actions = Array.isArray(actions) ? actions : [];
     const hasMapAction = actions.some(a => a.type === 'openMapWidget' || a.type === 'focusNearbyPOI');
     const hasWeatherAction = actions.some(a => a.type === 'openWeatherWidget');
     const hasStatsAction = actions.some(a => a.type === 'showStats');
@@ -6122,25 +6224,31 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const hasTourismAction = actions.some(a =>
       a.type === 'openTourismWidget' || a.type === 'offerTourism' || a.type === 'confirmTourismOffer'
     );
-    
-    // Si no hay acción de mapa en este turno, cerrar mapa flotante
+    const hasFinanceAction = actions.some(a => a.type === 'openFinanceWidget');
+    const hasLoteFocus = actions.some(a =>
+      a.type === 'lookAtLote' ||
+      a.type === 'openLotePanel' ||
+      a.type === 'openGallery' ||
+      a.type === 'downloadPDF' ||
+      (a.type === 'highlightLotes' && Array.isArray(a.loteIds) && a.loteIds.length === 1)
+    );
+    const hasLotInventory = actions.some(a =>
+      a.type === 'highlightAvailable' || a.type === 'startAutoTour' || a.type === 'showStats' || a.type === 'showPriceComparison'
+    );
+
     // Mapa: mantener si hay acción de mapa O turismo (la ficha abre la ruta)
     if (!hasMapAction && !hasTourismAction) {
       closeMapWidget();
     }
 
-    // Turismo: cerrar widget al cambiar de tema (lote, precio, clima, etc.)
+    // Turismo: cerrar al cambiar de tema (lote, precio, clima, agenda…)
     if (!hasTourismAction && window.FerrariTourism) {
       window.FerrariTourism.closeWidget();
-      // Si el turno no es confirmación, limpiar oferta pendiente al hablar de otra cosa
-      const staysOnOffer = actions.some(a => a.type === 'offerTourism');
-      if (!staysOnOffer) window.FerrariTourism.clearPendingOffer();
+      if (!actions.some(a => a.type === 'offerTourism')) {
+        window.FerrariTourism.clearPendingOffer();
+      }
     }
-    
-    // El widget del clima se mantiene abierto hasta que el usuario lo cierre manualmente
-    // (ya no se auto-cierra al cambiar de tema para evitar que desaparezca al cambiar voz)
-    
-    // Si no hay acción de estadísticas, cerrar stats
+
     if (!hasStatsAction) {
       const statsWidget = document.getElementById('kpk-stats-widget');
       if (statsWidget && statsWidget.style.display !== 'none') {
@@ -6148,8 +6256,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         statsWidget.classList.remove('is-open');
       }
     }
-    
-    // Si no hay acción de precio, cerrar price widget
+
     if (!hasPriceAction) {
       const priceWidget = document.getElementById('kpk-price-widget');
       if (priceWidget && priceWidget.style.display !== 'none') {
@@ -6157,29 +6264,43 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         priceWidget.classList.remove('is-open');
       }
     }
-    
-    // Si no hay acción de calendario, cerrar calendario
+
     if (!hasCalendarAction) {
       closeCalendarWidget();
     }
 
-    const hasFinanceAction = actions.some(a => a.type === 'openFinanceWidget');
-    // Si no hay acción de financiamiento, cerrar simulador
     if (!hasFinanceAction) {
       closeFinanceWidget();
     }
 
-    // Si el usuario habla de otra cosa, cerramos la ficha de lote (panel de espectador)
-    const changedTopicToPOI = actions.some(a => a.type === 'openMapWidget' || a.type === 'focusNearbyPOI' || a.type === 'openWeatherWidget');
-    if (changedTopicToPOI) {
+    // Ficha de lote: solo vive mientras el turno habla de UN lote (o finanzas de ese lote)
+    const keepLotePanel = hasLoteFocus || hasFinanceAction;
+    if (!keepLotePanel) {
       if (window.FerrariUI && typeof window.FerrariUI.closeLotePanel === 'function') {
         window.FerrariUI.closeLotePanel();
       }
-      
-      // Colapsar el dock del comprador (dock izquierdo) si el usuario empieza a hablar de clima o del lote en sí
-      if (window.FerrariBuyerDock && typeof window.FerrariBuyerDock.setExpanded === 'function') {
-        window.FerrariBuyerDock.setExpanded(false);
+    }
+
+    // Al entrar a turismo / mapa / clima / inventario amplio: colapsar dock y limpiar escena de lote
+    if (hasTourismAction || hasMapAction || hasWeatherAction || (hasLotInventory && !hasLoteFocus)) {
+      if (!hasLoteFocus && window.FerrariUI && typeof window.FerrariUI.closeLotePanel === 'function') {
+        window.FerrariUI.closeLotePanel();
       }
+      if (window.FerrariBuyerDock && typeof window.FerrariBuyerDock.setExpanded === 'function') {
+        if (hasTourismAction || hasWeatherAction || hasMapAction) {
+          window.FerrariBuyerDock.setExpanded(false);
+        }
+      }
+    }
+
+    // Al enfocar un lote concreto: cerrar turismo/mapa para no tapar la ficha
+    if (hasLoteFocus) {
+      if (window.FerrariTourism) {
+        window.FerrariTourism.closeWidget();
+        window.FerrariTourism.clearPendingOffer();
+      }
+      if (!hasMapAction) closeMapWidget();
+      if (!hasCalendarAction) closeCalendarWidget();
     }
   }
 
