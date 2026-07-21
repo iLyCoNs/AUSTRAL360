@@ -256,6 +256,10 @@
     _input  = document.getElementById('kpk-ai-input');
     _btnMic = document.getElementById('kpk-ai-mic');
 
+    if (window.FerrariDrag && _panel) {
+      window.FerrariDrag.attach(_panel, { handle: '.kpk-ai-header' });
+    }
+
     // Referencias Uploader
     _btnAttach       = document.getElementById('kpk-ai-attach');
     _fileInput       = document.getElementById('kpk-ai-file-input');
@@ -2279,6 +2283,9 @@
     document.body.appendChild(widget);
     // Auto-cerrar en 18 segundos
     setTimeout(() => widget.isConnected && widget.remove(), 18000);
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(widget, { handle: '.kpk-fw-header' });
+    }
   }
 
   // ─── WIDGET DE COMPARACIÓN DE PRECIOS ────────────────────────────────────
@@ -2326,6 +2333,9 @@
     `;
     document.body.appendChild(widget);
     setTimeout(() => widget.isConnected && widget.remove(), 20000);
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(widget, { handle: '.kpk-fw-header' });
+    }
   }
 
   // ─── RESALTAR LOTES DISPONIBLES ───────────────────────────────────────────
@@ -2546,6 +2556,9 @@
       document.body.appendChild(widget);
       
       widget.querySelector('#kpk-widget-close-btn').addEventListener('click', closeMapWidget);
+      if (window.FerrariDrag) {
+        window.FerrariDrag.attach(widget, { handle: '.kpk-widget-header' });
+      }
     }
     
     const titleEl = widget.querySelector('#kpk-widget-title');
@@ -5974,6 +5987,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     _calBindWidget(widget);
     _calRefreshSummary();
 
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(widget, { handle: '.kpk-cal__handle' });
+    }
+
     widget.style.display = 'flex';
     widget.classList.remove('is-success');
     setTimeout(() => widget.classList.add('is-open'), 40);
@@ -6270,7 +6287,25 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     }
 
     if (!hasFinanceAction) {
-      closeFinanceWidget();
+      const finEl = document.getElementById('kpk-finance-widget');
+      const finVisible = !!(
+        finEl &&
+        finEl.classList.contains('is-open') &&
+        finEl.style.display !== 'none'
+      );
+      // Mantener abierto mientras el usuario sigue afinando; cerrar al cambiar de tema
+      const leaveFinanceTopic =
+        hasTourismAction ||
+        hasCalendarAction ||
+        hasMapAction ||
+        hasWeatherAction ||
+        hasStatsAction ||
+        hasPriceAction ||
+        hasLotInventory ||
+        (hasLoteFocus && !hasFinanceAction);
+      if (!finVisible || leaveFinanceTopic) {
+        closeFinanceWidget();
+      }
     }
 
     // Ficha de lote: solo vive mientras el turno habla de UN lote (o finanzas de ese lote)
@@ -6339,74 +6374,59 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (telInp) prePhone = telInp.value;
 
     widget.innerHTML = `
-      <div class="kpk-widget-header" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.1);">
-        <div style="display: flex; flex-direction: column;">
-          <span style="font-size: 13.5px; font-weight: 700; color: #fff;">Simulador de Financiamiento</span>
-          <span style="font-size: 10.5px; color: rgba(255,255,255,0.5); font-weight: 500; margin-top: 1px;">Crédito Directo del Desarrollador (0% Interés)</span>
+      <div class="kpk-fin__handle">
+        <div>
+          <span class="kpk-fin__eyebrow">Financiamiento</span>
+          <span class="kpk-fin__title">Simulador directo</span>
+          <span class="kpk-fin__sub">Crédito del desarrollador · 0% interés</span>
         </div>
-        <button class="kpk-widget-close" id="fin-widget-close-btn" style="border: none; background: transparent; color: rgba(255,255,255,0.4); font-size: 20px; cursor: pointer; transition: color 0.15s;">&times;</button>
+        <button type="button" class="kpk-fin__close" id="fin-widget-close-btn" title="Cerrar" aria-label="Cerrar">&times;</button>
       </div>
-      
-      <div class="kpk-widget-body" style="padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: 310px;">
-        <div>
-          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px;">1. Selecciona tu Terreno</div>
-          <select id="fin-select-lote" class="fin-select">
-            ${optionsHTML}
-          </select>
+
+      <div class="kpk-fin__body">
+        <div class="kpk-fin__step">
+          <div class="kpk-fin__label"><span>1 · Terreno</span></div>
+          <select id="fin-select-lote" class="fin-select">${optionsHTML}</select>
         </div>
-        
-        <div>
-          <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em;">
-            <span>2. Porcentaje de Pie</span>
-            <span id="fin-pie-percent" style="color: #00B4FF; font-weight: 700;">20%</span>
+
+        <div class="kpk-fin__step">
+          <div class="kpk-fin__label">
+            <span>2 · Pie</span>
+            <span class="kpk-fin__label-val" id="fin-pie-percent">20%</span>
           </div>
           <input type="range" id="fin-slider-pie" class="fin-slider" min="10" max="50" step="5" value="20">
         </div>
 
-        <div>
-          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px;">3. Plazo del Crédito</div>
-          <div class="fin-months-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;">
-            <button class="fin-month-btn" data-months="12">12m</button>
-            <button class="fin-month-btn is-selected" data-months="24">24m</button>
-            <button class="fin-month-btn" data-months="36">36m</button>
-            <button class="fin-month-btn" data-months="48">48m</button>
-            <button class="fin-month-btn" data-months="60">60m</button>
+        <div class="kpk-fin__step">
+          <div class="kpk-fin__label"><span>3 · Plazo</span></div>
+          <div class="fin-months-grid">
+            <button type="button" class="fin-month-btn" data-months="12">12m</button>
+            <button type="button" class="fin-month-btn is-selected" data-months="24">24m</button>
+            <button type="button" class="fin-month-btn" data-months="36">36m</button>
+            <button type="button" class="fin-month-btn" data-months="48">48m</button>
+            <button type="button" class="fin-month-btn" data-months="60">60m</button>
           </div>
         </div>
 
         <div class="fin-summary-box">
-          <div class="fin-summary-row">
-            <span>Precio Terreno:</span>
-            <strong id="fin-res-precio">-</strong>
-          </div>
-          <div class="fin-summary-row">
-            <span>Pie Requerido:</span>
-            <strong id="fin-res-pie">-</strong>
-          </div>
-          <div class="fin-summary-row">
-            <span>Saldo a Financiar:</span>
-            <strong id="fin-res-saldo">-</strong>
-          </div>
-          <div class="fin-summary-row highlight">
-            <span>Dividendo Mensual:</span>
-            <strong id="fin-res-cuota">-</strong>
-          </div>
+          <div class="fin-summary-row"><span>Precio</span><strong id="fin-res-precio">-</strong></div>
+          <div class="fin-summary-row"><span>Pie</span><strong id="fin-res-pie">-</strong></div>
+          <div class="fin-summary-row"><span>Saldo</span><strong id="fin-res-saldo">-</strong></div>
+          <div class="fin-summary-row highlight"><span>Dividendo</span><strong id="fin-res-cuota">-</strong></div>
         </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
-          <div style="font-size: 10px; font-weight: 650; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px;">4. Datos del Interesado</div>
-          <input type="text" id="fin-input-name" placeholder="Tu Nombre Completo" value="${preName}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <input type="email" id="fin-input-email" placeholder="Correo Electrónico" value="${preEmail}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
-            <input type="tel" id="fin-input-phone" placeholder="WhatsApp" value="${prePhone}" style="width: 100%; height: 32px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff; padding: 0 10px; font-size: 12px; outline: none;">
+
+        <div class="kpk-fin__fields">
+          <div class="kpk-fin__label"><span>4 · Tus datos</span></div>
+          <input class="kpk-fin__input" type="text" id="fin-input-name" placeholder="Nombre completo" value="${preName}" autocomplete="name">
+          <div class="kpk-fin__row">
+            <input class="kpk-fin__input" type="email" id="fin-input-email" placeholder="Correo" value="${preEmail}" autocomplete="email">
+            <input class="kpk-fin__input" type="tel" id="fin-input-phone" placeholder="WhatsApp" value="${prePhone}" autocomplete="tel">
           </div>
         </div>
       </div>
-      
-      <div class="kpk-widget-footer" style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.15);">
-        <button id="fin-btn-submit" style="width: 100%; height: 36px; border: none; border-radius: 8px; background: linear-gradient(135deg, #00B4FF, #0078FF); color: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,120,255,0.3);">
-          Enviar Simulación Directa
-        </button>
+
+      <div class="kpk-fin__footer">
+        <button type="button" class="kpk-fin__submit" id="fin-btn-submit">Enviar simulación</button>
       </div>
     `;
 
@@ -6457,6 +6477,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
     widget.querySelector('#fin-widget-close-btn').addEventListener('click', closeFinanceWidget);
 
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(widget, { handle: '.kpk-fin__handle' });
+    }
+
     widget.querySelector('#fin-btn-submit').addEventListener('click', async () => {
       const name = widget.querySelector('#fin-input-name').value.trim();
       const email = widget.querySelector('#fin-input-email').value.trim();
@@ -6483,7 +6507,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       const cuotaCLP = Math.round(saldoCLP / months);
 
       const submitBtn = widget.querySelector('#fin-btn-submit');
-      submitBtn.textContent = 'Procesando cotización...';
+      submitBtn.textContent = 'Procesando…';
       submitBtn.disabled = true;
 
       const notes = `COTIZACIÓN FINANCIERA DIRECTA:\n` +
@@ -6518,7 +6542,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
       } catch (err) {
         console.error('Error al procesar simulación financiera:', err);
-        submitBtn.textContent = 'Enviar Simulación Directa';
+        submitBtn.textContent = 'Enviar simulación';
         submitBtn.disabled = false;
         alert('Ocurrió un error al procesar la cotización. Intente nuevamente.');
       }
@@ -6526,10 +6550,24 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
 
     recalculate();
 
+    // Al reabrir: volver a ancla izquierda (no quedar bajo el chat)
+    try {
+      widget.classList.remove('is-user-positioned');
+      widget.style.removeProperty('left');
+      widget.style.removeProperty('top');
+      widget.style.removeProperty('right');
+      widget.style.removeProperty('bottom');
+      widget.style.removeProperty('width');
+      widget.style.removeProperty('transform');
+    } catch (e) {}
+
     widget.style.display = 'flex';
+    try {
+      document.body.classList.add('kpk-finance-open');
+    } catch (e) {}
     setTimeout(() => {
       widget.classList.add('is-open');
-    }, 50);
+    }, 40);
   }
 
   function closeFinanceWidget() {
@@ -6538,8 +6576,11 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       widget.classList.remove('is-open');
       setTimeout(() => {
         widget.style.display = 'none';
-      }, 300);
+      }, 280);
     }
+    try {
+      document.body.classList.remove('kpk-finance-open');
+    } catch (e) {}
   }
 
   // ─── CHIPS DE SUGERENCIA DINÁMICOS (+ carrusel con flechas) ───
@@ -6852,6 +6893,13 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
 
     popup.querySelector('#kpk-mbp-close-btn').addEventListener('click', closeMobileBubblePopup);
+
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(popup, {
+        handle: '.kpk-mbp-header',
+        ignore: window.FerrariDrag.DEFAULT_IGNORE + ', .kpk-mbp-btn, .kpk-mbp-control-btn, .kpk-mbp-mic-inline-btn, #kpk-mbp-send-btn, #kpk-mbp-text-input'
+      });
+    }
     
     const clientBadge = popup.querySelector('#kpk-mbp-client-badge');
     if (clientBadge) {

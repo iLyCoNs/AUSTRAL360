@@ -55,6 +55,10 @@
     if (_bound) return;
     _bound = true;
 
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attachIf('kpk-panel', { handle: '.kpk-panel-header' });
+    }
+
     // Registrar herramientas
     registerTool(window.FerrariDrawLote);
     registerTool(window.FerrariDrawCalle);

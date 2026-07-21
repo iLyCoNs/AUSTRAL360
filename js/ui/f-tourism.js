@@ -481,6 +481,9 @@
     `;
     document.body.appendChild(el);
     el.querySelector('#kpk-tw-close').addEventListener('click', closeWidget);
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(el, { handle: '.kpk-tw-header' });
+    }
     return el;
   }
 

@@ -1,8 +1,6 @@
 /**
  * f-weather.js — Widget meteorológico premium para KPrano Killer 360
- * API: Open-Meteo (gratuita, sin key, datos WMO oficiales)
- * Coordenadas: window.FerrariGeo.droneOrigin (lat/lng del proyecto)
- * Diseño: macOS glassmorphism ultra-blur, draggable, arrastrable
+ * API: Open-Meteo · Reloj local en vivo · Glass armónico móvil/desktop
  */
 'use strict';
 
@@ -41,13 +39,13 @@
   }
 
   let _widget = null;
-  let _dragging = false;
-  let _dragOffX = 0;
-  let _dragOffY = 0;
   let _refreshTimer = null;
+  let _clockTimer = null;
   let _collapsed = false;
+  let _tz = 'America/Santiago';
+  let _lastLat = null;
+  let _lastLng = null;
 
-  // ─── Crear el DOM del widget ───────────────────────────────────────────────
   function createWidget() {
     const el = document.createElement('div');
     el.id = 'kpk-weather-widget';
@@ -59,7 +57,7 @@
         <div class="kpk-weather__grip">
           <span></span><span></span><span></span>
         </div>
-        <button class="kpk-weather__collapse" id="kpk-weather-toggle" title="Minimizar">
+        <button class="kpk-weather__collapse" id="kpk-weather-toggle" title="Minimizar" type="button">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M2 5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
@@ -68,9 +66,12 @@
       <div class="kpk-weather__body" id="kpk-weather-body">
         <div class="kpk-weather__main">
           <div class="kpk-weather__icon" id="kpk-w-icon">—</div>
-          <div class="kpk-weather__temp" id="kpk-w-temp">—</div>
+          <div class="kpk-weather__temp-wrap">
+            <div class="kpk-weather__temp" id="kpk-w-temp">—</div>
+            <div class="kpk-weather__label" id="kpk-w-label">Cargando…</div>
+          </div>
         </div>
-        <div class="kpk-weather__label" id="kpk-w-label">Cargando clima…</div>
+        <div class="kpk-weather__clock" id="kpk-w-clock" aria-live="off">--:--:--</div>
         <div class="kpk-weather__details" id="kpk-w-details"></div>
         <div class="kpk-weather__footer" id="kpk-w-footer"></div>
       </div>
@@ -78,52 +79,13 @@
     document.body.appendChild(el);
     _widget = el;
 
-    // ── Drag ──────────────────────────────────────────────────────────────────
-    const handle = el.querySelector('#kpk-weather-handle');
-    handle.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button')) return;
-      _dragging = true;
-      const rect = el.getBoundingClientRect();
-      _dragOffX = e.clientX - rect.left;
-      _dragOffY = e.clientY - rect.top;
-      el.style.transition = 'none';
-      e.preventDefault();
-    });
-    handle.addEventListener('touchstart', (e) => {
-      if (e.target.closest('button')) return;
-      _dragging = true;
-      const t = e.touches[0];
-      const rect = el.getBoundingClientRect();
-      _dragOffX = t.clientX - rect.left;
-      _dragOffY = t.clientY - rect.top;
-      el.style.transition = 'none';
-    }, { passive: true });
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(el, { handle: '#kpk-weather-handle' });
+    }
 
-    document.addEventListener('mousemove', (e) => {
-      if (!_dragging) return;
-      moveTo(e.clientX - _dragOffX, e.clientY - _dragOffY);
-    });
-    document.addEventListener('touchmove', (e) => {
-      if (!_dragging) return;
-      const t = e.touches[0];
-      moveTo(t.clientX - _dragOffX, t.clientY - _dragOffY);
-    }, { passive: true });
-    document.addEventListener('mouseup',  () => { _dragging = false; });
-    document.addEventListener('touchend', () => { _dragging = false; });
-
-    // ── Collapse ──────────────────────────────────────────────────────────────
     el.querySelector('#kpk-weather-toggle').addEventListener('click', toggleCollapse);
-
+    startClock();
     return el;
-  }
-
-  function moveTo(x, y) {
-    const maxX = window.innerWidth  - _widget.offsetWidth;
-    const maxY = window.innerHeight - _widget.offsetHeight;
-    _widget.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
-    _widget.style.top  = Math.max(0, Math.min(y, maxY)) + 'px';
-    _widget.style.right  = 'auto';
-    _widget.style.bottom = 'auto';
   }
 
   function toggleCollapse() {
@@ -137,7 +99,34 @@
       : `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
   }
 
-  // ─── Fetch Open-Meteo ──────────────────────────────────────────────────────
+  function formatLiveClock() {
+    try {
+      return new Date().toLocaleTimeString('es-CL', {
+        timeZone: _tz || 'America/Santiago',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    } catch (e) {
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+    }
+  }
+
+  function tickClock() {
+    if (!_widget) return;
+    const clock = _widget.querySelector('#kpk-w-clock');
+    if (clock) clock.textContent = formatLiveClock();
+  }
+
+  function startClock() {
+    if (_clockTimer) clearInterval(_clockTimer);
+    tickClock();
+    _clockTimer = setInterval(tickClock, 1000);
+  }
+
   async function fetchWeather() {
     const origin = window.FerrariGeo && window.FerrariGeo.droneOrigin;
     if (!origin || origin.lat == null || origin.lng == null) {
@@ -187,30 +176,29 @@
     const dir  = windDir(c.wind_direction_10m);
     const hum  = c.relative_humidity_2m;
     const prec = c.precipitation;
-    const tz   = data.timezone_abbreviation || '';
 
-    // Hora local en la zona del proyecto
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    if (data.timezone) _tz = data.timezone;
+    _lastLat = lat;
+    _lastLng = lng;
 
     _widget.querySelector('#kpk-w-icon').textContent = wmo.icon;
     _widget.querySelector('#kpk-w-temp').textContent = `${temp}°`;
     _widget.querySelector('#kpk-w-label').textContent = wmo.label;
-    _widget.querySelector('#kpk-w-details').innerHTML = `
-      <span title="Sensación térmica">ST ${feel}°</span>
-      <span title="Humedad">💧 ${hum}%</span>
-      <span title="Viento">${dir} ${wind} km/h</span>
-      ${prec > 0 ? `<span title="Precipitación">🌂 ${prec.toFixed(1)} mm</span>` : ''}
-    `;
+    _widget.querySelector('#kpk-w-details').innerHTML =
+      '<span class="kpk-weather__chip" title="Sensación térmica"><em>ST</em> ' + feel + '°</span>' +
+      '<span class="kpk-weather__chip" title="Humedad"><em>Hum</em> ' + hum + '%</span>' +
+      '<span class="kpk-weather__chip" title="Viento"><em>' + dir + '</em> ' + wind + ' km/h</span>' +
+      (prec > 0
+        ? '<span class="kpk-weather__chip" title="Precipitación"><em>Lluvia</em> ' + prec.toFixed(1) + ' mm</span>'
+        : '');
     _widget.querySelector('#kpk-w-footer').textContent =
-      `${lat.toFixed(4)}, ${lng.toFixed(4)} · ${timeStr}`;
+      lat.toFixed(3) + ', ' + lng.toFixed(3);
+    tickClock();
   }
 
-  // ─── Init ──────────────────────────────────────────────────────────────────
   function init() {
     createWidget();
 
-    // Esperar a que FerrariGeo tenga el origen (puede tardar si carga async)
     let attempts = 0;
     const tryFetch = () => {
       const origin = window.FerrariGeo && window.FerrariGeo.droneOrigin;
@@ -224,10 +212,7 @@
     };
     tryFetch();
 
-    // Actualizar cada 15 minutos
     _refreshTimer = setInterval(fetchWeather, 15 * 60 * 1000);
-
-    // Actualizar cuando cambia el origen del drone
     document.addEventListener('ferrari:geo-changed', fetchWeather);
   }
 
@@ -237,7 +222,6 @@
     init();
   }
 
-  // API pública mínima
   window.FerrariWeather = { refresh: fetchWeather };
 
 })();

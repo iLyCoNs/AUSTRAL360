@@ -249,6 +249,12 @@
     _panel = document.getElementById('kpk-lote-panel');
     if (!_panel) return;
 
+    if (window.FerrariDrag) {
+      window.FerrariDrag.attach(_panel, {
+        handle: '.kpk-lote-header, .kpk-spectator-header'
+      });
+    }
+
     // Elementos Modo Edición
     _closeBtn = document.getElementById('lote-panel-close');
     _btnCancel = document.getElementById('lote-btn-cancel');

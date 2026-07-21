@@ -28,7 +28,39 @@
     _elTool    = document.getElementById('hud-tool-name');
     _elCount   = document.getElementById('hud-vertex-count');
     _elHint    = document.getElementById('hud-hint');
+    _syncHudPlacement();
+    window.addEventListener('resize', _syncHudPlacement);
+    // El dock del comprador puede crearse después
+    setTimeout(_syncHudPlacement, 800);
+    setTimeout(_syncHudPlacement, 2000);
     console.log('[Ferrari/HUD] ✓ Inicializado');
+  }
+
+  /** Móvil: HFOV bajo «Consigue tu 360°» (~30% del tamaño del CTA). Desktop: HUD esquina. */
+  function _syncHudPlacement() {
+    const coords = document.getElementById('kpk-hud-coords');
+    const layer  = document.getElementById('kpk-hud-layer');
+    if (!coords || !layer) return;
+
+    const isMobile = window.innerWidth <= 640;
+    const stack = document.querySelector('#kpk-buyer-dock .kbd-stack');
+    const cta = document.getElementById('kbd-cta-btn');
+
+    if (isMobile && stack && cta && document.body.contains(cta)) {
+      if (coords.parentElement !== stack || coords.previousElementSibling !== cta) {
+        cta.insertAdjacentElement('afterend', coords);
+      }
+      coords.classList.add('hud-chip--under-cta');
+      layer.classList.add('kpk-hud-layer--mobile-dock');
+    } else {
+      if (coords.parentElement !== layer) {
+        const draw = document.getElementById('kpk-hud-draw');
+        if (draw && draw.parentElement === layer) layer.insertBefore(coords, draw);
+        else layer.appendChild(coords);
+      }
+      coords.classList.remove('hud-chip--under-cta');
+      layer.classList.remove('kpk-hud-layer--mobile-dock');
+    }
   }
 
   // ─── COORDS — Llamado cada 10 frames desde rAF ───────────────────
@@ -98,7 +130,7 @@
   }
 
   // ─── API PÚBLICA ────────────────────────────────────────────────────
-  window.FerrariHUD = { updateCoords, showDraw, hideDraw, updateDraw };
+  window.FerrariHUD = { updateCoords, showDraw, hideDraw, updateDraw, syncPlacement: _syncHudPlacement };
 
   console.log('[Ferrari/HUD] ✓ Módulo cargado');
 

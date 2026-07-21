@@ -1065,10 +1065,16 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
       0 -1px 0 rgba(0, 0, 0, 0.1) inset;
   }
   .kbd-cta-glass {
-    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.28),
+      0 1px 0 rgba(255, 255, 255, 0.16) inset;
   }
   .kbd-cta-logo {
     filter: none;
+  }
+  .kbd-cta-name {
+    font-size: 16px;
+    letter-spacing: 0.05em;
   }
   .kpk-lote-panel.spectator-mode {
     box-shadow: 0 4px 16px rgba(0,0,0,0.08);
@@ -2306,66 +2312,259 @@ body.f-tool-mode .kpk-buyer-dock {
   }
 }
 
-.kbd-cta-sheet { width: 100%; }
+.kbd-cta-sheet {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
 .kbd-cta-glass {
   position: relative;
   border-radius: 20px;
-  padding: 16px 14px 14px;
-  background: linear-gradient(165deg, rgba(28,28,32,0.94), rgba(12,12,14,0.9));
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
-  color: #f5f5f7;
-}
-.kbd-cta-close {
-  position: absolute; top: 10px; right: 10px;
-  width: 28px; height: 28px; border-radius: 50%;
-  border: none; background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.7); cursor: pointer;
-  display: grid; place-items: center;
-}
-.kbd-cta-brand {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 10px; padding-right: 28px;
-}
-.kbd-cta-logo {
-  height: 36px; width: auto; max-width: 140px;
-  object-fit: contain; display: block;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
-}
-.kbd-cta-eyebrow {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; color: rgba(201,168,76,0.9);
-}
-.kbd-cta-name {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 20px; font-weight: 600; letter-spacing: 0.03em;
-  color: #fff; line-height: 1.15;
-}
-.kbd-cta-copy {
-  font-size: 12.5px; line-height: 1.45;
-  color: rgba(255,255,255,0.62); margin: 0 0 12px;
-}
-.kbd-cta-actions { display: flex; flex-direction: column; gap: 8px; }
-.kbd-cta-link {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 11px 12px; border-radius: 12px;
-  text-decoration: none; font-size: 13px; font-weight: 650;
-  transition: transform 0.15s;
-}
-.kbd-cta-link:hover { transform: translateY(-1px); }
-.kbd-cta-link--wa {
-  background: linear-gradient(135deg, #25D366, #1EBE55);
+  padding: 18px 16px 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
   color: #fff;
-  box-shadow: 0 6px 16px rgba(37,211,102,0.28);
+  font-family: 'Outfit', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  animation: kbd-cta-in 0.38s cubic-bezier(0.34, 1.2, 0.64, 1) both;
 }
+
+.kbd-cta-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  pointer-events: none;
+}
+
+@keyframes kbd-cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kbd-cta-glass { animation: none; }
+}
+
+.kbd-cta-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.kbd-cta-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.kbd-cta-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 0;
+  padding-right: 34px;
+}
+
+.kbd-cta-logo-wrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+}
+
+.kbd-cta-logo-wrap:has(.kbd-cta-logo[hidden]) {
+  display: none;
+}
+
+.kbd-cta-logo {
+  height: 36px;
+  width: auto;
+  max-width: 42px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.28));
+}
+
+.kbd-cta-brand-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kbd-cta-eyebrow {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(186, 214, 230, 0.88);
+  font-family: 'Outfit', sans-serif;
+}
+
+.kbd-cta-name {
+  /* Cinzel: tipografía epigráfica formal, armónica con la marca premium */
+  font-family: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(17px, 4.2vw, 21px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
+}
+
+.kbd-cta-rule {
+  height: 1px;
+  margin: 14px 0 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent
+  );
+}
+
+.kbd-cta-copy {
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 450;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 14px;
+  letter-spacing: 0.01em;
+}
+
+.kbd-cta-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.kbd-cta-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.kbd-cta-link:hover {
+  transform: translateY(-1px);
+}
+
+.kbd-cta-link-ico {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+}
+
+.kbd-cta-link-txt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kbd-cta-link-title {
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kbd-cta-link-sub {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: 0.72;
+  letter-spacing: 0.01em;
+}
+
+.kbd-cta-link--wa {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.92), rgba(18, 168, 78, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 20px rgba(37, 211, 102, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.kbd-cta-link--wa .kbd-cta-link-ico {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.kbd-cta-link--wa:hover {
+  box-shadow:
+    0 10px 24px rgba(37, 211, 102, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset;
+}
+
 .kbd-cta-link--web {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #f5f5f7;
+  color: #f5f8fa;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
 }
+
+.kbd-cta-link--web .kbd-cta-link-ico {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(186, 214, 230, 0.95);
+}
+
+.kbd-cta-link--web:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
 .kbd-cta-hint {
-  font-size: 11.5px; color: rgba(255,255,255,0.45);
-  text-align: center; padding: 6px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.48);
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
 }
 
 .kpk-buyer-dock.is-expanded {
@@ -2755,11 +2954,20 @@ body.f-tool-mode .kpk-buyer-dock {
     stroke-width: 0.6px !important;
   }
 
-  /* --- Reposicionamiento del HUD de coordenadas en móvil (evita solapamiento con docks) --- */
-  #kpk-hud-layer {
-    bottom: 110px !important;
+  /* --- HUD: en móvil el chip de coords vive bajo el CTA 360 (ver .hud-chip--under-cta) --- */
+  #kpk-hud-layer.kpk-hud-layer--mobile-dock {
+    /* Solo draw-info queda en la capa; coords están en el dock */
+    bottom: auto !important;
     left: 12px !important;
+    top: auto !important;
     padding: 0 !important;
+    justify-content: flex-end;
+    align-items: flex-start;
+  }
+  #kpk-hud-layer.kpk-hud-layer--mobile-dock #kpk-hud-draw {
+    position: fixed;
+    left: 12px;
+    bottom: max(120px, env(safe-area-inset-bottom, 0px) + 100px);
   }
   .hud-chip {
     padding: 3px 6px !important;
@@ -2770,6 +2978,57 @@ body.f-tool-mode .kpk-buyer-dock {
     -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 5px !important;
+  }
+
+  /* HFOV bajo «Consigue tu 360°»: ~70% más pequeño (≈30% del CTA) */
+  .kbd-stack > .hud-chip--under-cta,
+  #kpk-buyer-dock .hud-chip--under-cta {
+    pointer-events: none !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    box-sizing: border-box;
+    width: 30% !important;
+    max-width: 30% !important;
+    min-width: 0 !important;
+    margin: -2px auto 0 !important;
+    padding: 2px 4px !important;
+    gap: 3px !important;
+    font-size: 6.5px !important;
+    line-height: 1.05 !important;
+    border-radius: 999px !important;
+    background: rgba(8, 12, 18, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+    backdrop-filter: blur(10px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+    color: rgba(255, 255, 255, 0.82) !important;
+    opacity: 0.94;
+    overflow: hidden;
+  }
+  #kpk-buyer-dock .hud-chip--under-cta span {
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* En móvil priorizar HFOV; P/Y más discretos */
+  #kpk-buyer-dock .hud-chip--under-cta #hud-pitch,
+  #kpk-buyer-dock .hud-chip--under-cta #hud-yaw {
+    opacity: 0.5;
+    font-size: 6px !important;
+  }
+  #kpk-buyer-dock .hud-chip--under-cta #hud-hfov {
+    opacity: 1;
+    font-weight: 700;
+    font-size: 7px !important;
+    color: rgba(180, 230, 255, 0.95) !important;
+  }
+  /* Si el CTA se oculta (dock expandido), ocultar también el chip */
+  .kpk-buyer-dock.is-expanded .hud-chip--under-cta {
+    display: none !important;
   }
 }
 
@@ -2805,50 +3064,217 @@ body.f-tool-mode .kpk-buyer-dock {
 /* Calendar widget styles → css/f-calendar.css (glass estilo clima) */
 
 /* ==========================================
-   FINANCE WIDGET (Simulador de Crédito Directo)
+   FINANCE WIDGET — glass clima (sin barra tipo navegador)
    ========================================== */
 .kpk-finance-widget {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 340px;
-  background: rgba(15, 20, 32, 0.75);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 18px;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.45);
-  z-index: 999;
+  top: 72px;
+  left: 18px;
+  right: auto;
+  bottom: auto;
+  width: min(328px, calc(100vw - 420px));
+  max-width: 340px;
+  max-height: min(72vh, 560px);
+  z-index: 10012;
   display: none;
   flex-direction: column;
-  color: #fff;
-  font-family: inherit;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.12) inset;
+  font-family: 'Outfit', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  transition: opacity 0.28s ease, transform 0.28s ease;
 }
+
 .kpk-finance-widget.is-open {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+}
+
+/* Chat cerrado: puede crecer un poco */
+body:not(.kpk-ai-panel-open) .kpk-finance-widget {
+  width: min(340px, calc(100vw - 36px));
+}
+
+.kpk-fin__handle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.kpk-fin__eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(125, 211, 252, 0.95);
+  line-height: 1.2;
+}
+
+.kpk-fin__title {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.kpk-fin__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+}
+
+.kpk-fin__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.kpk-fin__close:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.kpk-fin__body {
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kpk-fin__step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpk-fin__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpk-fin__label-val {
+  color: rgba(125, 211, 252, 0.95);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpk-fin__footer {
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+  flex-shrink: 0;
+}
+
+.kpk-fin__submit {
+  width: 100%;
+  height: 38px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0, 180, 255, 0.95), rgba(0, 120, 255, 0.92));
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 120, 255, 0.32);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.kpk-fin__submit:hover {
+  filter: brightness(1.06);
+}
+
+.kpk-fin__submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.kpk-fin__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kpk-fin__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fin-select,
+.kpk-fin__input {
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
 }
 
 .fin-select {
-  width: 100%;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
-  padding: 0 8px;
-  font-size: 12.5px;
-  outline: none;
-  font-weight: 600;
   cursor: pointer;
 }
+
 .fin-select option {
-  background: #1e2029;
+  background: #1a1f2a;
   color: #fff;
+}
+
+.kpk-fin__input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+  font-weight: 500;
 }
 
 .fin-slider {
@@ -2856,88 +3282,121 @@ body.f-tool-mode .kpk-buyer-dock {
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  margin: 10px 0;
+  margin: 6px 0 2px;
 }
+
 .fin-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: #00B4FF;
+  background: #7dd3fc;
   border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+}
+
+.fin-months-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 
 .fin-month-btn {
   height: 30px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
   font-size: 11.5px;
   font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .fin-month-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
+
 .fin-month-btn.is-selected {
-  background: rgba(0, 180, 255, 0.85);
+  background: rgba(0, 180, 255, 0.82);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 0 10px rgba(0, 180, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 180, 255, 0.28);
 }
 
 .fin-summary-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
 .fin-summary-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 12px;
   font-weight: 600;
 }
+
 .fin-summary-row span {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.52);
+  flex-shrink: 0;
 }
+
 .fin-summary-row strong {
   color: #fff;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
+
 .fin-summary-row.highlight {
-  font-size: 13.5px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
+  font-size: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  padding-top: 7px;
   margin-top: 2px;
 }
+
 .fin-summary-row.highlight strong {
-  color: #00B4FF;
+  color: #7dd3fc;
+}
+
+@media (max-width: 900px) {
+  .kpk-finance-widget {
+    top: max(56px, env(safe-area-inset-top, 0px) + 48px);
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    max-height: min(58vh, calc(100dvh - 170px));
+    z-index: 10015;
+  }
+  .kpk-fin__row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 576px) {
   .kpk-finance-widget {
-    bottom: 12px;
-    right: 12px;
-    left: 12px;
-    width: calc(100vw - 24px);
-    max-height: 90vh;
+    top: max(52px, env(safe-area-inset-top, 0px) + 44px);
+    max-height: min(52vh, calc(100dvh - 190px));
   }
 }
+
 
 
