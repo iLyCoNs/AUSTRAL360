@@ -440,7 +440,7 @@
     el.innerHTML = `
       <div class="kpk-tw-header">
         <div class="kpk-tw-titles">
-          <span class="kpk-tw-eyebrow">Jarvis Turismo</span>
+          <span class="kpk-tw-eyebrow" id="kpk-tw-eyebrow">Jarvis Turismo</span>
           <span class="kpk-tw-title" id="kpk-tw-title">—</span>
         </div>
         <button type="button" class="kpk-tw-close" id="kpk-tw-close" title="Cerrar">&times;</button>
@@ -455,6 +455,77 @@
     document.body.appendChild(el);
     el.querySelector('#kpk-tw-close').addEventListener('click', closeWidget);
     return el;
+  }
+
+  /** Muestra foto y/o video; si YouTube oEmbed OK, despliega el panel video automáticamente. */
+  function _renderTourismMedia(mediaBox, media, poi) {
+    mediaBox.innerHTML = '';
+    const hasYt = !!(media.youtube && media.youtube.id);
+    const hasImg = !!media.imageUrl;
+
+    if (!hasYt && !hasImg) {
+      mediaBox.innerHTML =
+        '<div class="kpk-tw-map-hint">Ruta desde el proyecto · usa el mapa o los botones de abajo</div>';
+      return;
+    }
+
+    if (hasYt && hasImg) {
+      const tabs = document.createElement('div');
+      tabs.className = 'kpk-tw-media-tabs';
+      tabs.innerHTML =
+        '<button type="button" class="kpk-tw-tab is-active" data-panel="video">▶ Video</button>' +
+        '<button type="button" class="kpk-tw-tab" data-panel="photo">Foto</button>';
+      mediaBox.appendChild(tabs);
+      tabs.querySelectorAll('.kpk-tw-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const panel = tab.getAttribute('data-panel');
+          tabs.querySelectorAll('.kpk-tw-tab').forEach((t) => t.classList.toggle('is-active', t === tab));
+          mediaBox.querySelectorAll('.kpk-tw-panel').forEach((p) => {
+            p.classList.toggle('is-active', p.getAttribute('data-panel') === panel);
+          });
+        });
+      });
+    }
+
+    const stage = document.createElement('div');
+    stage.className = 'kpk-tw-media-stage';
+    mediaBox.appendChild(stage);
+
+    if (hasYt) {
+      const wrap = document.createElement('div');
+      wrap.className = 'kpk-tw-panel kpk-tw-video is-active';
+      wrap.setAttribute('data-panel', 'video');
+      const title = (media.youtube.title || poi.title || 'Video').replace(/"/g, '');
+      // Embed directo: oEmbed ya validó el ID. autoplay muted ayuda a “desplegar” sin gesto en varios browsers.
+      wrap.innerHTML =
+        '<iframe src="https://www.youtube-nocookie.com/embed/' +
+        encodeURIComponent(media.youtube.id) +
+        '?rel=0&modestbranding=1&playsinline=1&autoplay=1&mute=1" title="' +
+        title +
+        '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+      stage.appendChild(wrap);
+    }
+
+    if (hasImg) {
+      const photoPanel = document.createElement('div');
+      photoPanel.className = 'kpk-tw-panel' + (hasYt ? '' : ' is-active');
+      photoPanel.setAttribute('data-panel', 'photo');
+      const img = document.createElement('img');
+      img.className = 'kpk-tw-photo';
+      img.alt = poi.title;
+      img.referrerPolicy = 'no-referrer';
+      img.src = media.imageUrl;
+      photoPanel.appendChild(img);
+      stage.appendChild(photoPanel);
+    }
+  }
+
+  function _showTourismVideoPanel(el) {
+    if (!el) return;
+    const videoTab = el.querySelector('.kpk-tw-tab[data-panel="video"]');
+    if (videoTab) videoTab.click();
+    const video = el.querySelector('.kpk-tw-video');
+    if (video) video.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function closeWidget() {
@@ -506,6 +577,15 @@
     const el = _ensureWidget();
     el.querySelector('#kpk-tw-title').textContent = poi.title;
 
+    const eyebrow = el.querySelector('#kpk-tw-eyebrow');
+    if (eyebrow) {
+      eyebrow.innerHTML =
+        'Jarvis Turismo' +
+        (media.youtube && media.youtube.id
+          ? ' <span class="kpk-tw-badge">VIDEO</span>'
+          : '');
+    }
+
     const descParts = [];
     if (poi.blurb) descParts.push(poi.blurb);
     if (media.wikiExtract && media.wikiExtract !== poi.blurb) descParts.push(media.wikiExtract);
@@ -514,6 +594,13 @@
     }
     el.querySelector('#kpk-tw-blurb').textContent = descParts.join('\n\n') || '';
 
+    const metaEl = el.querySelector('#kpk-tw-meta');
+    const prefix =
+      (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
+      _formatDist(distM) +
+      ' · ' +
+      _formatEta(distM) +
+      ' desde el proyecto';
     const srcBits = [];
     if (media.imageUrl) {
       if (media.imageSource === 'wikipedia' || media.wikiPageUrl) srcBits.push('foto Wikipedia');
@@ -521,40 +608,20 @@
       else if (media.imageSource === 'catalog') srcBits.push('foto verificada');
       else srcBits.push('foto');
     }
-    if (media.youtube) srcBits.push('video curado');
-    el.querySelector('#kpk-tw-meta').textContent =
-      (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
-      _formatDist(distM) +
-      ' · ' +
-      _formatEta(distM) +
-      ' desde el proyecto' +
-      (srcBits.length ? ' · ' + srcBits.join(' · ') : '');
-
-    const mediaBox = el.querySelector('#kpk-tw-media');
-    mediaBox.innerHTML = '';
-    if (media.imageUrl) {
-      const img = document.createElement('img');
-      img.className = 'kpk-tw-photo';
-      img.alt = poi.title;
-      img.referrerPolicy = 'no-referrer';
-      img.src = media.imageUrl;
-      mediaBox.appendChild(img);
-    }
+    metaEl.textContent = '';
+    metaEl.appendChild(document.createTextNode(prefix + (srcBits.length ? ' · ' + srcBits.join(' · ') : '')));
     if (media.youtube && media.youtube.id) {
-      const wrap = document.createElement('div');
-      wrap.className = 'kpk-tw-video';
-      wrap.innerHTML =
-        '<iframe src="https://www.youtube.com/embed/' +
-        encodeURIComponent(media.youtube.id) +
-        '?rel=0&modestbranding=1" title="' +
-        (media.youtube.title || poi.title).replace(/"/g, '') +
-        '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
-      mediaBox.appendChild(wrap);
+      metaEl.appendChild(document.createTextNode(' · '));
+      const vBtn = document.createElement('button');
+      vBtn.type = 'button';
+      vBtn.className = 'kpk-tw-meta-link';
+      vBtn.textContent = 'video curado ▶';
+      vBtn.title = media.youtube.title || 'Ver video';
+      vBtn.addEventListener('click', () => _showTourismVideoPanel(el));
+      metaEl.appendChild(vBtn);
     }
-    if (!media.imageUrl && !media.youtube) {
-      mediaBox.innerHTML =
-        '<div class="kpk-tw-map-hint">Ruta desde el proyecto · usa el mapa o los botones de abajo</div>';
-    }
+
+    _renderTourismMedia(el.querySelector('#kpk-tw-media'), media, poi);
 
     const footer = el.querySelector('#kpk-tw-footer');
     let maps = null;
