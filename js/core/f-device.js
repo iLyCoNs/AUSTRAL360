@@ -27,6 +27,7 @@
   let _detected   = false;
   let _externalTexSize = 0;
   let _isTablet = false;
+  let _isPhone = false;
   let _maxDpr = 2;
 
   function _ua() {
@@ -38,6 +39,21 @@
     return ua.indexOf('samsung') >= 0 ||
            ua.indexOf('galaxy') >= 0 ||
            /sm-[a-z0-9]+/i.test(navigator.userAgent || '');
+  }
+
+  /** Teléfonos Android/iOS (Poco F5, etc.) — NUNCA 8192 */
+  function _detectPhone() {
+    var ua = _ua();
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+    } catch (e) {}
+    if (/iphone|ipod|windows phone/.test(ua)) return true;
+    if (/android/.test(ua) && !_detectTablet()) return true;
+    // Pantalla “phone-like” en portrait/landscape
+    var w = Math.max(screen.width || 0, screen.height || 0);
+    var h = Math.min(screen.width || 0, screen.height || 0);
+    if (/android|mobile/.test(ua) && w > 0 && h > 0 && (w / h) >= 1.6 && w < 1400) return true;
+    return false;
   }
 
   /** Tab S7 FE (SM-T73x), Tab S7/S8/S9 y Android tablet genérico */
@@ -77,24 +93,32 @@
         maxWidth: _limit,
         maxTextureSize: _maxTexSize,
         isTablet: _isTablet,
+        isPhone: _isPhone,
         maxDpr: _maxDpr
       };
     }
     _detected = true;
     _isTablet = _detectTablet();
+    _isPhone = !_isTablet && _detectPhone();
 
     var override = _urlOverride();
     if (override) {
       _tier = override.tier;
       _limit = override.maxWidth;
+      // En móvil, aunque pidan 8192 por URL, techo 4096 (evita cuelgue)
+      if ((_isPhone || _isTablet) && _limit > LIMITS.mid) {
+        _limit = LIMITS.mid;
+        _tier = 'mid';
+      }
       _maxTexSize = _detectMaxTextureSize();
       if (_maxTexSize > 0 && _limit > _maxTexSize) {
         _limit = _maxTexSize;
         _tier = _limit <= 2048 ? 'low' : (_limit <= 4096 ? 'mid' : 'high');
       }
-      _maxDpr = _tier === 'high' ? 2 : (_tier === 'mid' ? 1.5 : 1.25);
-      console.log('[Ferrari/Device] Override URL → Tier:', _tier, '| maxWidth:', _limit);
-      return { tier: _tier, maxWidth: _limit, maxTextureSize: _maxTexSize, isTablet: _isTablet, maxDpr: _maxDpr };
+      _maxDpr = _tier === 'high' ? 2 : (_tier === 'mid' ? 1.35 : 1.15);
+      console.log('[Ferrari/Device] Override URL → Tier:', _tier, '| maxWidth:', _limit,
+        '| phone:', _isPhone, '| tablet:', _isTablet);
+      return { tier: _tier, maxWidth: _limit, maxTextureSize: _maxTexSize, isTablet: _isTablet, isPhone: _isPhone, maxDpr: _maxDpr };
     }
 
     var score = 0;
@@ -133,6 +157,11 @@
       score -= 2;
       if (score >= 6) score = 5; // techo mid
     }
+    // Teléfonos potentes (Poco F5, etc.): GPU reporta 8192 pero el downscale cuelga.
+    if (_isPhone) {
+      score -= 2;
+      if (score >= 6) score = 5;
+    }
 
     if (_maxTexSize > 0) {
       if (_maxTexSize >= 8192)      score += 2;
@@ -144,11 +173,13 @@
     else if (score >= 3) { _tier = 'mid'; _limit = LIMITS.mid; }
     else { _tier = 'low'; _limit = LIMITS.low; }
 
-    // Tablet: techo mid aunque el score diga high
-    if (_isTablet && _tier === 'high') {
+    // Tablet o teléfono: techo mid (4096). El Poco F5 (8 GB / 8 cores) caía en
+    // high→8192 y se colgaba en "Ajustando resolución 360° (8192px)…".
+    if ((_isTablet || _isPhone) && _tier === 'high') {
       _tier = 'mid';
       _limit = LIMITS.mid;
     }
+    if (_isPhone && score >= 6) score = 5;
 
     // Si la GPU no aguanta el límite elegido, bajar
     if (_maxTexSize > 0 && _limit > _maxTexSize) {
@@ -157,20 +188,21 @@
       else if (_limit <= 4096) _tier = 'mid';
     }
 
-    // DPR: tablets mid/low → menos píxeles de framebuffer = más FPS
+    // DPR: móviles/tablets mid/low → menos píxeles de framebuffer = más FPS
     if (_tier === 'high') _maxDpr = 2;
-    else if (_tier === 'mid') _maxDpr = _isTablet ? 1.35 : 1.5;
+    else if (_tier === 'mid') _maxDpr = (_isTablet || _isPhone) ? 1.35 : 1.5;
     else _maxDpr = 1.15;
 
     console.log('[Ferrari/Device] Tier:', _tier, '| maxWidth:', _limit,
       '| MAX_TEXTURE_SIZE:', _maxTexSize, '| score:', score,
-      '| tablet:', _isTablet, '| maxDpr:', _maxDpr);
+      '| phone:', _isPhone, '| tablet:', _isTablet, '| maxDpr:', _maxDpr);
 
     return {
       tier: _tier,
       maxWidth: _limit,
       maxTextureSize: _maxTexSize,
       isTablet: _isTablet,
+      isPhone: _isPhone,
       maxDpr: _maxDpr
     };
   }
@@ -214,6 +246,11 @@
     return _isTablet;
   }
 
+  function isPhone() {
+    detect();
+    return _isPhone;
+  }
+
   function getMaxDpr() {
     detect();
     return _maxDpr;
@@ -222,16 +259,23 @@
   function getOriginalWidth() { return ORIGINAL_WIDTH; }
   function getOriginalHeight() { return ORIGINAL_HEIGHT; }
 
-  /** Baja un escalón de calidad (para reintento tras error WebGL) */
+  /** Baja un escalón de calidad (para reintento tras error WebGL / timeout) */
   function stepDown() {
     detect();
     if (_tier === 'high') { _tier = 'mid'; _limit = LIMITS.mid; }
     else if (_tier === 'mid') { _tier = 'low'; _limit = LIMITS.low; }
     else if (_limit > 1024) { _limit = 1024; }
     if (_maxTexSize > 0) _limit = Math.min(_limit, _maxTexSize);
-    _maxDpr = _tier === 'low' ? 1.1 : 1.25;
+    _maxDpr = (_isPhone || _isTablet || _tier === 'low') ? 1.1 : 1.25;
     console.warn('[Ferrari/Device] stepDown →', _tier, _limit);
-    return { tier: _tier, maxWidth: _limit, maxTextureSize: _maxTexSize, isTablet: _isTablet, maxDpr: _maxDpr };
+    return {
+      tier: _tier,
+      maxWidth: _limit,
+      maxTextureSize: _maxTexSize,
+      isTablet: _isTablet,
+      isPhone: _isPhone,
+      maxDpr: _maxDpr
+    };
   }
 
   window.FerrariDevice = {
@@ -240,6 +284,7 @@
     getMaxWidth: getMaxWidth,
     getTier: getTier,
     isTablet: isTablet,
+    isPhone: isPhone,
     getMaxDpr: getMaxDpr,
     stepDown: stepDown,
     setMaxTextureSize: setMaxTextureSize,

@@ -130,10 +130,11 @@
     document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
     document.body.classList.add('ferrari-device-' + tier);
     if (info.isTablet) document.body.classList.add('ferrari-device-tablet');
+    if (info.isPhone) document.body.classList.add('ferrari-device-phone');
 
     console.log('[Ferrari/Init] Device tier:', tier,
       '| maxWidth:', maxWidth, '| downscale:', needsDl,
-      '| tablet:', !!info.isTablet);
+      '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet);
 
     if (!needsDl) {
       return Promise.resolve('loteo360.jpg');
@@ -141,9 +142,35 @@
 
     _showLoadingMessage('Ajustando resolución 360° (' + maxWidth + 'px)…');
 
-    return _loadAndScaleImage('loteo360.jpg', maxWidth).then(function(canvas) {
+    // Timeout: en móviles Brave/Chrome el resize a 8K/4K puede colgarse sin reject
+    var loadTimeoutMs = (info.isPhone || info.isTablet) ? 12000 : 25000;
+    return _withTimeout(_loadAndScaleImage('loteo360.jpg', maxWidth), loadTimeoutMs,
+      'Timeout ajustando resolución (' + maxWidth + 'px)'
+    ).then(function(canvas) {
       _hideLoadingMessage();
       return canvas;
+    });
+  }
+
+  function _withTimeout(promise, ms, label) {
+    return new Promise(function(resolve, reject) {
+      var done = false;
+      var t = setTimeout(function() {
+        if (done) return;
+        done = true;
+        reject(new Error(label || ('Timeout ' + ms + 'ms')));
+      }, ms);
+      promise.then(function(v) {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        resolve(v);
+      }, function(err) {
+        if (done) return;
+        done = true;
+        clearTimeout(t);
+        reject(err);
+      });
     });
   }
 
@@ -174,10 +201,12 @@
       return r.blob();
     }).then(function(blob) {
       // createImageBitmap con resize puede fallar si el navegador no lo soporta.
-      // Encadenar para que la rejection del resize vaya al .catch de abajo.
+      // En móvil, 'medium' reduce el riesgo de cuelgue al bajar de ~12K a 4K.
+      var quality = (document.body.classList.contains('ferrari-device-phone') ||
+        document.body.classList.contains('ferrari-device-tablet')) ? 'medium' : 'high';
       return createImageBitmap(blob, {
         resizeWidth: maxWidth,
-        resizeQuality: 'high'
+        resizeQuality: quality
       }).then(function(bitmap) {
         var canvas = document.createElement('canvas');
         canvas.width  = bitmap.width;
