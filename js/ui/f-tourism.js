@@ -6,7 +6,7 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=7';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=8';
   const EARTH_R_M = 6371000;
   /** false = solo video si hay youtubeCandidates curado + oEmbed OK (sin búsqueda proxy) */
   const ENABLE_YT_LIVE_SEARCH = false;

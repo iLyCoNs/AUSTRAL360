@@ -1,21 +1,76 @@
 {
-  "version": 7,
+  "version": 8,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
-    { "id": "muy_cerca", "label": "Muy cerca", "emoji": "🟢", "maxKm": 40 },
-    { "id": "paseo", "label": "A un paseo", "emoji": "🟡", "maxKm": 100 },
-    { "id": "dia", "label": "Día completo", "emoji": "🟠", "maxKm": 180 },
-    { "id": "lejos", "label": "Más lejos", "emoji": "🔵", "maxKm": 320 }
+    {
+      "id": "muy_cerca",
+      "label": "Muy cerca",
+      "emoji": "🟢",
+      "maxKm": 40
+    },
+    {
+      "id": "paseo",
+      "label": "A un paseo",
+      "emoji": "🟡",
+      "maxKm": 100
+    },
+    {
+      "id": "dia",
+      "label": "Día completo",
+      "emoji": "🟠",
+      "maxKm": 180
+    },
+    {
+      "id": "lejos",
+      "label": "Más lejos",
+      "emoji": "🔵",
+      "maxKm": 320
+    }
   ],
   "categories": [
-    { "id": "termas", "label": "Termas", "emoji": "♨️", "chip": "♨️ Termas" },
-    { "id": "trekking", "label": "Trekking", "emoji": "🥾", "chip": "🥾 Trekking" },
-    { "id": "rafting", "label": "Rafting", "emoji": "🛶", "chip": "🛶 Rafting" },
-    { "id": "lagos", "label": "Lagos / Fiordos", "emoji": "🏞️", "chip": "🏞️ Lagos" },
-    { "id": "pueblos", "label": "Pueblos", "emoji": "🏘️", "chip": "🏘️ Pueblos" },
-    { "id": "nieve", "label": "Nieve / Volcán", "emoji": "❄️", "chip": "❄️ Volcán" },
-    { "id": "cultura", "label": "Cultura", "emoji": "🎭", "chip": "🎭 Cultura" }
+    {
+      "id": "termas",
+      "label": "Termas",
+      "emoji": "♨️",
+      "chip": "♨️ Termas"
+    },
+    {
+      "id": "trekking",
+      "label": "Trekking",
+      "emoji": "🥾",
+      "chip": "🥾 Trekking"
+    },
+    {
+      "id": "rafting",
+      "label": "Rafting",
+      "emoji": "🛶",
+      "chip": "🛶 Rafting"
+    },
+    {
+      "id": "lagos",
+      "label": "Lagos / Fiordos",
+      "emoji": "🏞️",
+      "chip": "🏞️ Lagos"
+    },
+    {
+      "id": "pueblos",
+      "label": "Pueblos",
+      "emoji": "🏘️",
+      "chip": "🏘️ Pueblos"
+    },
+    {
+      "id": "nieve",
+      "label": "Nieve / Volcán",
+      "emoji": "❄️",
+      "chip": "❄️ Volcán"
+    },
+    {
+      "id": "cultura",
+      "label": "Cultura",
+      "emoji": "🎭",
+      "chip": "🎭 Cultura"
+    }
   ],
   "pois": [
     {
@@ -25,9 +80,16 @@
       "blurb": "Pueblo costero a minutos del proyecto: puerta al fiordo y a la ruta Contao–El Varal.",
       "lat": -41.8025,
       "lng": -72.7187,
-      "wiki": { "lang": "es", "title": "Contao" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "cerca", "pueblo"]
+      "wiki": {
+        "lang": "es",
+        "title": "Contao"
+      },
+      "youtubeCandidates": ["FRrnScu4fRc", "7y6FUdXANOI"],
+      "tags": [
+        "finde",
+        "cerca",
+        "pueblo"
+      ]
     },
     {
       "id": "hualaihue",
@@ -36,9 +98,20 @@
       "blurb": "Comuna de fiordos y alerce: base para Hornopirén, termas y la Carretera Austral.",
       "lat": -42.01666667,
       "lng": -72.68333333,
-      "wiki": { "lang": "es", "title": "Hualaihué" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "cerca", "pueblo"]
+      "wiki": {
+        "lang": "es",
+        "title": "Hualaihué"
+      },
+      "youtubeCandidates": [
+        "nglZh7chKEA",
+        "Ezi7wxK3jzI",
+        "SpWRfPB4G5Q"
+      ],
+      "tags": [
+        "finde",
+        "cerca",
+        "pueblo"
+      ]
     },
     {
       "id": "caleta-puelche",
@@ -47,21 +120,46 @@
       "blurb": "Desembarque del ferry del Estuario de Reloncaví: cruce clave hacia la Carretera Austral.",
       "lat": -41.74,
       "lng": -72.66,
-      "wiki": { "lang": "es", "title": "Caleta_Puelche" },
-      "youtubeCandidates": [],
-      "tags": ["cerca", "ruta"]
+      "wiki": {
+        "lang": "es",
+        "title": "Caleta_Puelche"
+      },
+      "youtubeCandidates": [
+        "puE51uKzeOo",
+        "aGBqNPriheE",
+        "8asxEsN1Fg8"
+      ],
+      "tags": [
+        "cerca",
+        "ruta"
+      ]
     },
     {
       "id": "hornopiren",
       "category": "pueblos",
       "title": "Hornopirén",
       "blurb": "Puerta norte de la Carretera Austral: fiordos, volcanes, cascadas y termas cercanas.",
-      "highlights": ["Inicio Carretera Austral", "Termas Pichicolo cerca", "Parque nacional Hornopirén"],
+      "highlights": [
+        "Inicio Carretera Austral",
+        "Termas Pichicolo cerca",
+        "Parque nacional Hornopirén"
+      ],
       "lat": -41.9662,
       "lng": -72.4706,
-      "wiki": { "lang": "es", "title": "Hornopirén" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "cerca", "pueblo"]
+      "wiki": {
+        "lang": "es",
+        "title": "Hornopirén"
+      },
+      "youtubeCandidates": [
+        "TJE1dot4oQ4",
+        "CEO14tOlhEY",
+        "miS8ffKQKYM"
+      ],
+      "tags": [
+        "finde",
+        "cerca",
+        "pueblo"
+      ]
     },
     {
       "id": "volcan-hornopiren",
@@ -70,9 +168,20 @@
       "blurb": "El “horno de nieve” que da nombre al pueblo: miradores y paisaje de Patagonia Verde.",
       "lat": -41.87444444,
       "lng": -72.43138889,
-      "wiki": { "lang": "es", "title": "Volcán_Hornopirén" },
-      "youtubeCandidates": [],
-      "tags": ["cerca", "volcan", "mirador"]
+      "wiki": {
+        "lang": "es",
+        "title": "Volcán_Hornopirén"
+      },
+      "youtubeCandidates": [
+        "hYQcbNnGQuo",
+        "FkF-7szX-Z8",
+        "mqU-skEK9Lk"
+      ],
+      "tags": [
+        "cerca",
+        "volcan",
+        "mirador"
+      ]
     },
     {
       "id": "parque-hornopiren",
@@ -81,27 +190,54 @@
       "blurb": "Bosque siempreverde, lagunas y ventisqueros colgantes a un corto viaje desde el proyecto.",
       "lat": -41.91666667,
       "lng": -72.26666667,
-      "wiki": { "lang": "es", "title": "Parque_nacional_Hornopirén" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "trekking", "cerca"]
+      "wiki": {
+        "lang": "es",
+        "title": "Parque_nacional_Hornopirén"
+      },
+      "youtubeCandidates": [
+        "BRXN32ZOYgc",
+        "6tiKdur0x7M",
+        "EGpyBFna4uE"
+      ],
+      "tags": [
+        "finde",
+        "trekking",
+        "cerca"
+      ]
     },
     {
       "id": "termas-pichicolo",
       "category": "termas",
       "title": "Termas de Pichicolo",
       "blurb": "Pozones naturales (32–42 °C) a ~9 km de Hornopirén, en la Carretera Austral. Las termas más cercanas al proyecto.",
-      "highlights": ["5 pozones al aire libre", "Acceso por Carretera Austral", "Ideal para un día de lluvia"],
+      "highlights": [
+        "5 pozones al aire libre",
+        "Acceso por Carretera Austral",
+        "Ideal para un día de lluvia"
+      ],
       "lat": -41.92,
       "lng": -72.45,
-      "wiki": { "lang": "es", "title": "Termas_de_Pichicolo" },
+      "wiki": {
+        "lang": "es",
+        "title": "Termas_de_Pichicolo"
+      },
       "commonsSearch": "Termas de Pichicolo",
       "youtubeSearch": "Termas de Pichicolo Hornopirén Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Termas_de_Pichicolo_-_panoramio.jpg/1280px-Termas_de_Pichicolo_-_panoramio.jpg",
         "https://upload.wikimedia.org/wikipedia/commons/8/81/Termas_de_Pichicolo_-_panoramio.jpg"
       ],
-      "youtubeCandidates": [],
-      "tags": ["finde", "termas", "cerca", "relax"]
+      "youtubeCandidates": [
+        "taQBZuszvag",
+        "pajLtBbSw-k",
+        "Ksl_fQmd-uY"
+      ],
+      "tags": [
+        "finde",
+        "termas",
+        "cerca",
+        "relax"
+      ]
     },
     {
       "id": "alerce-andino",
@@ -110,9 +246,19 @@
       "blurb": "Bosques milenarios de alerce, lagunas y el Lago Chapo: trekking clásico de la zona.",
       "lat": -41.57795,
       "lng": -72.54414,
-      "wiki": { "lang": "es", "title": "Parque_nacional_Alerce_Andino" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "trekking"]
+      "wiki": {
+        "lang": "es",
+        "title": "Parque_nacional_Alerce_Andino"
+      },
+      "youtubeCandidates": [
+        "gY77kTV3Dxc",
+        "EIF4qMNMvtM",
+        "XMvtPl8ZDIU"
+      ],
+      "tags": [
+        "finde",
+        "trekking"
+      ]
     },
     {
       "id": "lago-chapo",
@@ -121,9 +267,19 @@
       "blurb": "Espejo de agua en el Alerce Andino: ideal para un día de naturaleza sin ir demasiado lejos.",
       "lat": -41.45,
       "lng": -72.5,
-      "wiki": { "lang": "es", "title": "Lago_Chapo" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "lago"]
+      "wiki": {
+        "lang": "es",
+        "title": "Lago_Chapo"
+      },
+      "youtubeCandidates": [
+        "L4Uk-Tuzl_o",
+        "qoSOdWN78hk",
+        "15ZmU9xqi9I"
+      ],
+      "tags": [
+        "finde",
+        "lago"
+      ]
     },
     {
       "id": "termas-del-sol",
@@ -132,14 +288,25 @@
       "blurb": "Complejo termal volcánico en el fiordo de Reloncaví / Puelo: piscinas 36–45 °C entre bosque nativo, a los pies del volcán Yates.",
       "lat": -41.65,
       "lng": -72.28,
-      "wiki": { "lang": "es", "title": "Volcán_Yates" },
+      "wiki": {
+        "lang": "es",
+        "title": "Volcán_Yates"
+      },
       "commonsSearch": "Volcán Yates Reloncaví",
       "youtubeSearch": "Termas del Sol Puelo Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/2/25/Yate_volcano_seen_from_huar_island_chile_x_region.jpg"
       ],
-      "youtubeCandidates": [],
-      "tags": ["finde", "termas", "relax"]
+      "youtubeCandidates": [
+        "6ni94xy1AGs",
+        "-u4NChGTvFk",
+        "-j9rqON105k"
+      ],
+      "tags": [
+        "finde",
+        "termas",
+        "relax"
+      ]
     },
     {
       "id": "cochamo",
@@ -148,9 +315,20 @@
       "blurb": "Capital del granite climbing y puerta al valle: pueblo lacustre-estuarino de Reloncaví.",
       "lat": -41.5,
       "lng": -72.31666667,
-      "wiki": { "lang": "es", "title": "Cochamó" },
-      "youtubeCandidates": [],
-      "tags": ["finde", "pueblo", "aventura"]
+      "wiki": {
+        "lang": "es",
+        "title": "Cochamó"
+      },
+      "youtubeCandidates": [
+        "MCXvWFkEr3I",
+        "SCLkFz-hTBw",
+        "9e4RY7tGD38"
+      ],
+      "tags": [
+        "finde",
+        "pueblo",
+        "aventura"
+      ]
     },
     {
       "id": "estuario-reloncavi",
@@ -159,10 +337,21 @@
       "blurb": "Brazo de mar entre montañas: ferries, playas y acceso a termas por lancha.",
       "lat": -41.7,
       "lng": -72.55,
-      "wiki": { "lang": "es", "title": "Fiordo_de_Reloncaví" },
+      "wiki": {
+        "lang": "es",
+        "title": "Fiordo_de_Reloncaví"
+      },
       "commonsSearch": "Fiordo de Reloncaví",
-      "youtubeCandidates": [],
-      "tags": ["finde", "fiordo", "cerca"]
+      "youtubeCandidates": [
+        "mQNvr3uq4lc",
+        "Hh03aRL8szY",
+        "2b_4-Y6Bddc"
+      ],
+      "tags": [
+        "finde",
+        "fiordo",
+        "cerca"
+      ]
     },
     {
       "id": "puerto-montt",
@@ -171,9 +360,19 @@
       "blurb": "Capital regional: puerto, gastronomía y base para conectar con la zona lacustre.",
       "lat": -41.4718,
       "lng": -72.9396,
-      "wiki": { "lang": "es", "title": "Puerto_Montt" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["pueblo", "ciudad"]
+      "wiki": {
+        "lang": "es",
+        "title": "Puerto_Montt"
+      },
+      "youtubeCandidates": [
+        "VZAY7xf9X1o",
+        "VmygT08KQz0",
+        "5AdGsrPQ_LA"
+      ],
+      "tags": [
+        "pueblo",
+        "ciudad"
+      ]
     },
     {
       "id": "volcan-calbuco",
@@ -182,10 +381,20 @@
       "blurb": "Volcán emblemático del sur: paisaje andino y rutas de observación.",
       "lat": -41.33277778,
       "lng": -72.61111111,
-      "wiki": { "lang": "es", "title": "Calbuco_(volcán)" },
+      "wiki": {
+        "lang": "es",
+        "title": "Calbuco_(volcán)"
+      },
       "commonsSearch": "Volcán Calbuco",
-      "youtubeCandidates": [],
-      "tags": ["volcan", "naturaleza"]
+      "youtubeCandidates": [
+        "jD8dtT2J6p4",
+        "G2ejRBcjh8s",
+        "-lvYKP-777E"
+      ],
+      "tags": [
+        "volcan",
+        "naturaleza"
+      ]
     },
     {
       "id": "puerto-varas",
@@ -194,9 +403,20 @@
       "blurb": "Pueblo lacustre frente al Osorno: costanera, gastronomía y base de excursiones.",
       "lat": -41.3178,
       "lng": -72.9827,
-      "wiki": { "lang": "es", "title": "Puerto_Varas" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "pueblo", "comida"]
+      "wiki": {
+        "lang": "es",
+        "title": "Puerto_Varas"
+      },
+      "youtubeCandidates": [
+        "uS-oAlFrVF4",
+        "x8o_iva6PT0",
+        "XEE2o1pboxI"
+      ],
+      "tags": [
+        "finde",
+        "pueblo",
+        "comida"
+      ]
     },
     {
       "id": "ensenada",
@@ -205,22 +425,47 @@
       "blurb": "Puerta a Petrohué y al rafting, al pie del Volcán Osorno.",
       "lat": -41.2081,
       "lng": -72.5383,
-      "wiki": { "lang": "es", "title": "Ensenada_(Chile)" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "aventura"]
+      "wiki": {
+        "lang": "es",
+        "title": "Ensenada_(Chile)"
+      },
+      "youtubeCandidates": [
+        "90o_oUIixj8",
+        "84tQ58VYv4I",
+        "V27NJZ6ciFI"
+      ],
+      "tags": [
+        "finde",
+        "aventura"
+      ]
     },
     {
       "id": "petrohue-saltos",
       "category": "trekking",
       "title": "Saltos del Petrohué",
       "blurb": "Cascadas sobre lava basáltica con el Osorno de fondo. Clásico del Vicente Pérez Rosales.",
-      "highlights": ["Parque Vicente Pérez Rosales", "Vista al Volcán Osorno", "Circuito clásico desde Ensenada"],
+      "highlights": [
+        "Parque Vicente Pérez Rosales",
+        "Vista al Volcán Osorno",
+        "Circuito clásico desde Ensenada"
+      ],
       "lat": -41.17235,
       "lng": -72.44683,
-      "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
-      "youtubeCandidates": ["xpt794jxa1A"],
+      "wiki": {
+        "lang": "es",
+        "title": "Saltos_del_Petrohué"
+      },
+      "youtubeCandidates": [
+        "BYMsLmyJ3Vs",
+        "neLvPRFvmpk",
+        "6dZjDRccVmE"
+      ],
       "youtubeSearch": "Saltos del Petrohué Volcán Osorno",
-      "tags": ["finde", "naturaleza", "fotos"]
+      "tags": [
+        "finde",
+        "naturaleza",
+        "fotos"
+      ]
     },
     {
       "id": "parque-vpr",
@@ -229,10 +474,20 @@
       "blurb": "El parque nacional más antiguo de Chile: senderos, volcanes y el circuito Petrohué.",
       "lat": -41.17222222,
       "lng": -72.44888889,
-      "wiki": { "lang": "es", "title": "Parque_nacional_Vicente_Pérez_Rosales" },
-      "youtubeCandidates": ["xpt794jxa1A"],
+      "wiki": {
+        "lang": "es",
+        "title": "Parque_nacional_Vicente_Pérez_Rosales"
+      },
+      "youtubeCandidates": [
+        "UWIVrNMnIGY",
+        "m59ZQgpfguc",
+        "_-saIxBWotw"
+      ],
       "youtubeSearch": "Parque Vicente Pérez Rosales Chile",
-      "tags": ["finde", "trekking"]
+      "tags": [
+        "finde",
+        "trekking"
+      ]
     },
     {
       "id": "rafting-petrohue",
@@ -241,14 +496,25 @@
       "blurb": "Rápidos clase III con vista a Osorno, Calbuco y Puntiagudo. Salidas típicas desde Ensenada.",
       "lat": -41.17235,
       "lng": -72.44683,
-      "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
+      "wiki": {
+        "lang": "es",
+        "title": "Saltos_del_Petrohué"
+      },
       "commonsSearch": "Rafting Petrohué",
       "youtubeSearch": "Rafting Río Petrohué Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Saltos_del_Petrohue._%282010%29.JPG/1280px-Saltos_del_Petrohue._%282010%29.JPG"
       ],
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "aventura", "agua"]
+      "youtubeCandidates": [
+        "PJkTk-td-n8",
+        "6NNEPEA47wk",
+        "odOQ7c9unEk"
+      ],
+      "tags": [
+        "finde",
+        "aventura",
+        "agua"
+      ]
     },
     {
       "id": "lago-llanquihue",
@@ -257,9 +523,19 @@
       "blurb": "Uno de los lagos más grandes de Chile: costaneras, atardeceres y vista al Osorno.",
       "lat": -41.13333333,
       "lng": -72.78333333,
-      "wiki": { "lang": "es", "title": "Lago_Llanquihue" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "lago"]
+      "wiki": {
+        "lang": "es",
+        "title": "Lago_Llanquihue"
+      },
+      "youtubeCandidates": [
+        "NDX9fEWVCcI",
+        "roFhY0w0Gxs",
+        "0BzX6F016ns"
+      ],
+      "tags": [
+        "finde",
+        "lago"
+      ]
     },
     {
       "id": "volcan-osorno",
@@ -268,9 +544,20 @@
       "blurb": "El ícono del sur: nieve, miradores y centro de ski sobre el Llanquihue.",
       "lat": -41.1,
       "lng": -72.49305556,
-      "wiki": { "lang": "es", "title": "Volcán_Osorno" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "nieve", "mirador"]
+      "wiki": {
+        "lang": "es",
+        "title": "Volcán_Osorno"
+      },
+      "youtubeCandidates": [
+        "KQhl1Y6Wto0",
+        "b3ry68lIO3k",
+        "ZRGx2-A0nLI"
+      ],
+      "tags": [
+        "finde",
+        "nieve",
+        "mirador"
+      ]
     },
     {
       "id": "frutillar",
@@ -279,9 +566,19 @@
       "blurb": "Teatro del Lago, tradición alemana y orilla del Llanquihue.",
       "lat": -41.1258,
       "lng": -73.0605,
-      "wiki": { "lang": "es", "title": "Frutillar" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "pueblo"]
+      "wiki": {
+        "lang": "es",
+        "title": "Frutillar"
+      },
+      "youtubeCandidates": [
+        "hO9rNgGhhvg",
+        "6yBJLdxAf6k",
+        "5EPkXEOO1VY"
+      ],
+      "tags": [
+        "finde",
+        "pueblo"
+      ]
     },
     {
       "id": "teatro-del-lago",
@@ -290,10 +587,20 @@
       "blurb": "Sala de conciertos sobre el Llanquihue en Frutillar.",
       "lat": -41.1335,
       "lng": -73.0275,
-      "wiki": { "lang": "es", "title": "Teatro_del_Lago" },
+      "wiki": {
+        "lang": "es",
+        "title": "Teatro_del_Lago"
+      },
       "commonsSearch": "Teatro del Lago Frutillar",
-      "youtubeCandidates": [],
-      "tags": ["finde", "cultura"]
+      "youtubeCandidates": [
+        "xrcVFn6LC-M",
+        "LAaqL565mxo",
+        "RPOaxp2KhJk"
+      ],
+      "tags": [
+        "finde",
+        "cultura"
+      ]
     },
     {
       "id": "lago-todos-santos",
@@ -302,9 +609,19 @@
       "blurb": "Aguas esmeralda entre volcanes; puerta a Petrohué.",
       "lat": -41.13333333,
       "lng": -72.2,
-      "wiki": { "lang": "es", "title": "Lago_Todos_los_Santos" },
-      "youtubeCandidates": ["xpt794jxa1A"],
-      "tags": ["finde", "lago"]
+      "wiki": {
+        "lang": "es",
+        "title": "Lago_Todos_los_Santos"
+      },
+      "youtubeCandidates": [
+        "oMsYJiCVF58",
+        "r4Mi5yEiltk",
+        "VrXztQR68do"
+      ],
+      "tags": [
+        "finde",
+        "lago"
+      ]
     },
     {
       "id": "aguas-calientes",
@@ -313,14 +630,25 @@
       "blurb": "Termas del Parque Puyehue: pozones techados y al aire libre. Ideal para un día completo hacia el norte.",
       "lat": -40.7354972,
       "lng": -72.3080889,
-      "wiki": { "lang": "en", "title": "Aguas_Calientes_Hot_Springs" },
+      "wiki": {
+        "lang": "en",
+        "title": "Aguas_Calientes_Hot_Springs"
+      },
       "commonsSearch": "Aguas Calientes Puyehue",
       "youtubeSearch": "Termas Aguas Calientes Puyehue Chile",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Vista_aerea_Aguas_Calientes.jpg/1280px-Vista_aerea_Aguas_Calientes.jpg"
       ],
-      "youtubeCandidates": [],
-      "tags": ["finde", "termas", "dia"]
+      "youtubeCandidates": [
+        "q3ukiiUSYJM",
+        "M4jIJjMqcCg",
+        "CJJE5-g-NJY"
+      ],
+      "tags": [
+        "finde",
+        "termas",
+        "dia"
+      ]
     },
     {
       "id": "termas-puyehue",
@@ -329,13 +657,24 @@
       "blurb": "Clásicas termas lacustres junto a Aguas Calientes y Antillanca.",
       "lat": -40.71186,
       "lng": -72.328285,
-      "wiki": { "lang": "es", "title": "Termas_de_Puyehue" },
+      "wiki": {
+        "lang": "es",
+        "title": "Termas_de_Puyehue"
+      },
       "commonsSearch": "Termas de Puyehue",
       "imageCandidates": [
         "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Parque_Nacional_Puyehue.jpg/1280px-Parque_Nacional_Puyehue.jpg"
       ],
-      "youtubeCandidates": [],
-      "tags": ["finde", "termas", "dia"]
+      "youtubeCandidates": [
+        "BYN5EDX7WaA",
+        "Ic7ucSNPTqw",
+        "0dJm0lbDyMk"
+      ],
+      "tags": [
+        "finde",
+        "termas",
+        "dia"
+      ]
     },
     {
       "id": "parque-puyehue",
@@ -344,9 +683,19 @@
       "blurb": "Bosque valdiviano, volcanes y termas en la misma región.",
       "lat": -40.7,
       "lng": -72.15,
-      "wiki": { "lang": "es", "title": "Parque_nacional_Puyehue" },
-      "youtubeCandidates": [],
-      "tags": ["trekking", "dia"]
+      "wiki": {
+        "lang": "es",
+        "title": "Parque_nacional_Puyehue"
+      },
+      "youtubeCandidates": [
+        "uWiiI_vDTDI",
+        "UwrXGPfr5xo",
+        "TI7QiEf0ueg"
+      ],
+      "tags": [
+        "trekking",
+        "dia"
+      ]
     },
     {
       "id": "termas-geometricas",
@@ -355,10 +704,20 @@
       "blurb": "Pozones icónicos en la selva valdiviana (Coñaripe). Escape de fin de semana más lejos.",
       "lat": -39.501659,
       "lng": -71.874697,
-      "wiki": { "lang": "es", "title": "Termas_Geométricas" },
+      "wiki": {
+        "lang": "es",
+        "title": "Termas_Geométricas"
+      },
       "youtubeSearch": "Termas Geométricas Coñaripe Chile",
-      "youtubeCandidates": [],
-      "tags": ["termas", "lejos"]
+      "youtubeCandidates": [
+        "DF_Vf7ES1rc",
+        "CVGAVrBRc4M",
+        "DKSVo_WlspQ"
+      ],
+      "tags": [
+        "termas",
+        "lejos"
+      ]
     },
     {
       "id": "conaripe",
@@ -367,10 +726,20 @@
       "blurb": "Pueblo termal al pie del Villarrica: base para pozones hacia el norte.",
       "lat": -39.5679,
       "lng": -72.0075,
-      "wiki": { "lang": "es", "title": "Coñaripe" },
+      "wiki": {
+        "lang": "es",
+        "title": "Coñaripe"
+      },
       "youtubeSearch": "Coñaripe termas Chile",
-      "youtubeCandidates": [],
-      "tags": ["termas", "lejos"]
+      "youtubeCandidates": [
+        "DF_Vf7ES1rc",
+        "O6Cww5Gq_xs",
+        "CVwcbVivSvM"
+      ],
+      "tags": [
+        "termas",
+        "lejos"
+      ]
     }
   ]
 }
