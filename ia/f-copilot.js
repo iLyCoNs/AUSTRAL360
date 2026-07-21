@@ -4598,7 +4598,7 @@
       if (/(confirm|confirmar|env[ií]a|enviar|listo|dale\s+con\s+la\s+visita|ag[eé]ndalo|reservar\s+ya)/i.test(clean) &&
           !/(no\s+confirm|cancel)/i.test(clean)) {
         return {
-          text: 'Perfecto. Confirmo la visita y disparo correo + WhatsApp al equipo comercial.',
+          text: 'Perfecto. Confirmo la visita: enviamos la solicitud y pronto te contactará el equipo.',
           actions: [{ type: 'confirmCalendarVisit' }]
         };
       }
@@ -4639,11 +4639,11 @@
       if (parsed.time) bits.push(parsed.time + ' hrs');
       const text = isG
         ? (bits.length
-            ? '¡Listo! Abrí la agenda con ' + bits.join(' · ') + '. Completa tus datos o dímelos aquí y luego di <b>confirmar visita</b> 😊'
-            : '¡Me encanta! Abrí la agenda. Elige día/hora o dime: “mañana a las 12, me llamo Ana”. Luego confirmamos y aviso por correo y WhatsApp 😊')
+            ? '¡Listo! Abrí la agenda con ' + bits.join(' · ') + '. Elige o cambia la <b>parcela</b> (se ancla sola), día y hora del próximo mes, completa tus datos y toca <b>Confirmar Visita</b> 😊'
+            : '¡Me encanta! Abrí la agenda: elige la <b>parcela o lote</b> (la cámara se centra sola), un día del próximo mes, la hora y tus datos. Al confirmar, enviamos la solicitud y pronto te contactan 😊')
         : (bits.length
-            ? 'Desplegué la agenda con ' + bits.join(' · ') + '. Indique nombre, correo y WhatsApp, o diga <b>confirmar visita</b> si ya están listos.'
-            : 'Desplegué la agenda de visitas. Indique día y hora, o complete el panel. Al confirmar se envía correo y WhatsApp al equipo comercial.');
+            ? 'Desplegué la agenda con ' + bits.join(' · ') + '. Seleccione parcela, complete datos y pulse <b>Confirmar Visita</b>.'
+            : 'Desplegué la agenda. Elija parcela/lote (se ancla a la consulta), día del próximo mes y hora. Al confirmar, la solicitud queda enviada y el equipo lo contactará pronto.');
 
       return { text: text, actions: [openAct] };
     }
@@ -5391,7 +5391,7 @@ REGLA STRICTA DE HERRAMIENTA CERCANOS Y LOTES:
 GUÍA COMERCIAL:
 Actúa como asesor proactivo: sugiere hacer zoom a lotes de interés, mostrar fichas con fotos y precios, buscar servicios cercanos o enviar una solicitud de contacto directo. Hazlo de forma natural dentro de la conversación, no como lista de opciones.
 Usa el campo "tags" de cada lote para responder con propiedades concretas. Usa los servicios cercanos (POI) para dar distancias y tiempos reales.
-AGENDA DE VISITA: Si el cliente quiere ir al terreno, abre openCalendarWidget. Si da día/hora/nombre/correo/WhatsApp, usa fillCalendarVisit. Cuando diga confirmar, usa confirmCalendarVisit (correo + WhatsApp al vendedor). No inventes fechas: pídelas o usa las que diga.
+AGENDA DE VISITA: Si el cliente quiere ir al terreno, abre openCalendarWidget. Si da día/hora/nombre/correo/WhatsApp, usa fillCalendarVisit. Cuando diga confirmar, usa confirmCalendarVisit (envía solicitud al equipo; NO abras WhatsApp al cliente). Explica: elegir lote (se ancla), día del próximo mes, hora, datos, Confirmar Visita → pronto lo contactan.
 
 CONTACTO:
 - Correo: perito.vidal@gmail.com
@@ -5455,7 +5455,7 @@ ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "downloadPDF", "loteId": "ID_opcional"}: Genera y descarga inmediatamente una ficha comercial en PDF del lote indicado (o en foco). ÚSALA cuando pidan PDFs, folletos, fichas para descargar, cotizaciones o descargables.
 - {"type": "openCalendarWidget", "loteId": "ID_opcional", "date": "YYYY-MM-DD", "time": "HH:MM", "name": "", "email": "", "phone": ""}: Abre la agenda de visita (glass). Incluye date/time/datos si el cliente ya los dijo.
 - {"type": "fillCalendarVisit", "date": "YYYY-MM-DD", "time": "HH:MM", "name": "", "email": "", "phone": "", "loteId": "ID_opcional"}: Rellena la agenda abierta con lo que diga el chat (mañana, 12:00, nombre, correo, WhatsApp).
-- {"type": "confirmCalendarVisit"}: Confirma la visita y dispara correo (FormSubmit) + WhatsApp al vendedor. ÚSALA solo cuando el cliente diga confirmar/enviar/listo y haya día+hora+nombre+email+fono.
+- {"type": "confirmCalendarVisit"}: Confirma la visita y envía la solicitud al equipo (correo). NO abras WhatsApp al visitante. ÚSALA cuando diga confirmar/enviar/listo y haya día+hora+nombre+email+fono.
 - {"type": "closeCalendarWidget"}: Cierra la agenda.
 - {"type": "offerTourism", "category": "termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}: Ofrece un plan turístico (sin abrir widget).
 - {"type": "confirmTourismOffer"}: Abre el widget tras el sí del cliente.
@@ -5574,16 +5574,23 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     return 'el proyecto';
   }
 
+  function _calListLotes() {
+    try {
+      return (window.allDrawnLines || [])
+        .filter((l) => l && (l.tipo === 'lote-libre' || l.tipo === 'lote-organico'))
+        .slice(0, 48);
+    } catch (e) {
+      return [];
+    }
+  }
+
   function _calLoteLabel(loteId) {
     if (_activeLote && (!loteId || String(_activeLote.id) === String(loteId) || String(_activeLote.titulo) === String(loteId))) {
       return 'Lote ' + (_activeLote.titulo || _activeLote.id);
     }
     if (loteId) {
-      try {
-        const lotes = (window.Ferrari && window.Ferrari.lotes) || [];
-        const found = lotes.find(l => String(l.id) === String(loteId) || String(l.titulo) === String(loteId));
-        if (found) return 'Lote ' + (found.titulo || found.id);
-      } catch (e) {}
+      const found = findLoteById(loteId);
+      if (found) return 'Lote ' + (found.titulo || found.id);
       return 'Lote ' + loteId;
     }
     return 'Parcela / visita general';
@@ -5611,7 +5618,68 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       (_calendarState.name || 'sin nombre aún');
   }
 
+  function _calFlashSummary() {
+    const el = document.getElementById('kpk-cal-summary');
+    if (!el) return;
+    el.classList.remove('is-flash');
+    void el.offsetWidth;
+    el.classList.add('is-flash');
+  }
+
+  function _calSelectLote(loteId, opts) {
+    opts = opts || {};
+    const widget = document.getElementById('kpk-calendar-widget');
+    const label = loteId ? _calLoteLabel(loteId) : 'Parcela / visita general';
+    _calendarState.loteId = loteId || null;
+    _calendarState.loteLabel = label;
+
+    const sub = document.getElementById('kpk-cal-lote-sub');
+    if (sub) sub.textContent = 'Coordinando: ' + label;
+
+    if (widget) {
+      widget.querySelectorAll('.kpk-cal__lote-chip').forEach((chip) => {
+        const id = chip.getAttribute('data-lote-id') || '';
+        const isGen = chip.getAttribute('data-lote-general') === '1';
+        const selected = loteId ? id === String(loteId) : isGen;
+        chip.classList.toggle('is-selected', selected);
+        if (selected) {
+          chip.classList.remove('is-pop');
+          void chip.offsetWidth;
+          chip.classList.add('is-pop');
+        }
+      });
+    }
+
+    if (loteId) {
+      try {
+        const lote = findLoteById(loteId);
+        if (lote) {
+          _activeLote = lote;
+          lookAtLote(lote.id, 70);
+          pulseSmartPin(lote.id);
+        }
+      } catch (e) {}
+    }
+
+    _calRefreshSummary();
+    _calFlashSummary();
+    if (opts.silent !== true) {
+      try { _updateSuggestiveChips(); } catch (e) {}
+    }
+  }
+
   function _calBindWidget(widget) {
+    widget.querySelectorAll('.kpk-cal__lote-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        if (chip.getAttribute('data-lote-general') === '1') {
+          _calSelectLote(null);
+          return;
+        }
+        const id = chip.getAttribute('data-lote-id');
+        if (id) _calSelectLote(id);
+      });
+    });
+
     const dayBtns = widget.querySelectorAll('.cal-day-btn');
     dayBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -5661,7 +5729,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const daysHTML = [];
     const preferDate = opts.date || null;
-    for (let i = 0; i < 10; i++) {
+    const DAY_COUNT = 31; // hoy + ~1 mes
+    for (let i = 0; i < DAY_COUNT; i++) {
       const futureDate = new Date(today);
       futureDate.setDate(today.getDate() + i);
       const y = futureDate.getFullYear();
@@ -5669,8 +5738,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       const d = String(futureDate.getDate()).padStart(2, '0');
       const dateStr = y + '-' + m + '-' + d;
       const isSelected =
-        (preferDate && preferDate === dateStr) || (!preferDate && i === 1) ? 'is-selected' : '';
-      // default mañana (i===1) si no hay preferencia
+        (preferDate && preferDate === dateStr) || (!preferDate && i === 0) ? 'is-selected' : '';
       daysHTML.push(
         '<button type="button" class="cal-day-btn ' +
           isSelected +
@@ -5702,6 +5770,32 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const loteLabel = _calLoteLabel(resolvedLoteId);
     const preferTime = opts.time || '12:00';
     const hours = ['10:00', '12:00', '15:00', '17:00'];
+    const lotes = _calListLotes();
+
+    const loteChips =
+      '<button type="button" class="kpk-cal__lote-chip' +
+      (!resolvedLoteId ? ' is-selected' : '') +
+      '" data-lote-general="1">Visita general</button>' +
+      lotes
+        .map((l) => {
+          const id = String(l.id);
+          const tit = String(l.titulo || l.id);
+          const sel =
+            resolvedLoteId &&
+            (String(resolvedLoteId) === id || String(resolvedLoteId) === tit)
+              ? ' is-selected'
+              : '';
+          return (
+            '<button type="button" class="kpk-cal__lote-chip' +
+            sel +
+            '" data-lote-id="' +
+            _calEscape(id) +
+            '">Lote ' +
+            _calEscape(tit) +
+            '</button>'
+          );
+        })
+        .join('');
 
     _calendarState = {
       open: true,
@@ -5724,10 +5818,15 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       '<button type="button" class="kpk-cal__close" id="cal-widget-close-btn" title="Cerrar">&times;</button>' +
       '</div>' +
       '<div class="kpk-cal__body">' +
-      '<div><div class="kpk-cal__step-label">1 · Día</div><div class="kpk-cal__days">' +
+      '<div><div class="kpk-cal__step-label">1 · Parcela / lote</div>' +
+      '<div class="kpk-cal__lotes" id="kpk-cal-lotes">' +
+      loteChips +
+      '</div></div>' +
+      '<div><div class="kpk-cal__step-label">2 · Día <span class="kpk-cal__step-hint">(próximo mes)</span></div>' +
+      '<div class="kpk-cal__days">' +
       daysHTML.join('') +
       '</div></div>' +
-      '<div><div class="kpk-cal__step-label">2 · Hora</div><div class="kpk-cal__hours">' +
+      '<div><div class="kpk-cal__step-label">3 · Hora</div><div class="kpk-cal__hours">' +
       hours
         .map(
           (h) =>
@@ -5742,7 +5841,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         .join('') +
       '</div></div>' +
       '<div class="kpk-cal__fields">' +
-      '<div class="kpk-cal__step-label">3 · Tus datos</div>' +
+      '<div class="kpk-cal__step-label">4 · Tus datos</div>' +
       '<input class="kpk-cal__input" type="text" id="cal-input-name" placeholder="Nombre completo" value="' +
       _calEscape(preName) +
       '">' +
@@ -5757,11 +5856,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       '<p class="kpk-cal__summary" id="kpk-cal-summary">—</p>' +
       '</div></div>' +
       '<div class="kpk-cal__footer">' +
-      '<button type="button" class="kpk-cal__submit" id="cal-btn-submit">Confirmar visita · Correo + WhatsApp</button>' +
-      '<p class="kpk-cal__hint">También puedes decirle al chat: “mañana a las 12, me llamo Ana, +569…”</p>' +
+      '<button type="button" class="kpk-cal__submit" id="cal-btn-submit">Confirmar Visita</button>' +
+      '<p class="kpk-cal__hint">Elige parcela, día y hora. Al confirmar, el equipo te contactará pronto.</p>' +
       '</div>';
 
-    // Selección inicial de fecha
     const selectedDay = widget.querySelector('.cal-day-btn.is-selected');
     if (selectedDay) _calendarState.date = selectedDay.getAttribute('data-date');
     else {
@@ -5776,7 +5874,12 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     _calRefreshSummary();
 
     widget.style.display = 'flex';
+    widget.classList.remove('is-success');
     setTimeout(() => widget.classList.add('is-open'), 40);
+
+    if (resolvedLoteId) {
+      setTimeout(() => _calSelectLote(resolvedLoteId, { silent: true }), 120);
+    }
 
     if (opts.silent !== true) {
       _pushSuggestChips([
@@ -5807,10 +5910,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (!widget) return;
 
     if (act.loteId) {
-      _calendarState.loteId = act.loteId;
-      _calendarState.loteLabel = _calLoteLabel(act.loteId);
-      const sub = document.getElementById('kpk-cal-lote-sub');
-      if (sub) sub.textContent = 'Coordinando: ' + _calendarState.loteLabel;
+      _calSelectLote(act.loteId, { silent: true });
     }
     if (act.date) {
       const dayBtns = widget.querySelectorAll('.cal-day-btn');
@@ -5925,81 +6025,52 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       localStorage.setItem('kpk_client_phone', phone);
       _clientName = name;
 
-      const wspMsg =
-        'Hola, quiero confirmar una visita a *' +
-        project +
-        '*.\n' +
-        '*Lote:* ' +
-        loteLabel +
-        '\n' +
-        '*Fecha:* ' +
-        dateStr +
-        '\n' +
-        '*Hora:* ' +
-        timeStr +
-        ' hrs\n' +
-        '*Visitante:* ' +
-        name +
-        '\n' +
-        '*Email:* ' +
-        email +
-        '\n' +
-        '*WhatsApp:* ' +
-        phone;
+      // Notifica al equipo por correo (y CallMeBot si está activo). No abrir WhatsApp al visitante.
+      const successHtml =
+        '<div class="kpk-cal__success" role="status">' +
+        '<div class="kpk-cal__success-mark" aria-hidden="true">✓</div>' +
+        '<div class="kpk-cal__success-title">Solicitud enviada</div>' +
+        '<p class="kpk-cal__success-text">Tu visita para <b>' +
+        _calEscape(loteLabel) +
+        '</b> el <b>' +
+        _calEscape(dateStr) +
+        '</b> a las <b>' +
+        _calEscape(timeStr) +
+        ' hrs</b> quedó registrada. Pronto te contactarán para coordinar el encuentro.</p>' +
+        '</div>';
+      widget.classList.add('is-success');
+      widget.innerHTML = successHtml;
 
-      let wspUrl = null;
-      const sellerPhone = _calSellerPhone();
-      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.whatsappUrl === 'function') {
-        wspUrl = window.FerrariBrandDock.whatsappUrl(sellerPhone, wspMsg);
-      } else {
-        wspUrl =
-          'https://api.whatsapp.com/send?phone=' +
-          sellerPhone +
-          '&text=' +
-          encodeURIComponent(wspMsg);
-      }
-      if (wspUrl) window.open(wspUrl, '_blank');
-      // CallMeBot ya se dispara dentro de submitLead()
-
-      closeCalendarWidget();
-
-      appendMessage(
+      const okMsg =
         '¡Listo, <b>' +
-          _calEscape(name) +
-          '</b>! Visita confirmada para <b>' +
-          loteLabel +
-          '</b> el <b>' +
-          dateStr +
-          '</b> a las <b>' +
-          timeStr +
-          ' hrs</b>. Enviamos el requerimiento por <b>correo</b> al vendedor y abrimos <b>WhatsApp</b> para coordinar el encuentro.',
-        'system'
-      );
+        _calEscape(name) +
+        '</b>! Solicitud <b>enviada</b>. Visita para <b>' +
+        _calEscape(loteLabel) +
+        '</b> el <b>' +
+        _calEscape(dateStr) +
+        '</b> a las <b>' +
+        _calEscape(timeStr) +
+        ' hrs</b>. Pronto te contactará el equipo comercial.';
+      appendMessage(okMsg, 'system');
+      try {
+        const isMob =
+          window.innerWidth < 768 ||
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMob) showMobileBubblePopup(okMsg.replace(/<[^>]+>/g, ''), true);
+      } catch (e) {}
 
-      const chips = document.getElementById('kpk-ai-chips-container');
-      if (chips) {
-        chips.innerHTML = '';
-        const mk = (label, q) => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'kpk-suggest-chip';
-          b.textContent = label;
-          b.addEventListener('click', () => {
-            if (_input) _input.value = q;
-            handleSend();
-          });
-          chips.appendChild(b);
-        };
-        mk('🏡 Ver lotes', '¿Cuáles lotes están disponibles?');
-        mk('📄 Ficha PDF', 'Descargar ficha PDF del lote');
-        mk('💵 Financiamiento', 'Quiero simular financiamiento');
-        mk('🌲 Qué hacer cerca', 'Qué puedo hacer cerca del proyecto');
-      }
+      _pushSuggestChips([
+        { label: '🏡 Ver lotes', query: '¿Cuáles lotes están disponibles?' },
+        { label: '💵 Financiamiento', query: 'Quiero simular financiamiento' },
+        { label: '🌲 Qué hacer cerca', query: 'Qué puedo hacer cerca del proyecto' }
+      ]);
+
+      setTimeout(() => closeCalendarWidget(), 3200);
       return true;
     } catch (err) {
       console.error('Error al agendar visita:', err);
       if (submitBtn) {
-        submitBtn.textContent = 'Confirmar visita · Correo + WhatsApp';
+        submitBtn.textContent = 'Confirmar Visita';
         submitBtn.disabled = false;
       }
       appendMessage(
@@ -6013,7 +6084,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   function closeCalendarWidget() {
     const widget = document.getElementById('kpk-calendar-widget');
     if (widget) {
-      widget.classList.remove('is-open');
+      widget.classList.remove('is-open', 'is-success');
       _calendarState.open = false;
       setTimeout(() => {
         widget.style.display = 'none';

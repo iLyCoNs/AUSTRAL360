@@ -1,19 +1,18 @@
 /**
- * f-calendar.css — Agenda de visitas · mismo glass que #kpk-weather-widget
+ * f-calendar.css — Agenda de visitas · glass fino, mes completo, móvil armónico
  */
 .kpk-calendar-widget {
   position: fixed;
-  /* Izquierda (como el clima) para no taparse con el chat JARVIS a la derecha */
   bottom: 20px;
   left: 18px;
   right: auto;
   z-index: 10006;
-  width: min(360px, calc(100vw - 24px));
-  max-height: min(78vh, 560px);
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(82vh, 620px);
   display: none;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
@@ -34,19 +33,24 @@
   transform: translateY(0) scale(1);
 }
 
+.kpk-calendar-widget.is-success {
+  justify-content: center;
+  min-height: 220px;
+}
+
 .kpk-cal__handle {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 14px 10px;
+  padding: 10px 12px 8px;
   background: rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.10);
 }
 
 .kpk-cal__eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -56,7 +60,7 @@
 .kpk-cal__title {
   display: block;
   margin-top: 2px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 650;
   letter-spacing: -0.01em;
   line-height: 1.25;
@@ -68,6 +72,7 @@
   font-size: 11px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.62);
+  transition: color 0.25s ease;
 }
 
 .kpk-cal__close {
@@ -89,12 +94,13 @@
 }
 
 .kpk-cal__body {
-  padding: 14px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   overflow-y: auto;
-  max-height: min(52vh, 380px);
+  max-height: min(58vh, 420px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .kpk-cal__step-label {
@@ -103,17 +109,71 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
-  margin-bottom: 8px;
+  margin-bottom: 7px;
+}
+.kpk-cal__step-hint {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.38);
+  margin-left: 4px;
+}
+
+/* Lotes */
+.kpk-cal__lotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 88px;
+  overflow-y: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.kpk-cal__lote-chip {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 11px;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpk-cal__lote-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.kpk-cal__lote-chip.is-selected {
+  background: rgba(0, 180, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 180, 255, 0.28);
+}
+.kpk-cal__lote-chip.is-pop {
+  animation: kpk-cal-lote-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes kpk-cal-lote-pop {
+  0% { transform: scale(0.9); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
 
 .kpk-cal__days {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
 }
-.kpk-cal__days::-webkit-scrollbar { display: none; }
+.kpk-cal__days::-webkit-scrollbar { height: 3px; }
+.kpk-cal__days::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 99px;
+}
 
 .cal-day-btn {
   flex-shrink: 0;
@@ -121,13 +181,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 54px;
-  border-radius: 12px;
+  width: 42px;
+  height: 46px;
+  border-radius: 11px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.78);
   cursor: pointer;
+  scroll-snap-align: start;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 .cal-day-btn:hover {
@@ -138,19 +199,19 @@
   background: rgba(0, 180, 255, 0.88);
   border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(0, 180, 255, 0.35);
+  box-shadow: 0 3px 12px rgba(0, 180, 255, 0.3);
 }
 .cal-day-sem {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   opacity: 0.9;
 }
 .cal-day-num {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 1px;
   letter-spacing: -0.02em;
 }
 
@@ -161,12 +222,12 @@
 }
 
 .cal-hour-btn {
-  height: 34px;
+  height: 32px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.85);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 650;
   font-family: inherit;
   cursor: pointer;
@@ -180,13 +241,13 @@
   background: rgba(0, 180, 255, 0.88);
   border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(0, 180, 255, 0.32);
+  box-shadow: 0 3px 12px rgba(0, 180, 255, 0.28);
 }
 
 .kpk-cal__fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   padding-top: 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
 }
@@ -194,18 +255,18 @@
 .kpk-cal__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 7px;
 }
 
 .kpk-cal__input {
   width: 100%;
-  height: 36px;
+  height: 34px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(0, 0, 0, 0.22);
   color: #fff;
-  padding: 0 12px;
-  font-size: 12.5px;
+  padding: 0 11px;
+  font-size: 12px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -220,36 +281,44 @@
 
 .kpk-cal__summary {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 11px;
   background: rgba(0, 180, 255, 0.12);
   border: 1px solid rgba(0, 180, 255, 0.22);
-  font-size: 11.5px;
+  font-size: 11px;
   line-height: 1.4;
   color: rgba(245, 245, 247, 0.92);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.kpk-cal__summary.is-flash {
+  animation: kpk-cal-summary-flash 0.55s ease;
+}
+@keyframes kpk-cal-summary-flash {
+  0% { box-shadow: 0 0 0 0 rgba(0, 180, 255, 0.45); border-color: rgba(0, 180, 255, 0.55); }
+  100% { box-shadow: 0 0 0 0 transparent; border-color: rgba(0, 180, 255, 0.22); }
 }
 
 .kpk-cal__footer {
-  padding: 12px 14px 14px;
+  padding: 10px 12px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .kpk-cal__submit {
   width: 100%;
-  height: 40px;
+  height: 38px;
   border: none;
-  border-radius: 12px;
+  border-radius: 11px;
   background: linear-gradient(135deg, rgba(0, 180, 255, 0.95), rgba(0, 120, 255, 0.9));
   color: #fff;
   font-size: 13px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 120, 255, 0.28);
+  box-shadow: 0 4px 14px rgba(0, 120, 255, 0.24);
   transition: filter 0.15s ease, transform 0.15s ease;
 }
 .kpk-cal__submit:hover:not(:disabled) {
@@ -262,36 +331,108 @@
 
 .kpk-cal__hint {
   margin: 0;
-  font-size: 10.5px;
+  font-size: 10px;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.5);
   text-align: center;
 }
 
+/* Success */
+.kpk-cal__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px 22px;
+  gap: 8px;
+  animation: kpk-cal-success-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes kpk-cal-success-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.kpk-cal__success-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(34, 197, 94, 0.85);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+  margin-bottom: 4px;
+}
+.kpk-cal__success-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.kpk-cal__success-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 280px;
+}
+
 @media (max-width: 720px) {
   .kpk-calendar-widget {
-    left: 10px;
-    right: 10px;
-    /* Encima del HUD del chat móvil (z 10005); no tapado por chips */
+    left: 50%;
+    right: auto;
     bottom: auto;
-    top: max(12px, env(safe-area-inset-top, 0px) + 8px);
-    width: auto;
-    max-height: min(52vh, calc(100vh - 200px));
+    top: max(10px, env(safe-area-inset-top, 0px) + 6px);
+    width: min(360px, calc(100vw - 16px));
+    max-height: min(58vh, calc(100dvh - 168px));
+    transform: translateX(-50%) translateY(10px) scale(0.98);
     z-index: 10020;
+    border-radius: 16px;
+  }
+  .kpk-calendar-widget.is-open {
+    transform: translateX(-50%) translateY(0) scale(1);
   }
   .kpk-cal__body {
-    max-height: 32vh;
+    max-height: min(38vh, 280px);
+    padding: 8px 10px 10px;
+    gap: 10px;
   }
-  /* Con agenda abierta: HUD más bajo para no solapar el formulario */
+  .kpk-cal__lotes {
+    max-height: 72px;
+  }
+  .kpk-cal__lote-chip {
+    height: 26px;
+    font-size: 10.5px;
+    padding: 0 9px;
+  }
+  .cal-day-btn {
+    width: 38px;
+    height: 42px;
+  }
+  .cal-day-num { font-size: 13px; }
+  .cal-hour-btn { height: 30px; font-size: 11px; }
+  .kpk-cal__input { height: 32px; font-size: 11.5px; }
+  .kpk-cal__submit { height: 36px; font-size: 12.5px; }
+  .kpk-cal__row {
+    grid-template-columns: 1fr;
+  }
   body.kpk-calendar-open .kpk-mobile-ai-bubble-popup {
-    max-height: 38vh;
+    max-height: 34vh;
   }
 }
 
-/* Desktop ancho: si el chat está abierto, mantener agenda a la izquierda visible */
 @media (min-width: 721px) {
   body.kpk-ai-open .kpk-calendar-widget {
     left: 18px;
     right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpk-cal__lote-chip.is-pop,
+  .kpk-cal__summary.is-flash,
+  .kpk-cal__success {
+    animation: none !important;
   }
 }
