@@ -1,9 +1,13 @@
 /**
  * f-device.js — Detección de capacidad del dispositivo para adaptar Ferrari360
  *
- * Tier (high / mid / low) según WebGL, RAM, CPU, pantalla y UA.
- * Galaxy Tab S7 FE y tablets Android similares: mid (4096) por defecto
- * (mejor calidad que 2048, sin saturar GPU como 8192).
+ * Tier (high / mid / low) → archivo panorama pre-escalado (sin resize JS):
+ *   high → loteo360.jpg (12000) si la GPU aguanta; si no, 4096
+ *   mid  → loteo360-4096.jpg
+ *   low  → loteo360-2048.jpg
+ *
+ * Nunca reescalar el equirect de 41MB en el navegador móvil: cuelga en
+ * "Ajustando resolución…". Los JPG mid/low se generan con tools/gen-pano-variants.py
  *
  * Override URL: ?tex=2048|4096|8192  o  ?tier=low|mid|high
  */
@@ -21,6 +25,12 @@
     low:  2048
   };
 
+  const PANO = {
+    full: { url: 'loteo360.jpg', width: ORIGINAL_WIDTH, height: ORIGINAL_HEIGHT },
+    mid:  { url: 'loteo360-4096.jpg', width: 4096, height: 2048 },
+    low:  { url: 'loteo360-2048.jpg', width: 2048, height: 1024 }
+  };
+
   let _tier  = 'high';
   let _limit = LIMITS.high;
   let _maxTexSize = 0;
@@ -29,6 +39,7 @@
   let _isTablet = false;
   let _isPhone = false;
   let _maxDpr = 2;
+  let _panoUrl = PANO.full.url;
 
   function _ua() {
     return (navigator.userAgent || '').toLowerCase();
@@ -41,7 +52,6 @@
            /sm-[a-z0-9]+/i.test(navigator.userAgent || '');
   }
 
-  /** Teléfonos Android/iOS (Poco F5, etc.) — info; no se limita a mid */
   function _detectPhone() {
     var ua = _ua();
     try {
@@ -49,14 +59,12 @@
     } catch (e) {}
     if (/iphone|ipod|windows phone/.test(ua)) return true;
     if (/android/.test(ua) && !_detectTablet()) return true;
-    // Pantalla “phone-like” en portrait/landscape
     var w = Math.max(screen.width || 0, screen.height || 0);
     var h = Math.min(screen.width || 0, screen.height || 0);
     if (/android|mobile/.test(ua) && w > 0 && h > 0 && (w / h) >= 1.6 && w < 1400) return true;
     return false;
   }
 
-  /** Tab S7 FE (SM-T73x), Tab S7/S8/S9 y Android tablet genérico */
   function _detectTablet() {
     var ua = _ua();
     var screenW = Math.max(screen.width || 0, screen.height || 0);
@@ -86,6 +94,67 @@
     return null;
   }
 
+  /** Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE */
+  function _gpuFits(width, height) {
+    if (!_maxTexSize || _maxTexSize <= 0) return true;
+    return Math.max(width / 2, height) <= _maxTexSize;
+  }
+
+  /**
+   * Elige JPG pre-escalado. Nunca requiere resize en el navegador.
+   * @param {number} [forcedMaxWidth]
+   */
+  function pickPanorama(forcedMaxWidth) {
+    detect();
+    var force = forcedMaxWidth > 0 ? forcedMaxWidth : 0;
+
+    function choose() {
+      if (force > 0) {
+        if (force <= 2048) return PANO.low;
+        if (force <= 4096) {
+          if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
+          return PANO.low;
+        }
+        if (_gpuFits(PANO.full.width, PANO.full.height)) return PANO.full;
+        if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
+        return PANO.low;
+      }
+
+      // Tablets: 4096 (fluido). Teléfonos high con GPU OK: original.
+      if (_isTablet) {
+        if (_tier === 'low' || !_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.low;
+        return PANO.mid;
+      }
+
+      if (_tier === 'low') return PANO.low;
+
+      if (_tier === 'mid') {
+        if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
+        return PANO.low;
+      }
+
+      // high
+      if (_gpuFits(PANO.full.width, PANO.full.height)) return PANO.full;
+      if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
+      return PANO.low;
+    }
+
+    var pick = choose();
+
+    _panoUrl = pick.url;
+    _limit = pick.width;
+    return {
+      url: pick.url,
+      width: pick.width,
+      height: pick.height,
+      tier: _tier,
+      maxTextureSize: _maxTexSize,
+      isTablet: _isTablet,
+      isPhone: _isPhone,
+      maxDpr: _maxDpr
+    };
+  }
+
   function detect() {
     if (_detected) {
       return {
@@ -94,7 +163,8 @@
         maxTextureSize: _maxTexSize,
         isTablet: _isTablet,
         isPhone: _isPhone,
-        maxDpr: _maxDpr
+        maxDpr: _maxDpr,
+        panoramaUrl: _panoUrl
       };
     }
     _detected = true;
@@ -105,17 +175,29 @@
     if (override) {
       _tier = override.tier;
       _limit = override.maxWidth;
-      // Solo tablets: techo mid en override (teléfonos potentes sí pueden 8192 / original)
+      if (_isTablet && _limit > LIMITS.mid && !override.maxWidth) {
+        _limit = LIMITS.mid;
+        _tier = 'mid';
+      }
+      // ?tex=8192 en tablet → mid file (nunca JS resize a 8K)
       if (_isTablet && _limit > LIMITS.mid) {
         _limit = LIMITS.mid;
         _tier = 'mid';
       }
       _maxTexSize = _detectMaxTextureSize();
-      _limit = _resolveLimitForGpu(_limit, _tier);
       _maxDpr = _tier === 'high' ? 2 : (_tier === 'mid' ? 1.35 : 1.15);
-      console.log('[Ferrari/Device] Override URL → Tier:', _tier, '| maxWidth:', _limit,
+      var picked = pickPanorama(_limit);
+      console.log('[Ferrari/Device] Override URL → Tier:', _tier, '| pano:', picked.url,
         '| phone:', _isPhone, '| tablet:', _isTablet);
-      return { tier: _tier, maxWidth: _limit, maxTextureSize: _maxTexSize, isTablet: _isTablet, isPhone: _isPhone, maxDpr: _maxDpr };
+      return {
+        tier: _tier,
+        maxWidth: picked.width,
+        maxTextureSize: _maxTexSize,
+        isTablet: _isTablet,
+        isPhone: _isPhone,
+        maxDpr: _maxDpr,
+        panoramaUrl: picked.url
+      };
     }
 
     var score = 0;
@@ -148,12 +230,11 @@
       score -= 1;
     }
 
-    // Tablets Samsung / Android grandes: no high (8192). Preferir mid (4096).
-    // Antes score-=4 forzaba low(2048) y la imagen se veía blanda en Tab S7 FE.
     if (_isTablet || (isSamsung && Math.max(screen.width || 0, screen.height || 0) >= 1800)) {
       score -= 2;
-      if (score >= 6) score = 5; // techo mid
+      if (score >= 6) score = 5;
     }
+
     if (_maxTexSize > 0) {
       if (_maxTexSize >= 8192)      score += 2;
       else if (_maxTexSize >= 4096) score += 0;
@@ -164,22 +245,20 @@
     else if (score >= 3) { _tier = 'mid'; _limit = LIMITS.mid; }
     else { _tier = 'low'; _limit = LIMITS.low; }
 
-    // Solo tablets: techo mid. Teléfonos high (Poco F5) se dejan en high.
     if (_isTablet && _tier === 'high') {
       _tier = 'mid';
       _limit = LIMITS.mid;
     }
 
-    // Si la GPU puede cargar el original, no forzar downscale a 8192
-    // (ese resize es lo que colgaba en "Ajustando resolución…").
-    _limit = _resolveLimitForGpu(_limit, _tier);
-
-    // DPR: tablets mid/low → menos píxeles de framebuffer = más FPS
     if (_tier === 'high') _maxDpr = 2;
-    else if (_tier === 'mid') _maxDpr = _isTablet ? 1.35 : 1.5;
+    else if (_tier === 'mid') _maxDpr = (_isTablet || _isPhone) ? 1.35 : 1.5;
     else _maxDpr = 1.15;
 
-    console.log('[Ferrari/Device] Tier:', _tier, '| maxWidth:', _limit,
+    var pano = pickPanorama();
+    _limit = pano.width;
+    _panoUrl = pano.url;
+
+    console.log('[Ferrari/Device] Tier:', _tier, '| pano:', _panoUrl,
       '| MAX_TEXTURE_SIZE:', _maxTexSize, '| score:', score,
       '| phone:', _isPhone, '| tablet:', _isTablet, '| maxDpr:', _maxDpr);
 
@@ -189,37 +268,13 @@
       maxTextureSize: _maxTexSize,
       isTablet: _isTablet,
       isPhone: _isPhone,
-      maxDpr: _maxDpr
+      maxDpr: _maxDpr,
+      panoramaUrl: _panoUrl
     };
   }
 
   function setMaxTextureSize(size) {
     _externalTexSize = size;
-  }
-
-  /** Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE */
-  function _gpuCanLoadOriginal(maxTex) {
-    if (!maxTex || maxTex <= 0) return false;
-    return Math.max(ORIGINAL_WIDTH / 2, ORIGINAL_HEIGHT) <= maxTex;
-  }
-
-  /**
-   * High + GPU OK → límite = original (sin reescalar en JS).
-   * Si no, respetar tier y no pedir más de lo que aguanta la GPU.
-   */
-  function _resolveLimitForGpu(limit, tier) {
-    if (tier === 'high' && _gpuCanLoadOriginal(_maxTexSize)) {
-      return ORIGINAL_WIDTH;
-    }
-    if (_maxTexSize > 0) {
-      // Equirect: ancho útil hasta ~2*maxTex; height = width/2
-      var gpuCap = _maxTexSize * 2;
-      if (_maxTexSize < 4096) gpuCap = _maxTexSize;
-      limit = Math.min(limit, gpuCap);
-      if (limit <= 2048) _tier = 'low';
-      else if (limit <= 4096 && tier !== 'high') _tier = 'mid';
-    }
-    return limit;
   }
 
   function _detectMaxTextureSize() {
@@ -239,7 +294,7 @@
 
   function needsDownscale() {
     detect();
-    return ORIGINAL_WIDTH > _limit;
+    return false; // variantes pre-escaladas; no resize JS
   }
 
   function getMaxWidth() {
@@ -250,6 +305,11 @@
   function getTier() {
     detect();
     return _tier;
+  }
+
+  function getPanoramaUrl() {
+    detect();
+    return _panoUrl;
   }
 
   function isTablet() {
@@ -270,22 +330,29 @@
   function getOriginalWidth() { return ORIGINAL_WIDTH; }
   function getOriginalHeight() { return ORIGINAL_HEIGHT; }
 
-  /** Baja un escalón de calidad (para reintento tras error WebGL / timeout) */
+  /** Baja un escalón: high→4096 file, mid→2048 file */
   function stepDown() {
     detect();
-    if (_tier === 'high') { _tier = 'mid'; _limit = LIMITS.mid; }
-    else if (_tier === 'mid') { _tier = 'low'; _limit = LIMITS.low; }
-    else if (_limit > 1024) { _limit = 1024; }
-    if (_maxTexSize > 0) _limit = Math.min(_limit, _maxTexSize);
+    if (_tier === 'high' || _limit > 4096) {
+      _tier = 'mid';
+      _limit = LIMITS.mid;
+    } else if (_tier === 'mid' || _limit > 2048) {
+      _tier = 'low';
+      _limit = LIMITS.low;
+    } else if (_limit > 1024) {
+      _limit = 1024;
+    }
     _maxDpr = (_isPhone || _isTablet || _tier === 'low') ? 1.1 : 1.25;
-    console.warn('[Ferrari/Device] stepDown →', _tier, _limit);
+    var pano = pickPanorama(_limit);
+    console.warn('[Ferrari/Device] stepDown →', _tier, pano.url);
     return {
       tier: _tier,
-      maxWidth: _limit,
+      maxWidth: pano.width,
       maxTextureSize: _maxTexSize,
       isTablet: _isTablet,
       isPhone: _isPhone,
-      maxDpr: _maxDpr
+      maxDpr: _maxDpr,
+      panoramaUrl: pano.url
     };
   }
 
@@ -294,13 +361,16 @@
     needsDownscale: needsDownscale,
     getMaxWidth: getMaxWidth,
     getTier: getTier,
+    getPanoramaUrl: getPanoramaUrl,
+    pickPanorama: pickPanorama,
     isTablet: isTablet,
     isPhone: isPhone,
     getMaxDpr: getMaxDpr,
     stepDown: stepDown,
     setMaxTextureSize: setMaxTextureSize,
     getOriginalWidth: getOriginalWidth,
-    getOriginalHeight: getOriginalHeight
+    getOriginalHeight: getOriginalHeight,
+    PANO: PANO
   };
 
   console.log('[Ferrari/Device] ✓ Módulo cargado');

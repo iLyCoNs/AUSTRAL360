@@ -93,9 +93,9 @@
       _createViewer(source);
     }).catch(function(err) {
       console.error('[Ferrari/Init] Error preparando panorama:', err);
-      if (_viewerBootTries < 3 && window.FerrariDevice && window.FerrariDevice.stepDown) {
+      if (_viewerBootTries < 4 && window.FerrariDevice && window.FerrariDevice.stepDown) {
         var next = window.FerrariDevice.stepDown();
-        console.warn('[Ferrari/Init] Reintento con maxWidth', next.maxWidth);
+        console.warn('[Ferrari/Init] Reintento con', next.panoramaUrl || next.maxWidth);
         _bootViewer(next.maxWidth);
         return;
       }
@@ -109,167 +109,58 @@
   }
 
   /**
-   * Prepara la fuente del panorama: detecta el dispositivo, y si es necesario
-   * escala la imagen a una resolución soportable antes de pasarla a Pannellum.
-   * @returns {Promise<HTMLCanvasElement|string>} canvas (dynamic) o URL string
+   * Elige un JPG ya escalado (loteo360 / -4096 / -2048).
+   * NUNCA reescala el equirect de 41MB en el navegador: eso cuelga móviles/tablets
+   * en "Ajustando resolución 360°…".
+   * @returns {Promise<string>} URL del panorama
    */
   function _preparePanorama(forcedMaxWidth) {
     var info = window.FerrariDevice.detect();
-    var tier = info.tier;
-    var maxWidth = forcedMaxWidth || info.maxWidth;
-    var maxTex = info.maxTextureSize || 0;
-    var origW = window.FerrariDevice.getOriginalWidth();
-    var origH = window.FerrariDevice.getOriginalHeight();
-    // Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE
-    var gpuOkOriginal = maxTex > 0 && Math.max(origW / 2, origH) <= maxTex;
+    var pano = window.FerrariDevice.pickPanorama
+      ? window.FerrariDevice.pickPanorama(forcedMaxWidth)
+      : { url: 'loteo360.jpg', width: info.maxWidth, tier: info.tier };
 
-    if (maxTex > 0 && !gpuOkOriginal) {
-      maxWidth = Math.min(maxWidth, maxTex * 2);
-      if (maxTex < 4096) maxWidth = Math.min(maxWidth, maxTex);
-    }
-
-    // High + GPU OK: cargar JPG original (como antes en Poco F5 → 60fps sin "Ajustando…")
-    // Solo reescalar si el tier/force lo pide o la GPU no aguanta el original.
-    var needsDl = !!forcedMaxWidth
-      ? (origW > maxWidth)
-      : (!gpuOkOriginal || (tier !== 'high' && origW > maxWidth));
-
-    if (!needsDl) {
-      maxWidth = origW;
-    }
-
+    var tier = pano.tier || info.tier;
     document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
     document.body.classList.add('ferrari-device-' + tier);
     if (info.isTablet) document.body.classList.add('ferrari-device-tablet');
     if (info.isPhone) document.body.classList.add('ferrari-device-phone');
 
     console.log('[Ferrari/Init] Device tier:', tier,
-      '| maxWidth:', maxWidth, '| downscale:', needsDl,
-      '| gpuOkOriginal:', gpuOkOriginal,
-      '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet);
+      '| pano:', pano.url, '| width:', pano.width,
+      '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet,
+      '| MAX_TEXTURE_SIZE:', info.maxTextureSize);
 
-    if (!needsDl) {
-      return Promise.resolve('loteo360.jpg');
-    }
+    _showLoadingMessage('Cargando vista 360° (' + (pano.width || '') + 'px)…');
 
-    _showLoadingMessage('Ajustando resolución 360° (' + maxWidth + 'px)…');
-
-    // Timeout: si el resize cuelga, stepDown y reintenta
-    var loadTimeoutMs = (info.isPhone || info.isTablet) ? 12000 : 25000;
-    return _withTimeout(_loadAndScaleImage('loteo360.jpg', maxWidth), loadTimeoutMs,
-      'Timeout ajustando resolución (' + maxWidth + 'px)'
-    ).then(function(canvas) {
-      _hideLoadingMessage();
-      return canvas;
-    });
-  }
-
-  function _withTimeout(promise, ms, label) {
-    return new Promise(function(resolve, reject) {
-      var done = false;
-      var t = setTimeout(function() {
-        if (done) return;
-        done = true;
-        reject(new Error(label || ('Timeout ' + ms + 'ms')));
-      }, ms);
-      promise.then(function(v) {
-        if (done) return;
-        done = true;
-        clearTimeout(t);
-        resolve(v);
-      }, function(err) {
-        if (done) return;
-        done = true;
-        clearTimeout(t);
-        reject(err);
-      });
-    });
-  }
-
-  /**
-   * Carga la imagen equirectangular y la escala al ancho máximo indicado
-   * usando createImageBitmap (con resize) o fallback Image + canvas 2D.
-   * @param {string} url
-   * @param {number} maxWidth
-   * @returns {Promise<HTMLCanvasElement>}
-   */
-  function _loadAndScaleImage(url, maxWidth) {
-    // Intentar createImageBitmap + fetch (decodifica + redimensiona en un paso,
-    // sin el buffer intermedio de 288MB de la imagen original)
-    if (window.createImageBitmap && window.fetch) {
-      return _loadAndScaleWithBitmap(url, maxWidth);
-    }
-    // Fallback: Image + canvas 2D
-    return _fallbackLoadAndScale(url, maxWidth);
-  }
-
-  /**
-   * Carga y escala usando createImageBitmap (Chrome 76+, Firefox 98+, Safari 15.4+).
-   * Decodifica directamente al tamaño destino, ahorrando memoria.
-   */
-  function _loadAndScaleWithBitmap(url, maxWidth) {
-    return fetch(url).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.blob();
-    }).then(function(blob) {
-      // createImageBitmap con resize puede fallar si el navegador no lo soporta.
-      // En móvil, 'medium' reduce el riesgo de cuelgue al bajar de ~12K a 4K.
-      var quality = (document.body.classList.contains('ferrari-device-phone') ||
-        document.body.classList.contains('ferrari-device-tablet')) ? 'medium' : 'high';
-      return createImageBitmap(blob, {
-        resizeWidth: maxWidth,
-        resizeQuality: quality
-      }).then(function(bitmap) {
-        var canvas = document.createElement('canvas');
-        canvas.width  = bitmap.width;
-        canvas.height = bitmap.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(bitmap, 0, 0);
-        bitmap.close();
-        console.log('[Ferrari/Init] Imagen escalada vía createImageBitmap:',
-          maxWidth, '→', canvas.width + 'x' + canvas.height);
-        return canvas;
-      });
+    // Prefetch + comprobar que el archivo existe (404 → stepDown)
+    return fetch(pano.url, { method: 'HEAD', cache: 'force-cache' }).then(function(res) {
+      if (res && res.ok) {
+        _hideLoadingMessage();
+        return pano.url;
+      }
+      // Algunos hosts no permiten HEAD: intentar GET range o asumir OK
+      if (res && res.status === 405) {
+        _hideLoadingMessage();
+        return pano.url;
+      }
+      throw new Error('Panorama HTTP ' + (res && res.status) + ' · ' + pano.url);
     }).catch(function(err) {
-      // Fallback universal: Image + canvas 2D (funciona en todos los navegadores)
-      console.warn('[Ferrari/Init] createImageBitmap falló, usando fallback Image:', err);
-      return _fallbackLoadAndScale(url, maxWidth);
-    });
-  }
-
-  /** Fallback para navegadores sin createImageBitmap.resize */
-  function _fallbackLoadAndScale(url, maxWidth) {
-    return new Promise(function(resolve, reject) {
-      var img = new Image();
-      img.onload = function() {
-        var scale = maxWidth / img.width;
-        var w = Math.round(img.width * scale);
-        var h = Math.round(img.height * scale);
-        var canvas = document.createElement('canvas');
-        canvas.width  = w;
-        canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, w, h);
-        console.log('[Ferrari/Init] Imagen escalada (fallback):',
-          img.width + 'x' + img.height, '→', w + 'x' + h,
-          '(', Math.round(scale * 100), '%)');
-        resolve(canvas);
-      };
-      img.onerror = function() {
-        reject(new Error('No se pudo cargar la imagen: ' + url));
-      };
-      img.src = url;
+      // HEAD falló (CORS/method): cargar igual la URL; Pannellum reportará error si 404
+      console.warn('[Ferrari/Init] Prefetch panorama:', err && err.message ? err.message : err);
+      _hideLoadingMessage();
+      return pano.url;
     });
   }
 
   /**
    * Crea el viewer de Pannellum con la fuente preparada.
-   * @param {HTMLCanvasElement|string} source
+   * @param {string} source URL del JPG
    */
   function _createViewer(source) {
     var config = {
       type:        'equirectangular',
+      panorama:    typeof source === 'string' ? source : 'loteo360-4096.jpg',
       autoLoad:    true,
       showZoomCtrl:      true,
       showFullscreenCtrl: true,
@@ -286,13 +177,6 @@
         bylineLabel:  'por %s'
       }
     };
-
-    if (typeof source === 'string') {
-      config.panorama = source;
-    } else {
-      config.dynamic  = true;
-      config.panorama = source;
-    }
 
     var viewer = pannellum.viewer('pannellum-viewer', config);
 
@@ -318,10 +202,10 @@
       console.error('[Ferrari/Init] Error de Pannellum:', e);
       var container = document.getElementById('pannellum-viewer');
       if (e && (e.type === 'webgl size error' || (typeof e === 'string' && /webgl|texture/i.test(e)))) {
-        if (_viewerBootTries < 3 && window.FerrariDevice && window.FerrariDevice.stepDown) {
+        if (_viewerBootTries < 4 && window.FerrariDevice && window.FerrariDevice.stepDown) {
           try { viewer.destroy(); } catch (err) {}
           var next = window.FerrariDevice.stepDown();
-          console.warn('[Ferrari/Init] WebGL size error → reintento', next.maxWidth);
+          console.warn('[Ferrari/Init] WebGL size error → reintento', next.panoramaUrl || next.maxWidth);
           if (container) container.innerHTML = '';
           _bootViewer(next.maxWidth);
           return;
