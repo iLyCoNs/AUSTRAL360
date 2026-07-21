@@ -81,15 +81,29 @@
     }
 
     // ─── PREPARAR PANORAMA (con downscaling si es necesario) ──────
-    _preparePanorama().then(function(source) {
+    _bootViewer();
+  }
+
+  let _viewerBootTries = 0;
+  function _bootViewer(forcedMaxWidth) {
+    _viewerBootTries++;
+    // Cap DPR antes de crear el canvas WebGL (más FPS en tablets)
+    _applyPerfCapsEarly();
+    _preparePanorama(forcedMaxWidth).then(function(source) {
       _createViewer(source);
     }).catch(function(err) {
       console.error('[Ferrari/Init] Error preparando panorama:', err);
+      if (_viewerBootTries < 3 && window.FerrariDevice && window.FerrariDevice.stepDown) {
+        var next = window.FerrariDevice.stepDown();
+        console.warn('[Ferrari/Init] Reintento con maxWidth', next.maxWidth);
+        _bootViewer(next.maxWidth);
+        return;
+      }
       var container = document.getElementById('pannellum-viewer');
       if (container) {
         container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;' +
           'color:#fff;background:#1a1a2e;font-family:sans-serif;font-size:14px;padding:20px;text-align:center">' +
-          'Error al cargar la imagen 360°. Recarga la página o contacta al administrador.</div>';
+          'Error al cargar la imagen 360°. Recarga o prueba <code>?tex=2048</code>.</div>';
       }
     });
   }
@@ -99,24 +113,33 @@
    * escala la imagen a una resolución soportable antes de pasarla a Pannellum.
    * @returns {Promise<HTMLCanvasElement|string>} canvas (dynamic) o URL string
    */
-  function _preparePanorama() {
-    var tier = window.FerrariDevice.getTier();
-    var maxWidth = window.FerrariDevice.getMaxWidth();
-    var needsDl = window.FerrariDevice.needsDownscale();
+  function _preparePanorama(forcedMaxWidth) {
+    var info = window.FerrariDevice.detect();
+    var tier = info.tier;
+    var maxWidth = forcedMaxWidth || info.maxWidth;
+    var maxTex = info.maxTextureSize || 0;
+    // Nunca pedir más que MAX_TEXTURE_SIZE (Pannellum usa width/2 vs maxTex en equirect)
+    if (maxTex > 0) {
+      // Pannellum equirect: falla si max(width/2, height) > MAX_TEXTURE_SIZE
+      maxWidth = Math.min(maxWidth, maxTex * 2);
+      if (maxTex < 4096) maxWidth = Math.min(maxWidth, maxTex);
+    }
+    var origW = window.FerrariDevice.getOriginalWidth();
+    var needsDl = origW > maxWidth || !!forcedMaxWidth;
 
-    // Añadir clase CSS al body según el tier del dispositivo
+    document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
     document.body.classList.add('ferrari-device-' + tier);
+    if (info.isTablet) document.body.classList.add('ferrari-device-tablet');
 
     console.log('[Ferrari/Init] Device tier:', tier,
-      '| maxWidth:', maxWidth, '| downscale:', needsDl);
+      '| maxWidth:', maxWidth, '| downscale:', needsDl,
+      '| tablet:', !!info.isTablet);
 
-    // Tier high o imagen ya cabe → URL directa (comportamiento original)
-    if (tier === 'high' || !needsDl) {
+    if (!needsDl) {
       return Promise.resolve('loteo360.jpg');
     }
 
-    // Mid/low: escalar al ancho máximo soportado
-    _showLoadingMessage('Ajustando resolución para tu dispositivo…');
+    _showLoadingMessage('Ajustando resolución 360° (' + maxWidth + 'px)…');
 
     return _loadAndScaleImage('loteo360.jpg', maxWidth).then(function(canvas) {
       _hideLoadingMessage();
@@ -252,11 +275,21 @@
 
     viewer.on('error', function(e) {
       console.error('[Ferrari/Init] Error de Pannellum:', e);
-      var msg = '';
       var container = document.getElementById('pannellum-viewer');
+      if (e && (e.type === 'webgl size error' || (typeof e === 'string' && /webgl|texture/i.test(e)))) {
+        if (_viewerBootTries < 3 && window.FerrariDevice && window.FerrariDevice.stepDown) {
+          try { viewer.destroy(); } catch (err) {}
+          var next = window.FerrariDevice.stepDown();
+          console.warn('[Ferrari/Init] WebGL size error → reintento', next.maxWidth);
+          if (container) container.innerHTML = '';
+          _bootViewer(next.maxWidth);
+          return;
+        }
+      }
+      var msg = '';
       if (e && e.type === 'webgl size error') {
         msg = 'La imagen 360° es demasiado grande para este dispositivo.' +
-          ' (' + e.width + 'px, máx ' + e.maxWidth + 'px).';
+          ' (' + e.width + 'px, máx ' + e.maxWidth + 'px). Prueba ?tex=2048';
       } else {
         msg = 'Error al cargar la imagen 360°. Recarga o contacta al administrador.';
       }
@@ -364,8 +397,9 @@
       }
     }, { passive: true });
 
-    // 5. Mobile: permitir zoom más profundo (minHfov 15° vs 30°)
-    if (window.innerWidth < 768 && window.Ferrari.viewer.setHfovBounds) {
+    // 5. Mobile/tablet: zoom más profundo
+    if ((window.innerWidth < 768 || (window.FerrariDevice && window.FerrariDevice.isTablet && window.FerrariDevice.isTablet()))
+        && window.Ferrari.viewer.setHfovBounds) {
       window.Ferrari.viewer.setHfovBounds([15, 120]);
     }
 
@@ -377,6 +411,33 @@
     document.addEventListener('ferrari:lotes-changed', _tryCinematicIntro, { once: true });
 
     console.log('[Ferrari/Init] ✓ Motor Ferrari360 activo — SVG nadir-clamped');
+  }
+
+  function _applyPerfCapsEarly() {
+    if (!window.FerrariDevice) return;
+    window.FerrariDevice.detect();
+    var maxDpr = window.FerrariDevice.getMaxDpr ? window.FerrariDevice.getMaxDpr() : 2;
+    var real = window.devicePixelRatio || 1;
+    if (real <= maxDpr) return;
+    try {
+      Object.defineProperty(window, 'devicePixelRatio', {
+        configurable: true,
+        get: function() { return maxDpr; }
+      });
+      console.log('[Ferrari/Init] DPR capped early', real, '→', maxDpr);
+    } catch (e) {
+      console.warn('[Ferrari/Init] No se pudo limitar DPR:', e);
+    }
+  }
+
+  /** @deprecated alias — caps ya se aplican early */
+  function _applyPerfCaps() {
+    _applyPerfCapsEarly();
+    try {
+      if (window.Ferrari && window.Ferrari.viewer && window.Ferrari.viewer.resize) {
+        window.Ferrari.viewer.resize();
+      }
+    } catch (e2) {}
   }
 
   /** Paneo cinemático de bienvenida: norte → izquierda → Lote 13 */
