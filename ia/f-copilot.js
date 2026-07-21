@@ -3118,11 +3118,12 @@
     return new Blob([bytes], { type: mime.includes('audio') ? mime : 'audio/mpeg' });
   }
 
+  // Solo el TTS más barato (price-performance). Pro/3.1 cuestan ~2× y queman cuota free.
+  // Paid: $0.50/1M input + $10/1M audio vs 3.1 Flash TTS $1 + $20.
+  const GEMINI_TTS_CHEAPEST = 'gemini-2.5-flash-preview-tts';
   const GEMINI_TTS_MODELS = [
-    'gemini-2.5-flash-preview-tts',
-    'gemini-2.5-pro-preview-tts',
-    'gemini-3.1-flash-tts-preview',
-    'gemini-2.0-flash'
+    GEMINI_TTS_CHEAPEST
+    // No rotar a Pro/3.1: agotan la cuota free más rápido sin mejor precio.
   ];
 
   // Cuota TTS Gemini: tras 429/403, enfriar y usar Dalia (no robot)
@@ -3222,7 +3223,7 @@
     // Interactions API (otra cuota / ruta)
     try {
       const body = JSON.stringify({
-        model: _geminiTtsPreferredModel || 'gemini-2.5-flash-preview-tts',
+        model: GEMINI_TTS_CHEAPEST,
         input: speakPrompt,
         response_format: { type: 'audio' },
         generation_config: {
