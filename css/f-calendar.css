@@ -272,12 +272,18 @@
   .kpk-calendar-widget {
     left: 10px;
     right: 10px;
-    bottom: max(96px, env(safe-area-inset-bottom, 0px) + 88px);
+    /* Encima del HUD del chat móvil (z 10005); no tapado por chips */
+    bottom: auto;
+    top: max(12px, env(safe-area-inset-top, 0px) + 8px);
     width: auto;
-    max-height: 58vh;
-    z-index: 10006;
+    max-height: min(52vh, calc(100vh - 200px));
+    z-index: 10020;
   }
   .kpk-cal__body {
+    max-height: 32vh;
+  }
+  /* Con agenda abierta: HUD más bajo para no solapar el formulario */
+  body.kpk-calendar-open .kpk-mobile-ai-bubble-popup {
     max-height: 38vh;
   }
 }

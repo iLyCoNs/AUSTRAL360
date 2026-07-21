@@ -1044,7 +1044,12 @@
     }
 
     // Interceptar si estamos esperando el nombre del cliente (Interacción 2)
-    if (_isWaitingForName && prompt) {
+    // Agenda de visita: dejar pasar (el widget pide nombre; no bloquear el chip «Agendar»)
+    const _isAgendaIntent =
+      /(agendar|agenda\s+visita|coordinar\s+(una\s+)?visita|visita\s+presencial|calendario|confirmar\s+(la\s+)?visita)/i.test(
+        prompt || ''
+      );
+    if (_isWaitingForName && prompt && !_isAgendaIntent) {
       const modeWait = _getVoiceMode();
       const isGigiWait = modeWait.includes('gigi') || modeWait.includes('dalia');
       const isMobileWait = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1687,6 +1692,80 @@
       }
     });
     _renderActionChips(chipActions);
+  }
+
+  /** Chips de sugerencia (query → handleSend) en desktop + HUD móvil */
+  function _pushSuggestChips(items) {
+    items = items || [];
+    _actionChipsActive = false;
+    const chips = document.getElementById('kpk-ai-chips-container');
+    if (chips) {
+      chips.innerHTML = '';
+      chips.classList.remove('kpk-ai-chips-container--carousel');
+      items.forEach((it) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'kpk-suggest-chip';
+        b.textContent = it.label;
+        b.setAttribute('data-query', it.query);
+        b.addEventListener('click', () => {
+          _mobileHudPinned = true;
+          if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+          if (_input) _input.value = it.query;
+          handleSend();
+        });
+        chips.appendChild(b);
+      });
+      requestAnimationFrame(_refreshChipsNav);
+    }
+
+    const isMobile =
+      window.innerWidth < 768 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    let popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (popup) {
+      popup.classList.remove('kpk-mbp-minimal');
+      popup.style.display = 'flex';
+      popup.classList.add('is-visible');
+      const inputRow = popup.querySelector('#kpk-mbp-input-row');
+      const controlsRow = popup.querySelector('#kpk-mbp-controls-row');
+      if (inputRow && controlsRow) {
+        inputRow.style.display = 'flex';
+        controlsRow.style.display = 'none';
+      }
+    }
+    let mobile = document.getElementById('kpk-mbp-chips-row');
+    if (!mobile && popup) {
+      const body = popup.querySelector('.kpk-mbp-body');
+      if (body) {
+        mobile = document.createElement('div');
+        mobile.id = 'kpk-mbp-chips-row';
+        mobile.className = 'kpk-mbp-chips-row';
+        body.appendChild(mobile);
+      }
+    }
+    if (mobile) {
+      mobile.innerHTML = '';
+      mobile.style.display = items.length ? 'flex' : 'none';
+      items.forEach((it) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'kpk-mbp-chip';
+        b.textContent = it.label;
+        b.setAttribute('data-query', it.query);
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          _mobileHudPinned = true;
+          if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
+          if (_input) _input.value = it.query;
+          handleSend();
+        });
+        mobile.appendChild(b);
+      });
+    }
   }
 
   function _clearActionChips() {
@@ -4512,9 +4591,66 @@
         };
       }
     }
+
+    // 1d) Agenda de visita — ANTES del matcher de lotes
+    // (el chip «Agendar… Lote 12» antes disparaba lookAtLote y nunca abría el calendario)
+    if (_calendarState && _calendarState.open) {
+      if (/(confirm|confirmar|env[ií]a|enviar|listo|dale\s+con\s+la\s+visita|ag[eé]ndalo|reservar\s+ya)/i.test(clean) &&
+          !/(no\s+confirm|cancel)/i.test(clean)) {
+        return {
+          text: 'Perfecto. Confirmo la visita y disparo correo + WhatsApp al equipo comercial.',
+          actions: [{ type: 'confirmCalendarVisit' }]
+        };
+      }
+
+      const parsedOpen = _parseCalendarFillFromChat(clean);
+      if (parsedOpen) {
+        const bits = [];
+        if (parsedOpen.date) bits.push('día ' + parsedOpen.date);
+        if (parsedOpen.time) bits.push(parsedOpen.time + ' hrs');
+        if (parsedOpen.name) bits.push(parsedOpen.name);
+        return {
+          text:
+            'Actualicé la agenda' +
+            (bits.length ? ' (' + bits.join(' · ') + ')' : '') +
+            '. Cuando esté listo di <b>confirmar visita</b>.',
+          actions: [Object.assign({ type: 'fillCalendarVisit' }, parsedOpen)]
+        };
+      }
+    }
+
+    if (/(agendar|agenda\s+visita|quiero\s+visitar|visita\s+presencial|ir\s+a\s+ver\s+(el\s+)?(terreno|lote|parcela)|coordinar\s+(una\s+)?visita|calendario|reuni[oó]n\s+en\s+terreno|confirmar\s+(la\s+)?visita)/i.test(clean) &&
+        !/(tour|recorrer|visitar\s+todo)/i.test(clean)) {
+      const voiceMode = _getVoiceMode();
+      const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
+      const parsed = _parseCalendarFillFromChat(clean) || {};
+      let agendaLoteId = _activeLote ? _activeLote.id : null;
+      const loteNumInMsg = clean.match(/(?:lote|parcela)\s*(\d{1,3})\b/i);
+      if (loteNumInMsg) {
+        const found = findLoteById(loteNumInMsg[1]);
+        if (found) agendaLoteId = found.id;
+      }
+      const openAct = Object.assign(
+        { type: 'openCalendarWidget', loteId: agendaLoteId },
+        parsed
+      );
+      const bits = [];
+      if (parsed.date) bits.push(parsed.date);
+      if (parsed.time) bits.push(parsed.time + ' hrs');
+      const text = isG
+        ? (bits.length
+            ? '¡Listo! Abrí la agenda con ' + bits.join(' · ') + '. Completa tus datos o dímelos aquí y luego di <b>confirmar visita</b> 😊'
+            : '¡Me encanta! Abrí la agenda. Elige día/hora o dime: “mañana a las 12, me llamo Ana”. Luego confirmamos y aviso por correo y WhatsApp 😊')
+        : (bits.length
+            ? 'Desplegué la agenda con ' + bits.join(' · ') + '. Indique nombre, correo y WhatsApp, o diga <b>confirmar visita</b> si ya están listos.'
+            : 'Desplegué la agenda de visitas. Indique día y hora, o complete el panel. Al confirmar se envía correo y WhatsApp al equipo comercial.');
+
+      return { text: text, actions: [openAct] };
+    }
     
     // 2) Lote / Parcela específica (ej: "muéstrame la parcela 15", "acerca el lote 10", "dónde está el lote 10", "haz zoom al 20")
-    const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al|nro|numero|nº|\b)\s*(\d{1,3})\b/i);
+    // OJO: no usar bare \b — capturaba cualquier número suelto (y chocaba con «Agendar… Lote N»)
+    const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al|nro|numero|n[ºo°])\s*(\d{1,3})\b/i);
     if (loteMatch) {
       const num = loteMatch[1];
       const lote = findLoteById(num);
@@ -4689,56 +4825,6 @@
       }
     } catch(e) {
       console.warn('[Ferrari/IA] Error en matcher de POI específico:', e);
-    }
-
-    // 4.6) Agenda de visita — conversación con el widget
-    if (_calendarState && _calendarState.open) {
-      if (/(confirm|confirmar|env[ií]a|enviar|listo|dale\s+con\s+la\s+visita|ag[eé]ndalo|reservar\s+ya)/i.test(clean) &&
-          !/(no\s+confirm|cancel)/i.test(clean)) {
-        return {
-          text: 'Perfecto. Confirmo la visita y disparo correo + WhatsApp al equipo comercial.',
-          actions: [{ type: 'confirmCalendarVisit' }]
-        };
-      }
-
-      const parsed = _parseCalendarFillFromChat(clean);
-      if (parsed) {
-        const bits = [];
-        if (parsed.date) bits.push('día ' + parsed.date);
-        if (parsed.time) bits.push(parsed.time + ' hrs');
-        if (parsed.name) bits.push(parsed.name);
-        return {
-          text:
-            'Actualicé la agenda' +
-            (bits.length ? ' (' + bits.join(' · ') + ')' : '') +
-            '. Cuando esté listo di <b>confirmar visita</b>.',
-          actions: [Object.assign({ type: 'fillCalendarVisit' }, parsed)]
-        };
-      }
-    }
-
-    // Abrir agenda (y rellenar si ya dijo día/hora/datos en el mismo mensaje)
-    if (/(agendar|agenda\s+visita|quiero\s+visitar|visita\s+presencial|ir\s+a\s+ver\s+(el\s+)?(terreno|lote|parcela)|coordinar\s+(una\s+)?visita|calendario|reuni[oó]n\s+en\s+terreno)/i.test(clean) &&
-        !/(tour|recorrer|visitar\s+todo)/i.test(clean)) {
-      const voiceMode = _getVoiceMode();
-      const isG = voiceMode.includes('gigi') || voiceMode.includes('dalia');
-      const parsed = _parseCalendarFillFromChat(clean) || {};
-      const openAct = Object.assign(
-        { type: 'openCalendarWidget', loteId: (_activeLote ? _activeLote.id : null) },
-        parsed
-      );
-      const bits = [];
-      if (parsed.date) bits.push(parsed.date);
-      if (parsed.time) bits.push(parsed.time + ' hrs');
-      const text = isG
-        ? (bits.length
-            ? '¡Listo! Abrí la agenda con ' + bits.join(' · ') + '. Completa tus datos o dímelos aquí y luego di <b>confirmar visita</b> 😊'
-            : '¡Me encanta! Abrí la agenda. Elige día/hora o dime: “mañana a las 12, me llamo Ana”. Luego confirmamos y aviso por correo y WhatsApp 😊')
-        : (bits.length
-            ? 'Desplegué la agenda con ' + bits.join(' · ') + '. Indique nombre, correo y WhatsApp, o diga <b>confirmar visita</b> si ya están listos.'
-            : 'Desplegué la agenda de visitas. Indique día y hora, o complete el panel. Al confirmar se envía correo y WhatsApp al equipo comercial.');
-
-      return { text: text, actions: [openAct] };
     }
 
     // 4.7) Buscar si el usuario consulta por financiamiento, cuotas, pie o cotización simulada
@@ -5693,26 +5779,16 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     setTimeout(() => widget.classList.add('is-open'), 40);
 
     if (opts.silent !== true) {
-      // chips de ayuda en chat
-      const chips = document.getElementById('kpk-ai-chips-container');
-      if (chips) {
-        chips.innerHTML = '';
-        const mk = (label, q) => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'kpk-suggest-chip';
-          b.textContent = label;
-          b.addEventListener('click', () => {
-            if (_input) _input.value = q;
-            handleSend();
-          });
-          chips.appendChild(b);
-        };
-        mk('📅 Mañana 12:00', 'Agendar mañana a las 12:00');
-        mk('📅 Pasado 15:00', 'Agendar pasado mañana a las 15:00');
-        mk('✅ Confirmar visita', 'Confirmar la visita con mis datos');
-      }
+      _pushSuggestChips([
+        { label: '📅 Mañana 12:00', query: 'Agendar mañana a las 12:00' },
+        { label: '📅 Pasado 15:00', query: 'Agendar pasado mañana a las 15:00' },
+        { label: '✅ Confirmar visita', query: 'Confirmar la visita con mis datos' }
+      ]);
     }
+
+    try {
+      document.body.classList.add('kpk-calendar-open');
+    } catch (e) {}
   }
 
   function fillCalendarVisit(act) {
@@ -5800,16 +5876,10 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         'Faltan datos para confirmar: día, hora, nombre, correo y WhatsApp. Complétalos en la agenda o escríbemelos aquí.',
         'system'
       );
-      const chips = document.getElementById('kpk-ai-chips-container');
-      if (chips) {
-        chips.innerHTML = '';
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'kpk-suggest-chip';
-        b.textContent = '📅 Completar en agenda';
-        b.addEventListener('click', () => openCalendarWidget(loteId));
-        chips.appendChild(b);
-      }
+      _pushSuggestChips([
+        { label: '📅 Completar en agenda', query: 'Quiero coordinar una visita al terreno' },
+        { label: '📅 Mañana 12:00', query: 'Agendar mañana a las 12:00' }
+      ]);
       return false;
     }
 
@@ -5951,6 +6021,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     } else {
       _calendarState.open = false;
     }
+    try {
+      document.body.classList.remove('kpk-calendar-open');
+    } catch (e) {}
   }
 
   function isCalendarOpen() {
@@ -6351,21 +6424,23 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     } else {
       chips = [
         { text: `🏡 Lotes Disponibles`, query: `¿Cuáles están disponibles?` },
+        { text: `📅 Agendar visita`, query: `Quiero coordinar una visita al terreno` },
         { text: `🌲 Finde cerca`, query: `Arma mi primer fin de semana cerca del proyecto` },
         { text: `♨️ Termas`, query: `quiero planes de termas cerca` },
         { text: `🥾 Trekking`, query: `quiero planes de trekking cerca` },
         { text: `🛶 Rafting`, query: `quiero planes de rafting cerca` },
         { text: `🏞️ Lagos`, query: `quiero planes de lagos cerca` }
       ];
-      // Si el catálogo ya cargó, anteponer chips oficiales
+      // Si el catálogo ya cargó, anteponer chips oficiales (siempre conservar Agendar)
       try {
         if (window.FerrariTourism && typeof window.FerrariTourism.getChipDefs === 'function') {
           const defs = window.FerrariTourism.getChipDefs();
           if (defs && defs.length) {
             chips = [
               { text: `🏡 Lotes Disponibles`, query: `¿Cuáles están disponibles?` },
+              { text: `📅 Agendar visita`, query: `Quiero coordinar una visita al terreno` },
               { text: `🌲 Finde cerca`, query: `Arma mi primer fin de semana cerca del proyecto` }
-            ].concat(defs.slice(0, 5));
+            ].concat(defs.slice(0, 4));
           }
         }
       } catch (e) {}
@@ -6432,26 +6507,13 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       `Listo: <b>${poi.title}</b>. Ruta, video/foto verificados y más planes abajo. ¿Seguimos con otro lugar o miramos lotes?`,
       'system'
     );
-    const chips = document.getElementById('kpk-ai-chips-container');
-    if (chips) {
-      chips.innerHTML = '';
-      const mk = (label, q) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'kpk-suggest-chip';
-        b.textContent = label;
-        b.addEventListener('click', () => {
-          _input.value = q;
-          handleSend();
-        });
-        chips.appendChild(b);
-      };
-      mk('🥾 Otro trekking', 'quiero planes de trekking cerca');
-      mk('♨️ Termas', 'quiero planes de termas cerca');
-      mk('🏡 Ver lotes', '¿Cuáles lotes están disponibles?');
-      mk('📅 Agendar visita', 'Quiero coordinar una visita al terreno');
-      mk('💬 WhatsApp asesor', 'Quiero hablar por WhatsApp con un asesor humano');
-    }
+    _pushSuggestChips([
+      { label: '🥾 Otro trekking', query: 'quiero planes de trekking cerca' },
+      { label: '♨️ Termas', query: 'quiero planes de termas cerca' },
+      { label: '🏡 Ver lotes', query: '¿Cuáles lotes están disponibles?' },
+      { label: '📅 Agendar visita', query: 'Quiero coordinar una visita al terreno' },
+      { label: '💬 WhatsApp asesor', query: 'Quiero hablar por WhatsApp con un asesor humano' }
+    ]);
   };
 
   // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
