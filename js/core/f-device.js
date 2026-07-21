@@ -111,7 +111,8 @@
     function choose() {
       if (force > 0) {
         if (force <= 2048) return PANO.low;
-        if (force <= 4096) {
+        // En móvil, aunque forcen 8192, usar mid/low (nunca 41MB)
+        if (force <= 4096 || _isPhone || _isTablet) {
           if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
           return PANO.low;
         }
@@ -120,8 +121,8 @@
         return PANO.low;
       }
 
-      // Tablets: 4096 (fluido). Teléfonos high con GPU OK: original.
-      if (_isTablet) {
+      // Teléfono / tablet: NUNCA el JPG de 41MB (OOM / pantalla negra con UI encima).
+      if (_isPhone || _isTablet) {
         if (_tier === 'low' || !_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.low;
         return PANO.mid;
       }
@@ -133,13 +134,17 @@
         return PANO.low;
       }
 
-      // high
+      // Desktop high
       if (_gpuFits(PANO.full.width, PANO.full.height)) return PANO.full;
       if (_gpuFits(PANO.mid.width, PANO.mid.height)) return PANO.mid;
       return PANO.low;
     }
 
     var pick = choose();
+    // Refuerzo: móvil jamás full
+    if ((_isPhone || _isTablet) && pick.url === PANO.full.url) {
+      pick = _gpuFits(PANO.mid.width, PANO.mid.height) ? PANO.mid : PANO.low;
+    }
 
     _panoUrl = pick.url;
     _limit = pick.width;

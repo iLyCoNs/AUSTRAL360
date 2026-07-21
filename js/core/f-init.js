@@ -118,7 +118,7 @@
     var info = window.FerrariDevice.detect();
     var pano = window.FerrariDevice.pickPanorama
       ? window.FerrariDevice.pickPanorama(forcedMaxWidth)
-      : { url: 'loteo360.jpg', width: info.maxWidth, tier: info.tier };
+      : { url: 'loteo360-4096.jpg', width: 4096, tier: info.tier };
 
     var tier = pano.tier || info.tier;
     document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
@@ -131,26 +131,9 @@
       '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet,
       '| MAX_TEXTURE_SIZE:', info.maxTextureSize);
 
-    _showLoadingMessage('Cargando vista 360° (' + (pano.width || '') + 'px)…');
-
-    // Prefetch + comprobar que el archivo existe (404 → stepDown)
-    return fetch(pano.url, { method: 'HEAD', cache: 'force-cache' }).then(function(res) {
-      if (res && res.ok) {
-        _hideLoadingMessage();
-        return pano.url;
-      }
-      // Algunos hosts no permiten HEAD: intentar GET range o asumir OK
-      if (res && res.status === 405) {
-        _hideLoadingMessage();
-        return pano.url;
-      }
-      throw new Error('Panorama HTTP ' + (res && res.status) + ' · ' + pano.url);
-    }).catch(function(err) {
-      // HEAD falló (CORS/method): cargar igual la URL; Pannellum reportará error si 404
-      console.warn('[Ferrari/Init] Prefetch panorama:', err && err.message ? err.message : err);
-      _hideLoadingMessage();
-      return pano.url;
-    });
+    // No tapar el canvas con overlay permanente: Pannellum ya muestra su loader
+    _hideLoadingMessage();
+    return Promise.resolve(pano.url);
   }
 
   /**
@@ -158,9 +141,10 @@
    * @param {string} source URL del JPG
    */
   function _createViewer(source) {
+    var panoUrl = typeof source === 'string' ? source : 'loteo360-4096.jpg';
     var config = {
       type:        'equirectangular',
-      panorama:    typeof source === 'string' ? source : 'loteo360-4096.jpg',
+      panorama:    panoUrl,
       autoLoad:    true,
       showZoomCtrl:      true,
       showFullscreenCtrl: true,
@@ -178,6 +162,9 @@
       }
     };
 
+    // Quitar overlay residual que tapa la textura WebGL
+    _hideLoadingMessage(true);
+
     var viewer = pannellum.viewer('pannellum-viewer', config);
 
     // ─── EXPONER window.Ferrari ────────────────────────────────────
@@ -194,12 +181,14 @@
 
     // ─── ESPERAR CARGA DE PANNELLUM ────────────────────────────────
     viewer.on('load', function() {
-      console.log('[Ferrari/Init] ✓ Pannellum cargado. Iniciando sistemas...');
+      console.log('[Ferrari/Init] ✓ Pannellum cargado. Iniciando sistemas...', panoUrl);
+      _hideLoadingMessage(true);
       _onViewerReady();
     });
 
     viewer.on('error', function(e) {
       console.error('[Ferrari/Init] Error de Pannellum:', e);
+      _hideLoadingMessage(true);
       var container = document.getElementById('pannellum-viewer');
       if (e && (e.type === 'webgl size error' || (typeof e === 'string' && /webgl|texture/i.test(e)))) {
         if (_viewerBootTries < 4 && window.FerrariDevice && window.FerrariDevice.stepDown) {
@@ -257,18 +246,23 @@
     if (!el) {
       el = document.createElement('div');
       el.id = 'kpk-init-loading';
-      el.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;' +
-        'justify-content:center;color:#fff;background:#1a1a2e;font-family:sans-serif;' +
-        'font-size:14px;z-index:10;text-align:center;padding:20px';
       container.appendChild(el);
     }
+    // display en estilo (no solo hidden): en Android el inline flex gana a [hidden]
+    el.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;' +
+      'justify-content:center;color:#fff;background:#1a1a2e;font-family:sans-serif;' +
+      'font-size:14px;z-index:10;text-align:center;padding:20px;pointer-events:none';
     el.textContent = msg || 'Preparando imagen 360°…';
-    el.hidden = false;
+    el.removeAttribute('hidden');
   }
 
-  function _hideLoadingMessage() {
+  /** @param {boolean} [remove] quitar del DOM para no tapar el WebGL */
+  function _hideLoadingMessage(remove) {
     var el = document.getElementById('kpk-init-loading');
-    if (el) el.hidden = true;
+    if (!el) return;
+    el.style.display = 'none';
+    el.setAttribute('hidden', '');
+    if (remove && el.parentNode) el.parentNode.removeChild(el);
   }
 
   function _escHtml(s) {

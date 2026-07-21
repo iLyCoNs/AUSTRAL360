@@ -30,7 +30,7 @@ def main() -> None:
         out_path = os.path.join(ROOT, name)
         height = int(round(img.height * (width / float(img.width))))
         out = img.resize((width, height), Image.Resampling.LANCZOS)
-        out.save(out_path, "JPEG", quality=quality, optimize=True, progressive=True)
+        out.save(out_path, "JPEG", quality=quality, optimize=True, progressive=False)
         print("wrote", name, out.size, os.path.getsize(out_path))
 
 
