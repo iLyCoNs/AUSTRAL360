@@ -6,6 +6,7 @@
   "scripts": {
     "tts": "node tools/tts-proxy.js",
     "voice": "node tools/tts-proxy.js",
+    "tourism-videos": "node tools/find-tourism-videos.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
