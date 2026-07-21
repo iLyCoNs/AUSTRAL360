@@ -30,6 +30,16 @@
     spotlightId: null
   };
 
+  /** Modo edición (panel herramientas): ocultar pins Cercanos para no tapar Horizonte */
+  let _editorHideNearby = (function () {
+    try {
+      // Default ON (ocultos) salvo que el editor haya elegido mostrarlos
+      return localStorage.getItem('kpk_editor_hide_nearby') !== '0';
+    } catch (e) {
+      return true;
+    }
+  })();
+
   const ICON_MAPS = 'assets/icons/google-maps.svg';
   const ICON_WAZE = 'assets/icons/waze.svg?v=2';
 
@@ -67,6 +77,25 @@
     if (!_isNearbyTipo(pin.tipo)) return false;
     if (!_buyerNearby.show || !pin.id || pin.id !== _buyerNearby.spotlightId) return true;
     return false;
+  }
+
+  function _editorHidesPin(pin) {
+    if (!_editorHideNearby) return false;
+    if (!_isToolMode()) return false;
+    return _isNearbyTipo(pin.tipo);
+  }
+
+  function setEditorNearbyHidden(hidden) {
+    _editorHideNearby = !!hidden;
+    try {
+      localStorage.setItem('kpk_editor_hide_nearby', _editorHideNearby ? '1' : '0');
+    } catch (e) {}
+    markDirty();
+    return _editorHideNearby;
+  }
+
+  function isEditorNearbyHidden() {
+    return !!_editorHideNearby;
   }
 
   function _armInteractGuard(ms) {
@@ -308,7 +337,7 @@
   }
 
   function _placeEl(el, pin) {
-    if (_buyerHidesPin(pin)) {
+    if (_editorHidesPin(pin) || _buyerHidesPin(pin)) {
       el.style.display = 'none';
       return;
     }
@@ -404,7 +433,9 @@
     isDragging,
     bringFront: _bringFront,
     clearFront: _clearFront,
-    setBuyerNearbyFilter
+    setBuyerNearbyFilter,
+    setEditorNearbyHidden,
+    isEditorNearbyHidden
   };
 
   console.log('[Ferrari/GeoPins] ✓ Módulo inicializado');

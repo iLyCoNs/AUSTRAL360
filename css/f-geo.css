@@ -243,13 +243,14 @@
   word-break: break-word;
   -webkit-font-smoothing: antialiased;
 }
+/* Horizonte usa la misma tipografía Outfit que Cercanos (poi) */
 .f-geo-pin[data-tipo="horizonte"] .fgp-title {
-  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
-  font-size: 14.5px;
+  font-family: 'Outfit', 'Josefin Sans', system-ui, sans-serif;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  color: #1a1410;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  color: #141416;
 }
 .fgp-sub {
   font-family: 'Outfit', system-ui, sans-serif;
@@ -264,10 +265,10 @@
 }
 .f-geo-pin[data-tipo="horizonte"] .fgp-sub {
   font-size: 10px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
   font-weight: 500;
-  color: rgba(120, 70, 10, 0.55);
+  color: rgba(20, 20, 22, 0.48);
 }
 .fgp-actions {
   display: flex; align-items: center; gap: 3px;
@@ -542,5 +543,5 @@
     max-width: min(92vw, 340px);
     background: #ffffff !important;
   }
-  .f-geo-pin[data-tipo="horizonte"] .fgp-title { font-size: 13.5px; }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-title { font-size: 12.5px; }
 }

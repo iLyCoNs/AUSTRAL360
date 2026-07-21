@@ -33,11 +33,13 @@
     _toolRegistry.forEach(t => {
       if (typeof t.deactivate === 'function') t.deactivate();
     });
-    // Limpiar estado visual de botones
+    // Limpiar estado visual de botones (excepto toggles persistentes)
     document.querySelectorAll('.kpk-tool-btn').forEach(btn => {
+      if (btn.id === 'tool-geo-nearby-hide' || btn.classList.contains('kpk-tool-btn--toggle')) return;
       btn.classList.remove('active');
       btn.setAttribute('aria-pressed', 'false');
     });
+    _syncNearbyHideBtn();
   }
 
   // ─── EXPONER FerrariTools INMEDIATAMENTE ─────────────────────────
@@ -104,6 +106,26 @@
     _bindToolButton('tool-geo-ruta',      () => _activateTool('geo-ruta'));
     _bindToolButton('tool-geo-nearby',    () => _activateTool('geo-nearby'));
 
+    const btnNearbyHide = document.getElementById('tool-geo-nearby-hide');
+    if (btnNearbyHide) {
+      btnNearbyHide.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const api = window.FerrariGeoPins;
+        if (!api || typeof api.setEditorNearbyHidden !== 'function') return;
+        const next = !api.isEditorNearbyHidden();
+        api.setEditorNearbyHidden(next);
+        _syncNearbyHideBtn();
+        if (window.FerrariUI && window.FerrariUI.showToast) {
+          window.FerrariUI.showToast(
+            next ? 'Pins Cercanos ocultos — puedes editar Horizonte' : 'Pins Cercanos visibles en la foto',
+            'info'
+          );
+        }
+      }, false);
+      _syncNearbyHideBtn();
+    }
+
     // ── Botones de acción ─────────────────────────────────────────
     const btnUndo      = document.getElementById('action-undo');
     const btnFinish    = document.getElementById('action-finish');
@@ -166,6 +188,7 @@
     if (window.FerrariGeoPins && window.FerrariGeoPins.rebuild) {
       window.FerrariGeoPins.rebuild();
     }
+    _syncNearbyHideBtn();
   }
 
   function openPanel()  { if (!_panelOpen)  togglePanel(); }
@@ -232,10 +255,26 @@
 
     // Marcar botón activo DESPUÉS de activar, ya que las herramientas pueden llamar a deactivateAllTools internamente
     document.querySelectorAll('.kpk-tool-btn').forEach(btn => {
+      if (btn.id === 'tool-geo-nearby-hide' || btn.classList.contains('kpk-tool-btn--toggle')) return;
       const isCurrent = btn.dataset.tool === tipo;
       btn.classList.toggle('active', isCurrent);
       btn.setAttribute('aria-pressed', isCurrent ? 'true' : 'false');
     });
+    _syncNearbyHideBtn();
+  }
+
+  function _syncNearbyHideBtn() {
+    const btn = document.getElementById('tool-geo-nearby-hide');
+    const label = document.getElementById('tool-geo-nearby-hide-label');
+    if (!btn) return;
+    const hidden = !!(window.FerrariGeoPins && typeof window.FerrariGeoPins.isEditorNearbyHidden === 'function'
+      && window.FerrariGeoPins.isEditorNearbyHidden());
+    btn.classList.toggle('active', hidden);
+    btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+    if (label) label.textContent = hidden ? 'Mostrar cercanos' : 'Ocultar cercanos';
+    btn.title = hidden
+      ? 'Mostrar pins Cercanos en la foto'
+      : 'Ocultar pins Cercanos mientras editas Horizonte';
   }
 
   function _bindToolButton(id, handler) {
