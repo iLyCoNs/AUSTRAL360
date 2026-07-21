@@ -1,0 +1,12 @@
+# Puente TTS público (Dalia/Jorge) para GitHub Pages → Hetzner/VPS
+#   docker build -f tools/Dockerfile.tts -t kpk-tts .
+#   docker run -d --restart unless-stopped -p 8787:8787 -e KPK_TTS_HOST=0.0.0.0 kpk-tts
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY tools/tts-proxy.js ./tools/tts-proxy.js
+ENV KPK_TTS_HOST=0.0.0.0
+ENV KPK_TTS_PORT=8787
+EXPOSE 8787
+CMD ["node", "tools/tts-proxy.js"]

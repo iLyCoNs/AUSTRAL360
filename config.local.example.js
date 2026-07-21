@@ -14,6 +14,8 @@
     configVersion: 13,
     aiProvider: 'lightning',
     voiceMode: 'jarvis_charon',
+    // Puente Dalia/Jorge en VPS (HTTPS). Con esto GitHub Pages ya no necesita proxy en tu PC.
+    // ttsProxyUrl: 'https://TU-IP-O-DOMINIO:8787',
     aiKeys: {
       // Deja gemini vacío para heredar la de config.js (Charon)
       openrouter: '',

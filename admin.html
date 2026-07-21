@@ -1142,8 +1142,19 @@
             <span class="brand-opt-hint" id="ai-key-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Clave de acceso de la IA. Se almacena localmente de forma segura en este navegador.</span>
           </div>
 
+          <div class="efield full" style="padding:14px;border-radius:12px;border:1px solid rgba(57,255,20,0.25);background:rgba(57,255,20,0.06);">
+            <label style="display:block;margin-bottom:8px;">Salida de voz del copiloto (TTS)</label>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+              <button type="button" id="btn-tts-output-toggle" onclick="toggleCopilotTtsOutput()" style="padding:12px 18px;border-radius:10px;border:1px solid rgba(57,255,20,0.45);background:rgba(57,255,20,0.12);color:#39FF14;font-weight:700;cursor:pointer;font-family:inherit;">
+                Activar voces
+              </button>
+              <span id="tts-output-status" style="font-size:13px;color:var(--text-2);">OFF — chat solo texto</span>
+            </div>
+            <span class="brand-opt-hint" style="margin-top:8px;display:block;font-size:11px;color:var(--text-3);">Por defecto el copiloto <b>no habla</b> (evita voz robótica en GitHub). El micrófono del chat sigue sirviendo para <b>dictar</b>; la IA responde en texto. Cuando tengas API/proxy válidos, pulsa <b>Activar voces</b> y recarga el viewer.</span>
+          </div>
+
           <div class="efield full">
-            <label>Voz Predeterminada del Copiloto</label>
+            <label>Voz Predeterminada del Copiloto (cuando TTS esté ON)</label>
             <select id="brand-ai-voice" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
               <optgroup label="🎩 JARVIS (Gemini Charon)">
                 <option value="jarvis_charon">JARVIS Charon — voz grave del doc</option>
@@ -1166,7 +1177,7 @@
                 <option value="webspeech">Web Speech API (robótica)</option>
               </optgroup>
             </select>
-            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);"><b>Auto</b> sondea créditos de ElevenLabs: con saldo habla <b>Gigi Bella</b>; sin créditos usa <b>Mia</b> (AWS Polly vía StreamElements, gratis y estable en Chrome). <b>Dalia/Edge TTS no puede hablar en Chrome/Firefox</b> — Microsoft bloquea el WebSocket; solo funciona en el navegador Microsoft Edge.</span>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Solo aplica si la salida TTS está <b>Activada</b>. Para GitHub Pages hace falta puente TTS en VPS (<code>ttsProxyUrl</code>).</span>
           </div>
 
           <div class="efield full">
@@ -2069,6 +2080,36 @@ function onElevenLabsKeyChange() {
   localStorage.removeItem('kpk_el_status_v1');
 }
 
+function syncCopilotTtsOutputUI() {
+  const on = localStorage.getItem('kpk_tts_output') === '1';
+  const btn = document.getElementById('btn-tts-output-toggle');
+  const st = document.getElementById('tts-output-status');
+  if (btn) {
+    btn.textContent = on ? 'Desactivar voces' : 'Activar voces';
+    btn.style.color = on ? '#ff8a8a' : '#39FF14';
+    btn.style.borderColor = on ? 'rgba(255,80,80,0.45)' : 'rgba(57,255,20,0.45)';
+    btn.style.background = on ? 'rgba(255,80,80,0.12)' : 'rgba(57,255,20,0.12)';
+  }
+  if (st) {
+    st.textContent = on
+      ? 'ON — el copiloto hablará al recargar el viewer'
+      : 'OFF — chat solo texto (micrófono = dictar)';
+    st.style.color = on ? '#39FF14' : 'var(--text-2)';
+  }
+}
+
+function toggleCopilotTtsOutput() {
+  const on = localStorage.getItem('kpk_tts_output') === '1';
+  localStorage.setItem('kpk_tts_output', on ? '0' : '1');
+  if (_brand) _brand.ttsOutputEnabled = !on;
+  syncCopilotTtsOutputUI();
+  try {
+    if (typeof showToast === 'function') {
+      showToast(!on ? 'Voces ON — recarga el viewer' : 'Voces OFF — solo texto', 'success');
+    }
+  } catch (e) {}
+}
+
 function toggleAIKeyVisibility() {
   const txtKey = document.getElementById('brand-ai-key');
   const btn = document.getElementById('btn-toggle-ai-key');
@@ -2116,7 +2157,7 @@ function _deobfuscateKey(encKey) {
 }
 
 function _brandDefaults() {
-  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '', elevenlabs: '' }, voiceMode: 'auto_gigi', contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '', elevenlabs: '' }, voiceMode: 'auto_gigi', ttsOutputEnabled: false, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
 }
 
 function _normalizeBrand(raw) {
@@ -2131,6 +2172,7 @@ function _normalizeBrand(raw) {
   if (b.loteHoverColor == null) b.loteHoverColor = 'neon-green';
   if (b.aiProvider == null) b.aiProvider = 'openrouter';
   if (b.voiceMode == null) b.voiceMode = 'auto_gigi';
+  if (b.ttsOutputEnabled == null) b.ttsOutputEnabled = false;
   if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
@@ -2587,6 +2629,11 @@ async function loadBrandFromGitHub() {
       localStorage.removeItem('kpk_voice_user_override');
     };
   }
+  // TTS salida: brand + localStorage (default OFF)
+  if (localStorage.getItem('kpk_tts_output') == null) {
+    localStorage.setItem('kpk_tts_output', _brand.ttsOutputEnabled ? '1' : '0');
+  }
+  syncCopilotTtsOutputUI();
   const elKeyInput = document.getElementById('brand-elevenlabs-key');
   if (elKeyInput) {
     const storedEl = localStorage.getItem('ferrari_ai_key_elevenlabs')
@@ -2718,6 +2765,7 @@ async function saveBrand() {
       loteHoverColor: _hoverColorSelected,
       aiProvider,
       voiceMode: document.getElementById('brand-ai-voice') ? document.getElementById('brand-ai-voice').value : 'auto_gigi',
+      ttsOutputEnabled: localStorage.getItem('kpk_tts_output') === '1',
       aiKeys: {
         openrouter: _obfuscateKey(localStorage.getItem('ferrari_ai_key_openrouter') || ''),
         groq:       _obfuscateKey(localStorage.getItem('ferrari_ai_key_groq') || ''),
@@ -2745,6 +2793,8 @@ async function saveBrand() {
         localStorage.setItem('kpk_voice_mode', _brand.voiceMode);
         localStorage.removeItem('kpk_voice_user_override');
       }
+      localStorage.setItem('kpk_tts_output', _brand.ttsOutputEnabled ? '1' : '0');
+      syncCopilotTtsOutputUI();
       // Nueva key / créditos: invalidar sondeo ElevenLabs
       localStorage.removeItem('kpk_el_status_v1');
     } catch (e) {}

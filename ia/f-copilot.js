@@ -105,10 +105,7 @@
     `;
     document.head.appendChild(_vsStyle);
 
-    // Precargar módulo de Edge TTS en segundo plano para eliminar latencia del primer habla
-    setTimeout(() => {
-      _loadEdgeTTS().catch(() => {});
-    }, 400);
+    // No precargar Edge TTS si la salida de voz está OFF (modo solo texto)
 
     // Cargar config de IA desde la marca o localStorage
     let remoteProvider = null;
@@ -153,23 +150,26 @@
     };
     _modelName = models[_provider] || models.openrouter;
 
+    // TTS OFF duro (v2) ANTES de pintar UI — silencia Charon/Dalia/robot
+    if (localStorage.getItem('kpk_tts_output_forced_v2') !== '1') {
+      localStorage.setItem('kpk_tts_output', '0');
+      localStorage.setItem('kpk_tts_output_forced_v2', '1');
+    }
+    _speechEnabled = localStorage.getItem('kpk_tts_output') === '1';
+    try { stopAISpeech(); } catch (e) {}
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+
     // Ayudantes de nombres dinámicos de Jarvis/Gigi
     const mode = _getVoiceMode();
     const isGigi = mode.includes('gigi') || mode.includes('dalia') || mode.includes('stream') || mode === 'auto_gigi';
     const isJarvis = mode.includes('jarvis') || mode.includes('charon') || mode.includes('daniel');
     const assistantName = isJarvis ? 'Jarvis' : (isGigi ? 'Gigi' : 'Jarvis');
-    const assistantTitle = isJarvis ? 'Asistente JARVIS · Charon' : (isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis');
+    // Sin "Charon" en UI mientras TTS está apagado (modo solo texto)
+    const assistantTitle = isJarvis
+      ? (_speechEnabled ? 'Asistente JARVIS · Charon' : 'Asistente JARVIS')
+      : (isGigi ? 'Asistente de Ventas Gigi' : 'Asistente Inmobiliario Jarvis');
 
-    // Crear elementos de UI
-    const initialMuteClass = _speechEnabled ? 'kpk-mute-glow' : '';
-    const initialMuteColor = _speechEnabled ? '#39FF14' : 'rgba(255,255,255,0.25)';
-    const initialMuteIcon = _speechEnabled 
-      ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`
-      : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-         <line x1="23" y1="9" x2="17" y2="15"></line>
-         <line x1="17" y1="9" x2="23" y2="15"></line>`;
-
+    // Crear elementos de UI (TTS salida OFF por defecto; sin selector de voces ni badge robot)
     const root = document.createElement('div');
     root.id = 'kpk-ai-root';
     root.innerHTML = `
@@ -190,22 +190,10 @@
             <span class="kpk-ai-header-name">${assistantTitle}</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="kpk-ai-action-btn" id="kpk-ai-voice-select" title="Cambiar Voz" style="color: var(--accent); padding: 4px; border: none; background: none; cursor: pointer;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-              </svg>
-            </button>
-            <button class="kpk-ai-action-btn ${initialMuteClass}" id="kpk-ai-toggle-voice" title="Activar/Desactivar Voz" style="color: ${initialMuteColor}; padding: 4px; border: none; background: none; cursor: pointer;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="kpk-voice-icon">
-                ${initialMuteIcon}
-              </svg>
-            </button>
             <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
           </div>
         </div>
-        <div class="kpk-voice-panel" id="kpk-voice-panel" style="display:none;background:rgba(18,18,24,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;max-height:260px;overflow-y:auto;"></div>
+        <div class="kpk-voice-panel" id="kpk-voice-panel" style="display:none;"></div>
 
 
         <div class="kpk-ai-log" id="kpk-ai-log">
@@ -312,6 +300,12 @@
         _activeLote = lote;
         _updateSuggestiveChips();
       }
+    });
+
+    // Por si queda HTML viejo en caché: quitar mic/speaker/badge del header
+    ['kpk-ai-voice-select', 'kpk-ai-toggle-voice', 'kpk-voice-engine-badge'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
     });
 
     // Preferencia de voz v7: JARVIS Charon (Gemini) disponible vía Voz_Charon_JARVIS.txt
@@ -1032,7 +1026,7 @@
         _clientName = name;
         localStorage.setItem('kpk_client_name', name);
         _isWaitingForName = false;
-        _speechEnabled = true;
+        // No forzar TTS al capturar nombre — solo admin reactiva voces
         _jarvisMode = true;
         _shouldRestartMic = true;
 
@@ -1153,7 +1147,7 @@
       const typingIndicator = showTypingIndicator();
       _bubble.classList.add('is-loading');
 
-      _probeElevenLabs(true).then((elOk) => {
+      Promise.all([_probeElevenLabs(true), _probeLocalTtsProxy(true)]).then(([elOk, proxyOk]) => {
         typingIndicator.remove();
         _bubble.classList.remove('is-loading');
 
@@ -1161,22 +1155,36 @@
         const mode = _getVoiceMode();
         const lastEngine = _lastUsedVoiceEngine || 'aún no usado';
         const engineLabels = {
+          jarvis_charon: 'JARVIS Charon (Gemini TTS)',
           gemini_tts: 'Gemini TTS — Kore',
+          local_dalia: 'Dalia/Jorge Neural (proxy local)',
           streamelements: 'StreamElements',
+          google_tts: 'Google Translate TTS',
           google_translate: 'Google Translate TTS',
           edge_tts: 'Edge TTS Neural (Dalia)',
-          webspeech: 'Web Speech API',
+          webspeech: 'Web Speech API (robótica)',
           elevenlabs: 'ElevenLabs Gigi Bella'
         };
         const remaining = _elStatus && _elStatus.remaining != null ? _elStatus.remaining : '?';
+        const onHttps = typeof location !== 'undefined' && location.protocol === 'https:';
+        let proxyLine = proxyOk
+          ? `✅ Activo (<code>${LOCAL_TTS_PROXY}</code>)`
+          : '⛔ Apagado o bloqueado → ejecuta <code>npm run tts</code>';
+        if (!proxyOk && onHttps) {
+          proxyLine += '<br>• <b>Aviso HTTPS:</b> si abres GitHub Pages, Chrome puede bloquear localhost. Usa <code>http://127.0.0.1</code> local o Hetzner.';
+        }
+        if (lastEngine === 'webspeech') {
+          proxyLine += '<br>• <b>Por eso oyes robot:</b> cayó a WebSpeech (sin Charon ni Dalia).';
+        }
 
         const vozMsg = `🎙️ <b>Modelo de Voz del Copiloto</b><br><br>` +
           `• <b>Preferencia:</b> <code>${preferred}</code> (${_voiceModeLabel(preferred)})<br>` +
           `• <b>Efectiva ahora:</b> <code>${mode}</code> (${_voiceModeLabel(mode)})<br>` +
-          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida → Mia gratis'}<br>` +
+          `• <b>Proxy Dalia:</b> ${proxyLine}<br>` +
+          `• <b>ElevenLabs créditos:</b> ${elOk ? '✅ OK (' + remaining + ' restantes)' : '⛔ Sin créditos / key inválida'}<br>` +
           `• <b>Último motor:</b> <code>${engineLabels[lastEngine] || lastEngine}</code><br>` +
           `• <b>Saludo hablado:</b> ${_speechEnabled ? '✅ Activado' : '🔇 Silenciado'}<br><br>` +
-          `<i>Auto Gigi: con créditos habla Bella; sin créditos habla Dalia sola.</i>`;
+          `<i>JARVIS: Charon (cupo) → Dalia/Jorge local → resto. Arranca siempre: npm run tts</i>`;
 
         appendMessage(vozMsg, 'system');
         playFuturisticSound('success');
@@ -2326,8 +2334,30 @@
   //  Tier 5: ElevenLabs           (clave opcional en admin, calidad premium)
   // ══════════════════════════════════════════════════════════════════════════
 
-  let _speechEnabled = true;
+  // TTS salida (hablar): OFF por defecto. Admin activa con kpk_tts_output=1
+  const TTS_OUTPUT_KEY = 'kpk_tts_output';
+  function _readTtsOutputEnabled() {
+    try {
+      if (localStorage.getItem(TTS_OUTPUT_KEY) === '1') return true;
+      if (localStorage.getItem(TTS_OUTPUT_KEY) === '0') return false;
+      const cfg = window.KPK_CONFIG || {};
+      if (cfg.ttsOutputEnabled === true) return true;
+    } catch (e) {}
+    return false;
+  }
+  function _setTtsOutputEnabled(on) {
+    try { localStorage.setItem(TTS_OUTPUT_KEY, on ? '1' : '0'); } catch (e) {}
+    _speechEnabled = !!on;
+    if (!_speechEnabled) {
+      try { stopAISpeech(); } catch (e) {}
+      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    return _speechEnabled;
+  }
+  let _speechEnabled = _readTtsOutputEnabled();
   let _synthUtterance = null;
+  window.__kpkSetTtsOutput = _setTtsOutputEnabled;
+  window.__kpkGetTtsOutput = () => _speechEnabled;
 
   // ─── NIVEL 1: StreamElements TTS — Gratis, sin API key, voces AWS Polly Neural —
   //  Voces femeninas en español disponibles:
@@ -2648,30 +2678,70 @@
   const EDGE_TTS_VOICE_ES     = 'es-ES-AlvaroNeural';
   const EDGE_TTS_VOICE_RYAN   = 'en-GB-RyanNeural';
 
-  // Proxy local (node tools/tts-proxy.js) — Dalia Neural real desde Chrome
+  // Puente TTS: URL pública (Hetzner/VPS) o localhost. GitHub Pages necesita HTTPS remoto.
   const LOCAL_TTS_PORTS = [8787, 8788];
   let LOCAL_TTS_PROXY = 'http://127.0.0.1:8787';
   let _localTtsOk = null; // null=unknown, true/false
   let _localTtsCheckedAt = 0;
+
+  function _configuredTtsProxyUrl() {
+    try {
+      const fromLs = (localStorage.getItem('kpk_tts_proxy_url') || '').trim();
+      if (fromLs) return fromLs.replace(/\/$/, '');
+    } catch (e) {}
+    try {
+      const cfg = window.KPK_CONFIG || {};
+      if (cfg.ttsProxyUrl) return String(cfg.ttsProxyUrl).trim().replace(/\/$/, '');
+    } catch (e) {}
+    try {
+      if (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function') {
+        const b = window.FerrariBrandDock.getBrand();
+        if (b && b.ttsProxyUrl) return String(b.ttsProxyUrl).trim().replace(/\/$/, '');
+      }
+    } catch (e) {}
+    return '';
+  }
+
+  async function _probeOneTtsBase(base, timeoutMs) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs || 2500);
+    try {
+      const res = await fetch(base + '/health', { signal: ctrl.signal, cache: 'no-store', mode: 'cors' });
+      clearTimeout(t);
+      return !!(res && res.ok);
+    } catch (e) {
+      clearTimeout(t);
+      return false;
+    }
+  }
 
   async function _probeLocalTtsProxy(force) {
     if (!force && _localTtsOk !== null && (Date.now() - _localTtsCheckedAt) < 30000) {
       return _localTtsOk;
     }
     _localTtsOk = false;
+
+    // 1) Puente por internet (VPS) — funciona desde GitHub Pages
+    const remote = _configuredTtsProxyUrl();
+    if (remote) {
+      if (await _probeOneTtsBase(remote, 3500)) {
+        LOCAL_TTS_PROXY = remote;
+        _localTtsOk = true;
+        _localTtsCheckedAt = Date.now();
+        console.log('[Gigi/Voz] Puente TTS remoto OK:', remote);
+        return true;
+      }
+      console.warn('[Gigi/Voz] Puente TTS remoto no responde:', remote);
+    }
+
+    // 2) Localhost (solo tu PC / http local)
     for (const port of LOCAL_TTS_PORTS) {
-      try {
-        const base = 'http://127.0.0.1:' + port;
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 1200);
-        const res = await fetch(base + '/health', { signal: ctrl.signal, cache: 'no-store' });
-        clearTimeout(t);
-        if (res && res.ok) {
-          LOCAL_TTS_PROXY = base;
-          _localTtsOk = true;
-          break;
-        }
-      } catch (e) { /* try next */ }
+      const base = 'http://127.0.0.1:' + port;
+      if (await _probeOneTtsBase(base, 1200)) {
+        LOCAL_TTS_PROXY = base;
+        _localTtsOk = true;
+        break;
+      }
     }
     _localTtsCheckedAt = Date.now();
     return _localTtsOk;
@@ -3126,23 +3196,90 @@
     // No rotar a Pro/3.1: agotan la cuota free más rápido sin mejor precio.
   ];
 
-  // Cuota TTS Gemini: tras 429/403, enfriar y usar Dalia (no robot)
+  // Estrategia experta: cerebro (Lightning) ≠ voz.
+  // Charon = presupuesto diario + frases cortas. Dalia/Jorge = motor del día.
   let _geminiTtsCooldownUntil = 0;
   let _geminiTtsPreferredModel = '';
-  const GEMINI_TTS_COOLDOWN_MS = 3 * 60 * 1000; // 3 min tras rate-limit
+  const GEMINI_TTS_COOLDOWN_MS = 3 * 60 * 1000; // respaldo corto
+  const CHARON_DAILY_BUDGET = 12;          // turnos Charon/día (local)
+  const CHARON_MAX_CHARS = 220;            // frases largas → Dalia (ahorra cuota)
+  const CHARON_BUDGET_KEY = 'kpk_charon_budget_v1';
+
+  function _charonDayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function _readCharonBudget() {
+    try {
+      const raw = localStorage.getItem(CHARON_BUDGET_KEY);
+      const o = raw ? JSON.parse(raw) : null;
+      if (!o || o.day !== _charonDayKey()) {
+        return { day: _charonDayKey(), used: 0, locked: false };
+      }
+      return { day: o.day, used: Number(o.used) || 0, locked: !!o.locked };
+    } catch (e) {
+      return { day: _charonDayKey(), used: 0, locked: false };
+    }
+  }
+
+  function _writeCharonBudget(state) {
+    try {
+      localStorage.setItem(CHARON_BUDGET_KEY, JSON.stringify({
+        day: state.day || _charonDayKey(),
+        used: state.used || 0,
+        locked: !!state.locked
+      }));
+    } catch (e) {}
+  }
+
+  function _charonBudgetLeft() {
+    const s = _readCharonBudget();
+    if (s.locked) return 0;
+    return Math.max(0, CHARON_DAILY_BUDGET - s.used);
+  }
+
+  function _consumeCharonBudget() {
+    const s = _readCharonBudget();
+    s.used = (s.used || 0) + 1;
+    _writeCharonBudget(s);
+    console.log('[Gigi/Voz] Charon presupuesto', s.used + '/' + CHARON_DAILY_BUDGET);
+  }
+
+  function _lockCharonForToday(reason) {
+    const s = _readCharonBudget();
+    s.locked = true;
+    _writeCharonBudget(s);
+    _geminiTtsCooldownUntil = Date.now() + GEMINI_TTS_COOLDOWN_MS;
+    console.warn('[Gigi/Voz] Charon bloqueado hoy → Dalia. Motivo:', reason);
+    try {
+      if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+        window.FerrariUI.showToast('Charon agotado hoy → voz Dalia/Jorge', 'warning');
+      }
+    } catch (e) {}
+  }
 
   function _geminiTtsOnCooldown() {
+    const s = _readCharonBudget();
+    if (s.locked || _charonBudgetLeft() <= 0) return true;
     return Date.now() < _geminiTtsCooldownUntil;
   }
 
+  function _shouldSpendCharon(text) {
+    if (_geminiTtsOnCooldown()) return false;
+    const clean = _cleanTextForTTS(text || '');
+    if (!clean) return false;
+    // Frases largas queman audio tokens: Dalia las cubre mejor
+    if (clean.length > CHARON_MAX_CHARS) {
+      console.log('[Gigi/Voz] Texto largo (' + clean.length + 'c) → Dalia (ahorra Charon)');
+      return false;
+    }
+    return _charonBudgetLeft() > 0;
+  }
+
   function _tripGeminiTtsCooldown(reason) {
-    _geminiTtsCooldownUntil = Date.now() + GEMINI_TTS_COOLDOWN_MS;
-    console.warn('[Gigi/Voz] Gemini TTS en pausa', Math.round(GEMINI_TTS_COOLDOWN_MS / 1000) + 's → Dalia. Motivo:', reason);
-    try {
-      if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
-        window.FerrariUI.showToast('Charon en límite → Dalia neural', 'warning');
-      }
-    } catch (e) {}
+    // 429/403 = fin del día para Charon (no solo 3 min)
+    _lockCharonForToday(reason || 'HTTP 429/403');
   }
 
   /** Charon = JARVIS vendedor. Kore = Gigi. */
@@ -3211,6 +3348,7 @@
         const blob2 = _geminiAudioPartToBlob(inline);
         if (blob2 && blob2.size > 100) {
           _geminiTtsPreferredModel = model;
+          if (voice === 'Charon') _consumeCharonBudget();
           _lastUsedVoiceEngine = voice === 'Charon' ? 'jarvis_charon' : 'gemini_tts';
           console.log('[Gigi/Voz] ✓ Gemini', voice, 'vía', model);
           return _playAudioBlob(blob2, text);
@@ -3243,6 +3381,7 @@
         if (b64) {
           const bytes = _b64ToBytes(b64);
           const blob = _pcmToWav(bytes, 24000);
+          if (voice === 'Charon') _consumeCharonBudget();
           _lastUsedVoiceEngine = voice === 'Charon' ? 'jarvis_charon' : 'gemini_tts';
           console.log('[Gigi/Voz] ✓ Gemini', voice, 'vía interactions API');
           return _playAudioBlob(blob, text);
@@ -3282,17 +3421,30 @@
     return false;
   }
 
-  // ─── speakJarvis: Charon → Dalia SIEMPRE → resto → WebSpeech último ───
+  // ─── speakJarvis: cerebro Lightning; voz Charon (presupuesto) → Dalia → resto ───
+  let _speakGen = 0;
   async function speakJarvis(text) {
     if (!text) return;
+    const gen = ++_speakGen;
     _lastSpokenText = _cleanTextForTTS(text);
+
+    // Siempre releer admin flag (evita Charon+Dalia si se reactivó sola)
+    _speechEnabled = localStorage.getItem(TTS_OUTPUT_KEY) === '1';
 
     const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile) showMobileBubblePopup(text);
 
-    if (!_speechEnabled) return;
-    _unlockMobileAudio();
+    // Cortar cualquier audio previo (doble voz Charon/Dalia/WebSpeech)
+    try { stopAISpeech(); } catch (e) {}
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     if (_activeJarvisAudio) { try { _activeJarvisAudio.pause(); } catch (e) {} _activeJarvisAudio = null; }
+
+    if (!_speechEnabled) {
+      console.log('[Gigi/Voz] TTS OFF (admin) — solo texto');
+      return;
+    }
+    if (gen !== _speakGen) return;
+    _unlockMobileAudio();
 
     const preferred = _getPreferredVoiceMode();
     let mode = await _resolveVoiceModeAsync();
@@ -3310,42 +3462,67 @@
     else if (mode === 'stream_penelope') streamVoice = 'Penelope';
     else if (mode === 'stream_gigi' || mode === 'auto_gigi') streamVoice = 'Mia';
 
+    const wantsCharon = preferred === 'jarvis_charon' || preferred === 'gemini_charon' || mode === 'jarvis_charon'
+      || preferred === 'gemini_tts' || mode === 'gemini_tts';
+    const wantsDaliaFirst = preferred === 'local_dalia' || mode === 'local_dalia'
+      || preferred === 'edge_dalia' || mode === 'edge_dalia';
+
     console.log('[Gigi/Voz] Preferencia:', preferred, '→ efectiva:', mode,
-      _geminiTtsOnCooldown() ? '(Gemini TTS en cooldown)' : '');
+      '| Charon left:', _charonBudgetLeft(),
+      _geminiTtsOnCooldown() ? '(Dalia mode)' : '');
 
     if (isWebSpeechOnly) {
       if (_speakWebSpeech(text)) _lastUsedVoiceEngine = 'webspeech';
       return;
     }
 
-    const wantsCharon = preferred === 'jarvis_charon' || preferred === 'gemini_charon' || mode === 'jarvis_charon'
-      || preferred === 'gemini_tts' || mode === 'gemini_tts';
-    const wantsDaliaFirst = preferred === 'local_dalia' || mode === 'local_dalia'
-      || preferred === 'edge_dalia' || mode === 'edge_dalia';
+    // Modo JARVIS: Charon solo si hay presupuesto y frase corta; si no, Dalia/Jorge directo
+    if (wantsCharon) {
+      const spendCharon = (preferred === 'gemini_tts' || mode === 'gemini_tts')
+        ? !_geminiTtsOnCooldown()
+        : _shouldSpendCharon(text);
 
-    // 1) Dalia primero si el usuario la eligió, o si Gemini está en cooldown
-    if (wantsDaliaFirst || (_geminiTtsOnCooldown() && wantsCharon)) {
+      if (spendCharon) {
+        const vName = (preferred === 'gemini_tts' || mode === 'gemini_tts') ? 'Kore' : 'Charon';
+        if (await _speakGeminiVoice(text, vName)) {
+          console.log('[Gigi/Voz] ✓', vName === 'Charon' ? 'JARVIS Charon' : 'Gemini Kore');
+          return;
+        }
+        console.warn('[Gigi/Voz] Charon/Gemini falló → Dalia/Jorge');
+      }
+
       if (await _tryDaliaFallback(text, wantsMale)) return;
-    }
 
-    // 2) JARVIS Charon / Kore (Gemini TTS)
-    if (wantsCharon && !_geminiTtsOnCooldown()) {
-      const vName = (preferred === 'gemini_tts' || mode === 'gemini_tts') ? 'Kore' : 'Charon';
-      if (await _speakGeminiVoice(text, vName)) {
-        console.log('[Gigi/Voz] ✓', vName === 'Charon' ? 'JARVIS Charon' : 'Gemini Kore');
+      // En JARVIS no quemamos ElevenLabs; saltamos a SE/Google solo si proxy apagado
+      if (await _speakStreamElements(text, streamVoice)) {
+        _lastUsedVoiceEngine = 'streamelements';
         return;
       }
-      // Gemini falló → Dalia OBLIGATORIA (nunca saltar a robot)
-      console.warn('[Gigi/Voz] Charon/Gemini falló → forzando Dalia');
+      if (await _speakGoogleTranslate(text)) {
+        _lastUsedVoiceEngine = 'google_tts';
+        return;
+      }
+      console.warn('[Gigi/Voz] ⚠️ Solo WebSpeech. Arranca: npm run tts');
+      try {
+        if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
+          window.FerrariUI.showToast('Sin Dalia: ejecuta npm run tts', 'warning');
+        }
+      } catch (e) {}
+      if (_speakWebSpeech(text)) _lastUsedVoiceEngine = 'webspeech';
+      return;
+    }
+
+    // 1) Dalia primero si el usuario la eligió
+    if (wantsDaliaFirst) {
       if (await _tryDaliaFallback(text, wantsMale)) return;
     }
 
-    // 3) Dalia para cualquier otro modo (auto, stream, etc.) si aún no se intentó
-    if (!wantsDaliaFirst || _geminiTtsOnCooldown()) {
+    // 2) Dalia para auto / otros modos
+    if (!wantsDaliaFirst) {
       if (await _tryDaliaFallback(text, wantsMale)) return;
     }
 
-    // 4) ElevenLabs si hay créditos
+    // 3) ElevenLabs si hay créditos
     if (preferred === 'auto_gigi' || preferred.startsWith('elevenlabs') || mode.startsWith('elevenlabs')) {
       const wantDaniel = preferred.includes('daniel') || mode.includes('daniel');
       const elOk = await _probeElevenLabs(false);
@@ -3358,7 +3535,7 @@
       }
     }
 
-    // 5) Edge directo solo en Microsoft Edge
+    // 4) Edge directo solo en Microsoft Edge
     if (String(mode).startsWith('edge_') && _isMicrosoftEdgeBrowser()) {
       let ev = EDGE_TTS_VOICE_DALIA;
       if (mode === 'edge_elvira') ev = EDGE_TTS_VOICE_ELVIRA;
@@ -3371,20 +3548,20 @@
       }
     }
 
-    // 6) StreamElements (vía proxy /se si está arriba)
+    // 5) StreamElements (vía proxy /se si está arriba)
     if (await _speakStreamElements(text, streamVoice)) {
       _lastUsedVoiceEngine = 'streamelements';
       console.log('[Gigi/Voz] ✓ StreamElements', streamVoice);
       return;
     }
 
-    // 7) Google Translate
+    // 6) Google Translate
     if (await _speakGoogleTranslate(text)) {
       _lastUsedVoiceEngine = 'google_tts';
       return;
     }
 
-    // 8) WebSpeech — solo si TODO humano falló
+    // 7) WebSpeech — solo si TODO humano falló
     console.warn('[Gigi/Voz] ⚠️ Solo WebSpeech. Arranca: npm run tts');
     try {
       if (window.FerrariUI && typeof window.FerrariUI.showToast === 'function') {
@@ -5415,7 +5592,6 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
           ${_clientName ? `<span class="kpk-mbp-client-badge" id="kpk-mbp-client-badge" style="margin-left: 6px; font-size: 11px; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); padding: 2px 7px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15);" title="Cambiar tu nombre registrado">👤 ${_clientName} ✏️</span>` : ''}
         </div>
         <div class="kpk-mbp-actions">
-          <button class="kpk-mbp-btn ${mbpMuteClass}" id="kpk-mbp-mute-btn" title="Silenciar / Activar Voz">${muteIcon}</button>
           <button class="kpk-mbp-btn" id="kpk-mbp-close-btn" title="Cerrar">✕</button>
         </div>
       </div>
@@ -5506,26 +5682,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       });
     }
     
-    popup.querySelector('#kpk-mbp-mute-btn').addEventListener('click', () => {
-      const active = !_speechEnabled;
-      _speechEnabled = active;
-      _jarvisMode = active;
-      _shouldRestartMic = active;
-
-      _updateMuteUI(active);
-
-      if (!active) {
-        stopAISpeech();
-        if (_recognition) {
-          try { _recognition.stop(); } catch(e) {}
-        }
-      } else {
-        _loadEdgeTTS();
-        if (_recognition) {
-          try { _recognition.start(); } catch(e) {}
-        }
-      }
-    });
+    // Mute TTS eliminado — la salida de voz se activa solo desde admin.html
 
     const kbdBtn = popup.querySelector('#kpk-mbp-keyboard-toggle');
     const inputRow = popup.querySelector('#kpk-mbp-input-row');
@@ -5682,37 +5839,9 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         mobilePopup.classList.remove('is-speaking');
       }
     }
-    // Badge del motor activo (para ver al instante si es Dalia o robótica)
-    let badge = document.getElementById('kpk-voice-engine-badge');
-    if (!badge) {
-      const header = document.querySelector('.kpk-ai-header-title');
-      if (header) {
-        badge = document.createElement('span');
-        badge.id = 'kpk-voice-engine-badge';
-        badge.style.cssText = 'margin-left:8px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:999px;background:rgba(0,180,255,0.15);color:#7dd3fc;letter-spacing:0.2px;';
-        header.appendChild(badge);
-      }
-    }
-    if (badge) {
-      if (status && _lastUsedVoiceEngine) {
-        const labels = {
-          jarvis_charon: '🎩 CHARON',
-          gemini_tts: 'Gemini',
-          local_dalia: '🔥 DALIA',
-          elevenlabs: '🏆 BELLA',
-          streamelements: 'Mia',
-          google_tts: 'Google',
-          edge_tts: 'Edge',
-          webspeech: '⚠️ ROBOT'
-        };
-        badge.textContent = labels[_lastUsedVoiceEngine] || _lastUsedVoiceEngine;
-        badge.style.display = 'inline-block';
-        badge.style.background = _lastUsedVoiceEngine === 'webspeech' ? 'rgba(255,80,80,0.2)' : 'rgba(0,180,255,0.15)';
-        badge.style.color = _lastUsedVoiceEngine === 'webspeech' ? '#ff8a8a' : '#7dd3fc';
-      } else if (!status) {
-        // dejar el último motor visible unos segundos
-      }
-    }
+    // Badge ROBOT/motor eliminado — chat solo texto hasta activar TTS en admin
+    const oldBadge = document.getElementById('kpk-voice-engine-badge');
+    if (oldBadge) oldBadge.remove();
   }
 
   // Debug / prueba manual desde consola
@@ -5720,13 +5849,16 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   window.__kpkVoiceDebug = function() {
     const gk = _getGeminiKey();
     const cfg = window.KPK_CONFIG || {};
+    const budget = _readCharonBudget();
     return {
       mode: _getVoiceMode(),
       preferred: _getPreferredVoiceMode(),
       lastEngine: _lastUsedVoiceEngine,
       speechEnabled: _speechEnabled,
+      ttsOutput: localStorage.getItem(TTS_OUTPUT_KEY),
       localProxy: _localTtsOk,
       el: _elStatus,
+      charonBudget: { used: budget.used, max: CHARON_DAILY_BUDGET, left: _charonBudgetLeft(), locked: budget.locked, day: budget.day },
       geminiKeyLen: gk ? gk.length : 0,
       hasConfigGemini: !!(cfg.aiKeys && cfg.aiKeys.gemini),
       hasLsGemini: !!localStorage.getItem('ferrari_ai_key_gemini')

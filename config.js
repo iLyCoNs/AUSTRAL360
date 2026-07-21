@@ -16,6 +16,13 @@
   // Voz: jarvis_charon = Gemini Charon (doc Voz_Charon_JARVIS); auto_gigi = Bella/Mia/Dalia
   voiceMode: 'jarvis_charon',
 
+    // Puente TTS por internet (Hetzner/VPS). Vacío = solo localhost:8787 (no sirve en GitHub HTTPS).
+    // Ejemplo: 'https://tts.tudominio.com'  → debe exponer /health y /tts
+    ttsProxyUrl: '',
+
+    // Salida de voz del copiloto (hablar). false = solo texto; admin.html lo activa.
+    ttsOutputEnabled: false,
+
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {
       lightning:  'kpk-enc-NzE3NzY5ODdjYzJhLTdhZTgtNGEyNC1iOTQzLTIyYjJhMTYyLXRpbC1rcw==',

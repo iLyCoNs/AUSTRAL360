@@ -98,6 +98,14 @@
   pointer-events: auto;
 }
 
+/* Controles TTS del header ocultos (solo texto; activar voces desde admin) */
+#kpk-ai-voice-select,
+#kpk-ai-toggle-voice,
+#kpk-voice-engine-badge,
+#kpk-voice-panel {
+  display: none !important;
+}
+
 /* ─── Cabecera ──────────────────────────────────────────────────────────────── */
 .kpk-ai-header {
   padding: 14px 16px 12px;

@@ -12,16 +12,19 @@ const http = require('http');
 const { URL } = require('url');
 const { EdgeTTS } = require('edge-tts-universal');
 
-const HOST = '127.0.0.1';
+// 127.0.0.1 = solo PC local. 0.0.0.0 = VPS/internet (Hetzner).
+const HOST = process.env.KPK_TTS_HOST || '127.0.0.1';
 const PORT = Number(process.env.KPK_TTS_PORT || 8787);
 const DEFAULT_VOICE = 'es-MX-DaliaNeural';
 const SE_BASE = 'https://api.streamelements.com/kappa/v2/speech';
 
 function cors(res, extra) {
+  // Access-Control-Allow-Private-Network: permite GitHub Pages (HTTPS público) → 127.0.0.1
   const headers = Object.assign({
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Private-Network': 'true'
   }, extra || {});
   return headers;
 }
@@ -92,7 +95,10 @@ function sendMp3(res, buf) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, cors());
+      // Chrome Private Network Access preflight (páginas HTTPS → localhost)
+      res.writeHead(204, cors(res, {
+        'Access-Control-Allow-Private-Network': 'true'
+      }));
       return res.end();
     }
 
