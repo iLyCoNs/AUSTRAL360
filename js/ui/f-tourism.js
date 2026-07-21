@@ -6,12 +6,19 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=3';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=4';
   const EARTH_R_M = 6371000;
+  const DEFAULT_BANDS = [
+    { id: 'muy_cerca', label: 'Muy cerca', emoji: '🟢', maxKm: 40 },
+    { id: 'paseo', label: 'A un paseo', emoji: '🟡', maxKm: 100 },
+    { id: 'dia', label: 'Día completo', emoji: '🟠', maxKm: 180 },
+    { id: 'lejos', label: 'Más lejos', emoji: '🔵', maxKm: 320 }
+  ];
 
   let _catalog = null;
   let _loadPromise = null;
   let _pendingOffer = null; // { category, poiId, resolved }
+  let _pendingMenu = null; // { category, items: [...] }
   let _openPoiId = null;
   let _mediaCache = new Map(); // poiId → { imageUrl, youtubeId, wikiExtract, title }
 
@@ -76,16 +83,49 @@
     return _loadPromise;
   }
 
+  function _bands() {
+    return (_catalog && Array.isArray(_catalog.bands) && _catalog.bands.length)
+      ? _catalog.bands
+      : DEFAULT_BANDS;
+  }
+
+  function _maxRadiusM() {
+    const km = (_catalog && _catalog.maxRadiusKm) || 320;
+    return km * 1000;
+  }
+
+  function _bandForKm(km) {
+    const bands = _bands();
+    for (const b of bands) {
+      if (km <= b.maxKm) return b;
+    }
+    return bands[bands.length - 1] || { id: 'lejos', label: 'Más lejos', emoji: '🔵', maxKm: 999 };
+  }
+
+  function _enrichPoi(p) {
+    const origin = _origin();
+    const distM = _haversineM(origin.lat, origin.lng, p.lat, p.lng);
+    const km = distM / 1000;
+    const band = _bandForKm(km);
+    return Object.assign({}, p, {
+      distM,
+      distKm: Math.round(km * 10) / 10,
+      distLabel: _formatDist(distM),
+      etaLabel: _formatEta(distM),
+      bandId: band.id,
+      bandLabel: band.label,
+      bandEmoji: band.emoji || ''
+    });
+  }
+
   function listByCategory(category) {
     if (!_catalog) return [];
     const cat = String(category || '').toLowerCase();
-    const origin = _origin();
+    const maxM = _maxRadiusM();
     return (_catalog.pois || [])
       .filter((p) => !cat || p.category === cat)
-      .map((p) => {
-        const distM = _haversineM(origin.lat, origin.lng, p.lat, p.lng);
-        return Object.assign({}, p, { distM, distLabel: _formatDist(distM), etaLabel: _formatEta(distM) });
-      })
+      .map(_enrichPoi)
+      .filter((p) => p.distM <= maxM)
       .sort((a, b) => a.distM - b.distM);
   }
 
@@ -250,6 +290,7 @@
     await loadCatalog();
     const opts = typeof poiIdOrOpts === 'string' ? { poiId: poiIdOrOpts } : poiIdOrOpts || {};
     let poi = opts.poiId ? getPoi(opts.poiId) : null;
+    if (poi) poi = _enrichPoi(poi);
     if (!poi && opts.category) {
       const list = listByCategory(opts.category);
       for (const p of list) {
@@ -279,9 +320,13 @@
     const el = _ensureWidget();
     el.querySelector('#kpk-tw-title').textContent = poi.title;
     el.querySelector('#kpk-tw-blurb').textContent =
-      media.wikiExtract || poi.blurb || '';
+      poi.blurb || media.wikiExtract || '';
     el.querySelector('#kpk-tw-meta').textContent =
-      _formatDist(distM) + ' · ' + _formatEta(distM) + ' desde el proyecto';
+      (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
+      _formatDist(distM) +
+      ' · ' +
+      _formatEta(distM) +
+      ' desde el proyecto';
 
     const mediaBox = el.querySelector('#kpk-tw-media');
     mediaBox.innerHTML = '';
@@ -465,57 +510,164 @@
 
   /** Oferta conversacional: no abre widget hasta confirmación */
   async function prepareOffer(category) {
-    await loadCatalog();
-    const list = listByCategory(category);
-    for (const p of list) {
-      const media = await resolveMedia(p);
-      if (media && media.ok) {
-        _pendingOffer = {
-          category: category || p.category,
-          poiId: p.id,
-          title: p.title,
-          distLabel: p.distLabel,
-          etaLabel: p.etaLabel,
-          blurb: p.blurb
-        };
-        return _pendingOffer;
-      }
+    const menu = await prepareOfferMenu(category);
+    if (!menu || !menu.items.length) {
+      _pendingOffer = null;
+      return null;
     }
-    _pendingOffer = null;
-    return null;
+    const first = menu.items[0];
+    _pendingOffer = {
+      category: category || first.category,
+      poiId: first.poiId,
+      title: first.title,
+      distLabel: first.distLabel,
+      etaLabel: first.etaLabel,
+      blurb: first.blurb,
+      bandLabel: first.bandLabel
+    };
+    return _pendingOffer;
   }
 
-  /** Finde: el POI más cercano con media OK (cualquier categoría) */
-  async function prepareNearestOffer() {
+  /**
+   * Menú de opciones verificadas, ordenadas de cerca → lejos, agrupadas por banda.
+   * category: id | 'nearest' | '' (todas)
+   */
+  async function prepareOfferMenu(category, opts) {
     await loadCatalog();
-    const origin = _origin();
-    const ranked = (_catalog.pois || [])
-      .map((p) => {
-        const distM = _haversineM(origin.lat, origin.lng, p.lat, p.lng);
-        return Object.assign({}, p, {
-          distM,
-          distLabel: _formatDist(distM),
-          etaLabel: _formatEta(distM)
-        });
-      })
-      .sort((a, b) => a.distM - b.distM);
+    const limit = (opts && opts.limit) || 8;
+    const cat = String(category || '').toLowerCase();
+    const source =
+      cat && cat !== 'nearest' && cat !== 'all'
+        ? listByCategory(cat)
+        : (_catalog.pois || [])
+            .map(_enrichPoi)
+            .filter((p) => p.distM <= _maxRadiusM())
+            .sort((a, b) => a.distM - b.distM);
 
-    for (const p of ranked) {
+    const items = [];
+    for (const p of source) {
+      if (items.length >= limit) break;
       const media = await resolveMedia(p);
-      if (media && media.ok) {
-        _pendingOffer = {
-          category: p.category,
-          poiId: p.id,
-          title: p.title,
-          distLabel: p.distLabel,
-          etaLabel: p.etaLabel,
-          blurb: p.blurb
-        };
-        return _pendingOffer;
-      }
+      if (!media || !media.ok) continue;
+      items.push({
+        poiId: p.id,
+        category: p.category,
+        title: p.title,
+        distM: p.distM,
+        distKm: p.distKm,
+        distLabel: p.distLabel,
+        etaLabel: p.etaLabel,
+        bandId: p.bandId,
+        bandLabel: p.bandLabel,
+        bandEmoji: p.bandEmoji,
+        blurb: p.blurb,
+        chipLabel:
+          (p.bandEmoji ? p.bandEmoji + ' ' : '') +
+          p.title +
+          ' · ' +
+          p.distLabel
+      });
     }
-    _pendingOffer = null;
-    return null;
+
+    _pendingMenu = {
+      category: cat === 'nearest' || cat === 'all' ? '' : cat,
+      items
+    };
+
+    if (items[0]) {
+      _pendingOffer = {
+        category: items[0].category,
+        poiId: items[0].poiId,
+        title: items[0].title,
+        distLabel: items[0].distLabel,
+        etaLabel: items[0].etaLabel,
+        blurb: items[0].blurb,
+        bandLabel: items[0].bandLabel
+      };
+    } else {
+      _pendingOffer = null;
+    }
+
+    return _pendingMenu;
+  }
+
+  function formatMenuHtml(menu) {
+    if (!menu || !menu.items || !menu.items.length) return '';
+    const byBand = {};
+    const order = [];
+    menu.items.forEach((it) => {
+      const key = it.bandId || 'otros';
+      if (!byBand[key]) {
+        byBand[key] = {
+          emoji: it.bandEmoji || '',
+          label: it.bandLabel || 'Opciones',
+          items: []
+        };
+        order.push(key);
+      }
+      byBand[key].items.push(it);
+    });
+    let html = 'Te armo opciones <b>de cerca a lejos</b> (media verificada):<br>';
+    order.forEach((key) => {
+      const g = byBand[key];
+      html +=
+        '<br><b>' +
+        (g.emoji ? g.emoji + ' ' : '') +
+        g.label +
+        '</b><br>';
+      g.items.forEach((it) => {
+        html +=
+          '· <b>' +
+          it.title +
+          '</b> — ' +
+          it.distLabel +
+          ' · ' +
+          it.etaLabel +
+          '<br>';
+      });
+    });
+    html += '<br>¿Cuál te muestro? (o elige el más cercano)';
+    return html;
+  }
+
+  /** Finde: menú mixed nearest-first */
+  async function prepareNearestOffer() {
+    const menu = await prepareOfferMenu('nearest', { limit: 8 });
+    return menu && menu.items[0]
+      ? {
+          category: menu.items[0].category,
+          poiId: menu.items[0].poiId,
+          title: menu.items[0].title,
+          distLabel: menu.items[0].distLabel,
+          etaLabel: menu.items[0].etaLabel,
+          blurb: menu.items[0].blurb,
+          bandLabel: menu.items[0].bandLabel
+        }
+      : null;
+  }
+
+  function getPendingMenu() {
+    return _pendingMenu;
+  }
+
+  function clearPendingMenu() {
+    _pendingMenu = null;
+  }
+
+  function selectOfferByPoiId(poiId) {
+    if (!_pendingMenu || !_pendingMenu.items) return null;
+    const it = _pendingMenu.items.find((x) => x.poiId === poiId);
+    if (!it) return null;
+    _pendingOffer = {
+      category: it.category,
+      poiId: it.poiId,
+      title: it.title,
+      distLabel: it.distLabel,
+      etaLabel: it.etaLabel,
+      blurb: it.blurb,
+      bandLabel: it.bandLabel
+    };
+    return _pendingOffer;
   }
 
   function getChipDefs() {
@@ -532,11 +684,14 @@
 
   function clearPendingOffer() {
     _pendingOffer = null;
+    _pendingMenu = null;
   }
 
   async function confirmPendingOffer() {
     if (!_pendingOffer) return false;
-    return openWidget({ poiId: _pendingOffer.poiId });
+    const ok = await openWidget({ poiId: _pendingOffer.poiId });
+    _pendingMenu = null;
+    return ok;
   }
 
   /** Siguiente POI verificado de la misma categoría (ciclo) */
@@ -588,9 +743,14 @@
     getPoi,
     resolveMedia,
     prepareOffer,
+    prepareOfferMenu,
     prepareNearestOffer,
+    formatMenuHtml,
     getPendingOffer,
+    getPendingMenu,
     clearPendingOffer,
+    clearPendingMenu,
+    selectOfferByPoiId,
     confirmPendingOffer,
     openNextInCategory,
     openWidget,
@@ -598,7 +758,8 @@
     isOpen,
     catalogSummaryForPrompt,
     getChipDefs,
-    getCategories: () => (_catalog && _catalog.categories) || []
+    getCategories: () => (_catalog && _catalog.categories) || [],
+    getBands: () => _bands()
   };
 
   console.log('[Ferrari/Tourism] ✓ Jarvis Turismo listo');

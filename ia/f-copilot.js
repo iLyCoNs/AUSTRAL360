@@ -1302,9 +1302,13 @@
       setTimeout(() => {
         typingIndicator.remove();
         _bubble.classList.remove('is-loading');
-        appendMessage(localResp.text, 'system');
-        playFuturisticSound('success');
-        speakJarvis(localResp.text);
+        if (localResp.text) {
+          appendMessage(localResp.text, 'system');
+          playFuturisticSound('success');
+          speakJarvis(localResp.text);
+        } else {
+          playFuturisticSound('success');
+        }
         if (localResp.actions) {
           executeActions(localResp.actions);
         }
@@ -1566,21 +1570,33 @@
     if (window.FerrariTourism.isOpen && window.FerrariTourism.isOpen()) {
       window.FerrariTourism.closeWidget();
     }
-    const offer = category === 'nearest'
-      ? await window.FerrariTourism.prepareNearestOffer()
-      : await window.FerrariTourism.prepareOffer(category);
-    if (!offer) {
+    const menu =
+      typeof window.FerrariTourism.prepareOfferMenu === 'function'
+        ? await window.FerrariTourism.prepareOfferMenu(category === 'nearest' ? 'nearest' : category, {
+            limit: 8
+          })
+        : null;
+
+    if (!menu || !menu.items || !menu.items.length) {
       appendMessage(
-        'En este momento no tengo un lugar de esa categoría con foto o video <b>verificado</b>. Prueba con Termas, Trekking, Rafting, Lagos o Pueblos.',
+        'En este momento no tengo lugares con foto o video <b>verificado</b> en ese radio. Prueba Termas, Trekking, Lagos o Pueblos.',
         'system'
       );
       return;
     }
-    appendMessage(
-      `Tengo listo: <b>${offer.title}</b> (${offer.distLabel} · ${offer.etaLabel}). ¿Lo muestro con media real?`,
-      'system'
-    );
-    // Chips de confirmación en el chat
+
+    const html =
+      typeof window.FerrariTourism.formatMenuHtml === 'function'
+        ? window.FerrariTourism.formatMenuHtml(menu)
+        : `Tengo ${menu.items.length} opciones de cerca a lejos. ¿Cuál te muestro?`;
+    appendMessage(html, 'system');
+    try {
+      if (typeof speakJarvis === 'function') {
+        const plain = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        speakJarvis(plain.slice(0, 280));
+      }
+    } catch (e) {}
+
     const chips = document.getElementById('kpk-ai-chips-container');
     if (chips) {
       chips.innerHTML = '';
@@ -1592,17 +1608,36 @@
         b.addEventListener('click', onClick);
         chips.appendChild(b);
       };
-      mk('Sí, muéstrame', async () => {
-        const ok = await window.FerrariTourism.confirmPendingOffer();
+
+      // Más cercano primero
+      mk('📍 El más cercano', async () => {
+        if (window.FerrariTourism.selectOfferByPoiId) {
+          window.FerrariTourism.selectOfferByPoiId(menu.items[0].poiId);
+        }
         chips.innerHTML = '';
+        const ok = await window.FerrariTourism.confirmPendingOffer();
         if (!ok) {
-          appendMessage('No pude verificar foto/video de ese lugar. Probemos otra categoría.', 'system');
+          appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
         }
       });
+
+      menu.items.forEach((it) => {
+        mk(it.chipLabel || it.title, async () => {
+          if (window.FerrariTourism.selectOfferByPoiId) {
+            window.FerrariTourism.selectOfferByPoiId(it.poiId);
+          }
+          chips.innerHTML = '';
+          const ok = await window.FerrariTourism.confirmPendingOffer();
+          if (!ok) {
+            appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
+          }
+        });
+      });
+
       mk('Ahora no', () => {
         window.FerrariTourism.clearPendingOffer();
         chips.innerHTML = '';
-        appendMessage('Cuando quieras, pide termas, trekking, rafting o lagos y te armo el plan.', 'system');
+        appendMessage('Cuando quieras, pide termas, trekking, lagos o “qué hacer cerca”.', 'system');
       });
     }
   }
@@ -4290,27 +4325,27 @@
     }
 
     // 1c) Jarvis Turismo — ofrecer categoría (NO abre widget hasta el sí)
-    if (/(finde|fin\s+de\s+semana|primer\s+finde|que\s+hacer\s+cerca|qué\s+hacer\s+cerca|planes?\s+cerca|turismo\s+cerca|actividades\s+cerca)/.test(clean) &&
+    if (/(finde|fin\s+de\s+semana|primer\s+finde|que\s+hacer\s+cerca|qué\s+hacer\s+cerca|planes?\s+cerca|turismo\s+cerca|actividades\s+cerca|lugares\s+cerca|opciones\s+cerca)/.test(clean) &&
         !/(lote|parcela|precio|uf|financi)/.test(clean)) {
       return {
-        text: 'Te armo el plan más cercano con media <b>verificada</b>. ¿Te lo muestro?',
+        text: '',
         actions: [{ type: 'offerTourism', category: 'nearest' }]
       };
     }
 
     const tourismMap = [
-      { re: /\b(termas?|termal|aguas?\s+calientes|pozones?)\b/, cat: 'termas', label: 'termas' },
+      { re: /\b(termas?|termal|aguas?\s+calientes|pozones?|pichicolo|puyehue)\b/, cat: 'termas', label: 'termas' },
       { re: /\b(rafting|rapidos|rápidos|kayak)\b/, cat: 'rafting', label: 'rafting' },
-      { re: /\b(trekking|trekin|senderismo|caminata|excursion|excursión|petrohu[eé])\b/, cat: 'trekking', label: 'trekking y naturaleza' },
-      { re: /\b(volc[aá]n|osorno|nieve|ski|esqu[ií])\b/, cat: 'nieve', label: 'volcán y nieve' },
-      { re: /\b(lagos?|mirador|todos\s+los\s+santos|llanquihue)\b/, cat: 'lagos', label: 'lagos y miradores' },
-      { re: /\b(pueblo|puerto\s+varas|frutillar|ensenada|turismo)\b/, cat: 'pueblos', label: 'pueblos de la zona' },
+      { re: /\b(trekking|trekin|senderismo|caminata|excursion|excursión|petrohu[eé]|alerce)\b/, cat: 'trekking', label: 'trekking y naturaleza' },
+      { re: /\b(volc[aá]n|osorno|hornopir[eé]n|nieve|ski|esqu[ií]|calbuco)\b/, cat: 'nieve', label: 'volcán y nieve' },
+      { re: /\b(lagos?|mirador|todos\s+los\s+santos|llanquihue|chapo|fiordo|reloncav[ií]|estuario)\b/, cat: 'lagos', label: 'lagos y fiordos' },
+      { re: /\b(pueblo|puerto\s+varas|frutillar|ensenada|contao|hualaihu[eé]|cocham[oó]|turismo)\b/, cat: 'pueblos', label: 'pueblos de la zona' },
       { re: /\b(teatro|cultura|concierto|gastronom[ií]a|restaurante)\b/, cat: 'cultura', label: 'cultura y gastronomía' }
     ];
     for (const t of tourismMap) {
       if (t.re.test(clean) && !/(lote|parcela|precio|uf|financi)/.test(clean)) {
         return {
-          text: `En la zona hay planes de <b>${t.label}</b> con entorno real. ¿Te muestro fotos/video verificados y la ruta desde el proyecto?`,
+          text: '',
           actions: [{ type: 'offerTourism', category: t.cat }]
         };
       }
@@ -5091,11 +5126,12 @@ ${tourismJson}
 OFERTA TURISMO PENDIENTE (si no es null, el usuario debe confirmar antes de abrir widget):
 ${tourismPending}
 REGLAS TURISMO (ESTRICTAS):
-1. Si el cliente pregunta por termas, trekking, rafting, lagos, volcanes, pueblos, cultura, finde o “qué hacer cerca”, responde breve y ejecuta SOLO {"type":"offerTourism","category":"termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}. NUNCA abras el widget todavía.
-2. Solo si el usuario confirma (sí, dale, muéstrame, ok) y hay oferta pendiente → {"type":"confirmTourismOffer"} o {"type":"openTourismWidget","poiId":"ID","confirmed":true}.
+1. Si el cliente pregunta por termas, trekking, rafting, lagos, volcanes, pueblos, cultura, finde o “qué hacer cerca”, responde breve y ejecuta SOLO {"type":"offerTourism","category":"termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}. El cliente lista opciones de CERCA a LEJOS; NUNCA abras el widget todavía.
+2. Solo si el usuario elige un lugar o confirma el más cercano → {"type":"confirmTourismOffer"} o {"type":"openTourismWidget","poiId":"ID","confirmed":true}.
 3. NUNCA inventes URLs de YouTube, fotos ni coordenadas. El cliente valida Wikipedia/oEmbed; si no hay media real, el widget no se muestra.
 4. Si el tema cambia a lotes, precios, financiamiento o clima → no envíes acciones de turismo (el sistema cierra el widget solo).
 5. Tras mostrar turismo, invita a ver lotes o agendar visita (cierre comercial suave).
+6. Prioriza siempre lugares del entorno del proyecto (radio ~320 km), ordenados por distancia.
 
 ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). Úsala cuando pidan ver, acercar o hacer zoom a un lote.
