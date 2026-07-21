@@ -1,5 +1,5 @@
 {
-  "version": 8,
+  "version": 9,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
@@ -84,7 +84,10 @@
         "lang": "es",
         "title": "Contao"
       },
-      "youtubeCandidates": ["FRrnScu4fRc", "7y6FUdXANOI"],
+      "youtubeCandidates": [
+        "7y6FUdXANOI",
+        "FRrnScu4fRc"
+      ],
       "tags": [
         "finde",
         "cerca",
@@ -104,8 +107,7 @@
       },
       "youtubeCandidates": [
         "nglZh7chKEA",
-        "Ezi7wxK3jzI",
-        "SpWRfPB4G5Q"
+        "Ezi7wxK3jzI"
       ],
       "tags": [
         "finde",
@@ -126,8 +128,7 @@
       },
       "youtubeCandidates": [
         "puE51uKzeOo",
-        "aGBqNPriheE",
-        "8asxEsN1Fg8"
+        "aGBqNPriheE"
       ],
       "tags": [
         "cerca",
@@ -152,8 +153,7 @@
       },
       "youtubeCandidates": [
         "TJE1dot4oQ4",
-        "CEO14tOlhEY",
-        "miS8ffKQKYM"
+        "CEO14tOlhEY"
       ],
       "tags": [
         "finde",
@@ -174,8 +174,7 @@
       },
       "youtubeCandidates": [
         "hYQcbNnGQuo",
-        "FkF-7szX-Z8",
-        "mqU-skEK9Lk"
+        "FkF-7szX-Z8"
       ],
       "tags": [
         "cerca",
@@ -196,8 +195,7 @@
       },
       "youtubeCandidates": [
         "BRXN32ZOYgc",
-        "6tiKdur0x7M",
-        "EGpyBFna4uE"
+        "6tiKdur0x7M"
       ],
       "tags": [
         "finde",
@@ -229,8 +227,7 @@
       ],
       "youtubeCandidates": [
         "taQBZuszvag",
-        "pajLtBbSw-k",
-        "Ksl_fQmd-uY"
+        "pajLtBbSw-k"
       ],
       "tags": [
         "finde",
@@ -252,8 +249,7 @@
       },
       "youtubeCandidates": [
         "gY77kTV3Dxc",
-        "EIF4qMNMvtM",
-        "XMvtPl8ZDIU"
+        "EIF4qMNMvtM"
       ],
       "tags": [
         "finde",
@@ -273,8 +269,7 @@
       },
       "youtubeCandidates": [
         "L4Uk-Tuzl_o",
-        "qoSOdWN78hk",
-        "15ZmU9xqi9I"
+        "qoSOdWN78hk"
       ],
       "tags": [
         "finde",
@@ -299,8 +294,7 @@
       ],
       "youtubeCandidates": [
         "6ni94xy1AGs",
-        "-u4NChGTvFk",
-        "-j9rqON105k"
+        "-u4NChGTvFk"
       ],
       "tags": [
         "finde",
@@ -321,8 +315,7 @@
       },
       "youtubeCandidates": [
         "MCXvWFkEr3I",
-        "SCLkFz-hTBw",
-        "9e4RY7tGD38"
+        "SCLkFz-hTBw"
       ],
       "tags": [
         "finde",
@@ -344,8 +337,7 @@
       "commonsSearch": "Fiordo de Reloncaví",
       "youtubeCandidates": [
         "mQNvr3uq4lc",
-        "Hh03aRL8szY",
-        "2b_4-Y6Bddc"
+        "Hh03aRL8szY"
       ],
       "tags": [
         "finde",
@@ -366,8 +358,7 @@
       },
       "youtubeCandidates": [
         "VZAY7xf9X1o",
-        "VmygT08KQz0",
-        "5AdGsrPQ_LA"
+        "VmygT08KQz0"
       ],
       "tags": [
         "pueblo",
@@ -387,7 +378,6 @@
       },
       "commonsSearch": "Volcán Calbuco",
       "youtubeCandidates": [
-        "jD8dtT2J6p4",
         "G2ejRBcjh8s",
         "-lvYKP-777E"
       ],
@@ -409,8 +399,7 @@
       },
       "youtubeCandidates": [
         "uS-oAlFrVF4",
-        "x8o_iva6PT0",
-        "XEE2o1pboxI"
+        "x8o_iva6PT0"
       ],
       "tags": [
         "finde",
@@ -431,8 +420,7 @@
       },
       "youtubeCandidates": [
         "90o_oUIixj8",
-        "84tQ58VYv4I",
-        "V27NJZ6ciFI"
+        "84tQ58VYv4I"
       ],
       "tags": [
         "finde",
@@ -457,8 +445,7 @@
       },
       "youtubeCandidates": [
         "BYMsLmyJ3Vs",
-        "neLvPRFvmpk",
-        "6dZjDRccVmE"
+        "neLvPRFvmpk"
       ],
       "youtubeSearch": "Saltos del Petrohué Volcán Osorno",
       "tags": [
@@ -480,8 +467,7 @@
       },
       "youtubeCandidates": [
         "UWIVrNMnIGY",
-        "m59ZQgpfguc",
-        "_-saIxBWotw"
+        "m59ZQgpfguc"
       ],
       "youtubeSearch": "Parque Vicente Pérez Rosales Chile",
       "tags": [
@@ -507,8 +493,7 @@
       ],
       "youtubeCandidates": [
         "PJkTk-td-n8",
-        "6NNEPEA47wk",
-        "odOQ7c9unEk"
+        "6NNEPEA47wk"
       ],
       "tags": [
         "finde",
@@ -529,8 +514,7 @@
       },
       "youtubeCandidates": [
         "NDX9fEWVCcI",
-        "roFhY0w0Gxs",
-        "0BzX6F016ns"
+        "roFhY0w0Gxs"
       ],
       "tags": [
         "finde",
@@ -550,8 +534,7 @@
       },
       "youtubeCandidates": [
         "KQhl1Y6Wto0",
-        "b3ry68lIO3k",
-        "ZRGx2-A0nLI"
+        "b3ry68lIO3k"
       ],
       "tags": [
         "finde",
@@ -572,8 +555,7 @@
       },
       "youtubeCandidates": [
         "hO9rNgGhhvg",
-        "6yBJLdxAf6k",
-        "5EPkXEOO1VY"
+        "6yBJLdxAf6k"
       ],
       "tags": [
         "finde",
@@ -594,8 +576,7 @@
       "commonsSearch": "Teatro del Lago Frutillar",
       "youtubeCandidates": [
         "xrcVFn6LC-M",
-        "LAaqL565mxo",
-        "RPOaxp2KhJk"
+        "LAaqL565mxo"
       ],
       "tags": [
         "finde",
@@ -615,8 +596,7 @@
       },
       "youtubeCandidates": [
         "oMsYJiCVF58",
-        "r4Mi5yEiltk",
-        "VrXztQR68do"
+        "r4Mi5yEiltk"
       ],
       "tags": [
         "finde",
@@ -641,8 +621,7 @@
       ],
       "youtubeCandidates": [
         "q3ukiiUSYJM",
-        "M4jIJjMqcCg",
-        "CJJE5-g-NJY"
+        "M4jIJjMqcCg"
       ],
       "tags": [
         "finde",
@@ -667,8 +646,7 @@
       ],
       "youtubeCandidates": [
         "BYN5EDX7WaA",
-        "Ic7ucSNPTqw",
-        "0dJm0lbDyMk"
+        "Ic7ucSNPTqw"
       ],
       "tags": [
         "finde",
@@ -689,8 +667,7 @@
       },
       "youtubeCandidates": [
         "uWiiI_vDTDI",
-        "UwrXGPfr5xo",
-        "TI7QiEf0ueg"
+        "UwrXGPfr5xo"
       ],
       "tags": [
         "trekking",
@@ -711,8 +688,7 @@
       "youtubeSearch": "Termas Geométricas Coñaripe Chile",
       "youtubeCandidates": [
         "DF_Vf7ES1rc",
-        "CVGAVrBRc4M",
-        "DKSVo_WlspQ"
+        "CVGAVrBRc4M"
       ],
       "tags": [
         "termas",
@@ -733,8 +709,7 @@
       "youtubeSearch": "Coñaripe termas Chile",
       "youtubeCandidates": [
         "DF_Vf7ES1rc",
-        "O6Cww5Gq_xs",
-        "CVwcbVivSvM"
+        "O6Cww5Gq_xs"
       ],
       "tags": [
         "termas",
