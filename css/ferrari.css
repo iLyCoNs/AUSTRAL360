@@ -1039,9 +1039,7 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
 @media (max-width: 768px) {
   :root { --panel-w: calc(100vw - 24px); }
 
-  /* El backdrop-filter se desactiva dinámicamente mediante las clases .ferrari-device-mid y .ferrari-device-low */
-
-  /* ── Sombras simplificadas ── */
+  /* Glass móvil: mismo lenguaje visual que el widget clima (no opacar el dock) */
   .kpk-panel {
     box-shadow: 0 2px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
   }
@@ -1052,11 +1050,11 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   }
   .kbd-glass {
-    background: rgba(255, 255, 255, 0.10);
-    backdrop-filter: blur(32px) saturate(180%);
-    -webkit-backdrop-filter: blur(32px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.10) !important;
+    backdrop-filter: blur(28px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
   }
   .kbd-toggle {
     box-shadow:
@@ -1129,52 +1127,49 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   }
 }
 
-/* ══ DEVICE TIER: mid/low (tablets mid-range, 4GB RAM, Samsung Tab S7 FE) ══ */
-/* Desactiva backdrop-filter (causa #1 de lag GPU) y simplifica compositing */
-
-.ferrari-device-mid *,
-.ferrari-device-low * {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
+/* ══ DEVICE TIER: mid/low ══
+   Antes: backdrop-filter:none + dock #1e2029 (opaco/oscuro) en tablet/móvil.
+   Eso rompía el glass del clima y los pills. La textura 360° ya se baja con
+   loteo360-4096/2048; el UI mantiene el mismo cristal que en desktop. */
 
 .ferrari-device-mid .smart-pin,
 .ferrari-device-low .smart-pin,
 .ferrari-device-mid .f-geo-pin,
-.ferrari-device-low .f-geo-pin {
+.ferrari-device-low .f-geo-pin,
+.ferrari-device-phone .smart-pin,
+.ferrari-device-tablet .smart-pin,
+.ferrari-device-phone .f-geo-pin,
+.ferrari-device-tablet .f-geo-pin {
   will-change: auto;
 }
 
-/* Sombras más simples en mid tier */
-.ferrari-device-mid .kpk-panel {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
-}
-.ferrari-device-mid .kbd-glass {
-  background: #1e2029;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+/* Glass del dock / clima / pills: mismo look que desktop (sin forzar oscuro) */
+.ferrari-device-mid .kbd-glass,
+.ferrari-device-low .kbd-glass,
+.ferrari-device-phone .kbd-glass,
+.ferrari-device-tablet .kbd-glass {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.32),
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+  color: #ffffff;
 }
 
-/* Low tier: sombras aún más ligeras, sin text-shadow */
+.ferrari-device-mid .kpk-panel,
 .ferrari-device-low .kpk-panel {
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
 }
-.ferrari-device-low .kbd-glass {
-  background: #1e2029;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-}
+
 .ferrari-device-low .kpk-brand-dock__name {
   text-shadow: none !important;
 }
 .ferrari-device-low .kpk-lote-panel.spectator-mode {
   background: #ffffff;
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-
-/* Spectator mode: desactivar backdrop-filter en dispositivos mid/low (causa lag GPU) */
-.ferrari-device-mid .kpk-lote-panel.spectator-mode,
-.ferrari-device-low .kpk-lote-panel.spectator-mode {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 /* ──────────────────────────────────────────────
