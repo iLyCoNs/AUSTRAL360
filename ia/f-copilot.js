@@ -548,8 +548,8 @@
 
     if (_clientName) {
       const text = isGigi
-        ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantName}. ¿Hacemos el tour o buscas un lote en específico?`
-        : `Bienvenido de nuevo, ${_clientName}. Soy ${assistantName}. ¿Desea un tour o analizar un lote?`;
+        ? `¡Hola, ${_clientName}! Qué gusto tenerte de vuelta en ${projectName}. Soy ${assistantName}. ¿Tour de lotes, o te muestro qué hacer cerca (termas, trekking, lagos)?`
+        : `Bienvenido de nuevo, ${_clientName}. Soy ${assistantName}. ¿Tour de lotes o planes de turismo cerca del proyecto?`;
       return {
         messages: [text],
         speakText: text,
@@ -1561,6 +1561,68 @@
     }
   }
 
+  async function offerTourismCategory(category) {
+    if (!window.FerrariTourism) return;
+    if (window.FerrariTourism.isOpen && window.FerrariTourism.isOpen()) {
+      window.FerrariTourism.closeWidget();
+    }
+    const offer = category === 'nearest'
+      ? await window.FerrariTourism.prepareNearestOffer()
+      : await window.FerrariTourism.prepareOffer(category);
+    if (!offer) {
+      appendMessage(
+        'En este momento no tengo un lugar de esa categoría con foto o video <b>verificado</b>. Prueba con Termas, Trekking, Rafting, Lagos o Pueblos.',
+        'system'
+      );
+      return;
+    }
+    appendMessage(
+      `Tengo listo: <b>${offer.title}</b> (${offer.distLabel} · ${offer.etaLabel}). ¿Lo muestro con media real?`,
+      'system'
+    );
+    // Chips de confirmación en el chat
+    const chips = document.getElementById('kpk-ai-chips-container');
+    if (chips) {
+      chips.innerHTML = '';
+      const mk = (label, onClick) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'kpk-ai-chip';
+        b.textContent = label;
+        b.addEventListener('click', onClick);
+        chips.appendChild(b);
+      };
+      mk('Sí, muéstrame', async () => {
+        const ok = await window.FerrariTourism.confirmPendingOffer();
+        chips.innerHTML = '';
+        if (!ok) {
+          appendMessage('No pude verificar foto/video de ese lugar. Probemos otra categoría.', 'system');
+        }
+      });
+      mk('Ahora no', () => {
+        window.FerrariTourism.clearPendingOffer();
+        chips.innerHTML = '';
+        appendMessage('Cuando quieras, pide termas, trekking, rafting o lagos y te armo el plan.', 'system');
+      });
+    }
+  }
+
+  async function openTourismFromAction(act) {
+    if (!window.FerrariTourism) return;
+    if (act.poiId) {
+      await window.FerrariTourism.openWidget({ poiId: act.poiId });
+      return;
+    }
+    if (act.category) {
+      // Solo abrir si venía confirmación explícita en la acción
+      if (act.confirmed === true || act.confirm === true) {
+        await window.FerrariTourism.openWidget({ category: act.category });
+      } else {
+        await offerTourismCategory(act.category);
+      }
+    }
+  }
+
   // ─── ACCIONES CLIENT-SIDE ───────────────────────────────────────────
   function executeActions(actions) {
     autoCloseUnusedWidgets(actions);
@@ -1671,6 +1733,18 @@
             break;
           case 'openUrlInNewTab':
             window.open(act.url, '_blank', 'noopener');
+            break;
+          case 'offerTourism':
+            offerTourismCategory(act.category || act.cat || '');
+            break;
+          case 'openTourismWidget':
+            openTourismFromAction(act);
+            break;
+          case 'closeTourismWidget':
+            if (window.FerrariTourism) window.FerrariTourism.closeWidget();
+            break;
+          case 'confirmTourismOffer':
+            if (window.FerrariTourism) window.FerrariTourism.confirmPendingOffer();
             break;
           default:
             console.warn('[Ferrari/IA] Acción no soportada:', act.type);
@@ -4196,6 +4270,51 @@
         actions: [{ type: 'clearHighlights' }]
       };
     }
+
+    // 1b) Jarvis Turismo — confirmar oferta pendiente
+    if (window.FerrariTourism && window.FerrariTourism.getPendingOffer && window.FerrariTourism.getPendingOffer()) {
+      if (/^(si|sí|dale|ok|okay|claro|vamos|muéstrame|muestrame|mostrar|quiero\s+ver|si\s+por\s+favor|sip|sep)\b/.test(clean) ||
+          /(si|sí).{0,12}(muestra|ver|video|foto|widget)/.test(clean)) {
+        const offer = window.FerrariTourism.getPendingOffer();
+        return {
+          text: `Perfecto. Te abro <b>${offer.title}</b> (${offer.distLabel} · ${offer.etaLabel}) con media verificada.`,
+          actions: [{ type: 'confirmTourismOffer' }]
+        };
+      }
+      if (/^(no|ahora\s+no|despues|después|mejor\s+no|cancelar|omitir)\b/.test(clean)) {
+        return {
+          text: 'Sin problema. Cuando quieras, pide termas, trekking, rafting, lagos o pueblos.',
+          actions: [{ type: 'closeTourismWidget' }]
+        };
+      }
+    }
+
+    // 1c) Jarvis Turismo — ofrecer categoría (NO abre widget hasta el sí)
+    if (/(finde|fin\s+de\s+semana|primer\s+finde|que\s+hacer\s+cerca|qué\s+hacer\s+cerca|planes?\s+cerca|turismo\s+cerca|actividades\s+cerca)/.test(clean) &&
+        !/(lote|parcela|precio|uf|financi)/.test(clean)) {
+      return {
+        text: 'Te armo el plan más cercano con media <b>verificada</b>. ¿Te lo muestro?',
+        actions: [{ type: 'offerTourism', category: 'nearest' }]
+      };
+    }
+
+    const tourismMap = [
+      { re: /\b(termas?|termal|aguas?\s+calientes|pozones?)\b/, cat: 'termas', label: 'termas' },
+      { re: /\b(rafting|rapidos|rápidos|kayak)\b/, cat: 'rafting', label: 'rafting' },
+      { re: /\b(trekking|trekin|senderismo|caminata|excursion|excursión|petrohu[eé])\b/, cat: 'trekking', label: 'trekking y naturaleza' },
+      { re: /\b(volc[aá]n|osorno|nieve|ski|esqu[ií])\b/, cat: 'nieve', label: 'volcán y nieve' },
+      { re: /\b(lagos?|mirador|todos\s+los\s+santos|llanquihue)\b/, cat: 'lagos', label: 'lagos y miradores' },
+      { re: /\b(pueblo|puerto\s+varas|frutillar|ensenada|turismo)\b/, cat: 'pueblos', label: 'pueblos de la zona' },
+      { re: /\b(teatro|cultura|concierto|gastronom[ií]a|restaurante)\b/, cat: 'cultura', label: 'cultura y gastronomía' }
+    ];
+    for (const t of tourismMap) {
+      if (t.re.test(clean) && !/(lote|parcela|precio|uf|financi)/.test(clean)) {
+        return {
+          text: `En la zona hay planes de <b>${t.label}</b> con entorno real. ¿Te muestro fotos/video verificados y la ruta desde el proyecto?`,
+          actions: [{ type: 'offerTourism', category: t.cat }]
+        };
+      }
+    }
     
     // 2) Lote / Parcela específica (ej: "muéstrame la parcela 15", "acerca el lote 10", "dónde está el lote 10", "haz zoom al 20")
     const loteMatch = clean.match(/(?:lote|parcela|terreno|zoom\s+al|ver\s+el|mira\s+el|ir\s+al|ir\s+a\s+la|acercate\s+al|acerca\s+al|nro|numero|nº|\b)\s*(\d{1,3})\b/i);
@@ -4835,6 +4954,12 @@
     const nearbyCompactJson = JSON.stringify(nearbyCompact, null, 2);
     const ciudadesReferenciaJson = JSON.stringify(ciudadesReferencia, null, 2);
     const droneOriginJson = JSON.stringify(droneOrigin, null, 2);
+    const tourismJson = (window.FerrariTourism && typeof window.FerrariTourism.catalogSummaryForPrompt === 'function')
+      ? window.FerrariTourism.catalogSummaryForPrompt()
+      : '[]';
+    const tourismPending = (window.FerrariTourism && window.FerrariTourism.getPendingOffer && window.FerrariTourism.getPendingOffer())
+      ? JSON.stringify(window.FerrariTourism.getPendingOffer())
+      : 'null';
     const activeLoteJson = _activeLote ? JSON.stringify({
       id: _activeLote.id,
       num: _activeLote.titulo,
@@ -4961,6 +5086,17 @@ ${ciudadesTexto}
 SERVICIOS CERCANOS CARGADOS (OSM - TOP 10):
 ${nearbyCompactJson}
 
+JARVIS TURISMO (catálogo curado + media verificada en cliente):
+${tourismJson}
+OFERTA TURISMO PENDIENTE (si no es null, el usuario debe confirmar antes de abrir widget):
+${tourismPending}
+REGLAS TURISMO (ESTRICTAS):
+1. Si el cliente pregunta por termas, trekking, rafting, lagos, volcanes, pueblos, cultura, finde o “qué hacer cerca”, responde breve y ejecuta SOLO {"type":"offerTourism","category":"termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}. NUNCA abras el widget todavía.
+2. Solo si el usuario confirma (sí, dale, muéstrame, ok) y hay oferta pendiente → {"type":"confirmTourismOffer"} o {"type":"openTourismWidget","poiId":"ID","confirmed":true}.
+3. NUNCA inventes URLs de YouTube, fotos ni coordenadas. El cliente valida Wikipedia/oEmbed; si no hay media real, el widget no se muestra.
+4. Si el tema cambia a lotes, precios, financiamiento o clima → no envíes acciones de turismo (el sistema cierra el widget solo).
+5. Tras mostrar turismo, invita a ver lotes o agendar visita (cierre comercial suave).
+
 ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "lookAtLote", "loteId": "ID", "hfov": 50}: Mueve la cámara al lote. hfov entre 30 (zoom) y 110 (gran angular). Úsala cuando pidan ver, acercar o hacer zoom a un lote.
 - {"type": "openLotePanel", "loteId": "ID"}: Abre ficha con fotos y detalles. SOLO si el cliente pide ver la ficha, fotos, precio o reservar.
@@ -4981,6 +5117,10 @@ ACCIONES DISPONIBLES (úsalas con criterio y siempre en el JSON de respuesta):
 - {"type": "highlightAvailable"}: Resalta todos los lotes disponibles en verde en el plano 360°. ÚSALA cuando pregunten cuáles están disponibles o a la venta.
 - {"type": "downloadPDF", "loteId": "ID_opcional"}: Genera y descarga inmediatamente una ficha comercial en PDF del lote indicado (o en foco). ÚSALA cuando pidan PDFs, folletos, fichas para descargar, cotizaciones o descargables.
 - {"type": "openCalendarWidget", "loteId": "ID_opcional"}: Abre el widget del calendario interactivo macOS para agendar visitas al terreno. ÚSALA cuando el cliente exprese interés en agendar una visita, ir al lugar, coordinar un viaje, ir a ver las parcelas presencialmente o coordinar reunión en terreno.
+- {"type": "offerTourism", "category": "termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}: Ofrece un plan turístico (sin abrir widget).
+- {"type": "confirmTourismOffer"}: Abre el widget tras el sí del cliente.
+- {"type": "openTourismWidget", "poiId": "petrohue-saltos", "confirmed": true}: Abre widget turismo de un POI del catálogo (solo con confirmed true).
+- {"type": "closeTourismWidget"}: Cierra el widget de turismo.
 
 REGLA DE PROACTIVIDAD: Eres el único punto de control de la plataforma. Cuando el usuario exprese cualquier necesidad de información, visual o navegación, SIEMPRE ejecuta la acción correspondiente además de responder con texto. Nunca respondas solo con texto si existe una acción disponible para acompañarlo.
 
@@ -5173,10 +5313,21 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     const hasStatsAction = actions.some(a => a.type === 'showStats');
     const hasPriceAction = actions.some(a => a.type === 'showPriceComparison');
     const hasCalendarAction = actions.some(a => a.type === 'openCalendarWidget');
+    const hasTourismAction = actions.some(a =>
+      a.type === 'openTourismWidget' || a.type === 'offerTourism' || a.type === 'confirmTourismOffer'
+    );
     
     // Si no hay acción de mapa en este turno, cerrar mapa flotante
     if (!hasMapAction) {
       closeMapWidget();
+    }
+
+    // Turismo: cerrar widget al cambiar de tema (lote, precio, clima, etc.)
+    if (!hasTourismAction && window.FerrariTourism) {
+      window.FerrariTourism.closeWidget();
+      // Si el turno no es confirmación, limpiar oferta pendiente al hablar de otra cosa
+      const staysOnOffer = actions.some(a => a.type === 'offerTourism');
+      if (!staysOnOffer) window.FerrariTourism.clearPendingOffer();
     }
     
     // El widget del clima se mantiene abierto hasta que el usuario lo cierre manualmente
@@ -5473,21 +5624,35 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       chips = [
         { text: `📸 Fotos Lote ${_activeLote.titulo}`, query: `Ver fotos del Lote ${_activeLote.titulo}` },
         { text: `📄 Ficha PDF`, query: `Descargar ficha PDF del Lote ${_activeLote.titulo}` },
-        { text: `📊 Simular Pago`, query: `Simular financiamiento Lote ${_activeLote.titulo}` },
+        { text: `♨️ Qué hacer cerca`, query: `¿Qué puedo hacer cerca del proyecto? Termas, trekking, lagos` },
         { text: `📅 Agendar Visita`, query: `Quiero agendar una visita para el Lote ${_activeLote.titulo}` }
       ];
     } else {
       chips = [
         { text: `🏡 Lotes Disponibles`, query: `¿Cuáles están disponibles?` },
-        { text: `📈 Simular Pago`, query: `¿Tienen financiamiento directo?` },
-        { text: `🗺️ Ver en Mapa`, query: `¿Cómo llegar al proyecto y qué servicios hay cerca?` },
-        { text: `📅 Agendar Visita`, query: `Quiero coordinar una visita al terreno` }
+        { text: `🌲 Finde cerca`, query: `Arma mi primer fin de semana cerca del proyecto` },
+        { text: `♨️ Termas`, query: `quiero planes de termas cerca` },
+        { text: `🥾 Trekking`, query: `quiero planes de trekking cerca` },
+        { text: `🛶 Rafting`, query: `quiero planes de rafting cerca` },
+        { text: `🏞️ Lagos`, query: `quiero planes de lagos cerca` }
       ];
+      // Si el catálogo ya cargó, anteponer chips oficiales
+      try {
+        if (window.FerrariTourism && typeof window.FerrariTourism.getChipDefs === 'function') {
+          const defs = window.FerrariTourism.getChipDefs();
+          if (defs && defs.length) {
+            chips = [
+              { text: `🏡 Lotes Disponibles`, query: `¿Cuáles están disponibles?` },
+              { text: `🌲 Finde cerca`, query: `Arma mi primer fin de semana cerca del proyecto` }
+            ].concat(defs.slice(0, 5));
+          }
+        }
+      } catch (e) {}
     }
 
     if (container) {
       container.innerHTML = chips.map(c => `
-        <button class="kpk-suggest-chip" data-query="${c.query}">
+        <button class="kpk-suggest-chip" data-query="${c.query.replace(/"/g, '&quot;')}">
           ${c.text}
         </button>
       `).join('');
@@ -5508,7 +5673,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       if (popup && !isMinimal) {
         mobileContainer.style.display = 'flex';
         mobileContainer.innerHTML = chips.map(c => `
-          <button class="kpk-mbp-chip" data-query="${c.query}">
+          <button class="kpk-mbp-chip" data-query="${c.query.replace(/"/g, '&quot;')}">
             ${c.text}
           </button>
         `).join('');
@@ -5526,6 +5691,44 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       }
     }
   }
+
+  // Puentes para el widget de turismo
+  window.__kpkRefreshTourismChips = function () {
+    try { _updateSuggestiveChips(); } catch (e) {}
+  };
+  window.__kpkOfferTourism = function (cat) {
+    offerTourismCategory(cat);
+  };
+  window.__kpkSendTourismFollowUp = function (query) {
+    if (_input) _input.value = query;
+    handleSend();
+  };
+  window.__kpkTourismOpened = function (poi) {
+    appendMessage(
+      `Listo: <b>${poi.title}</b>. Ruta, video/foto verificados y más planes abajo. ¿Seguimos con otro lugar o miramos lotes?`,
+      'system'
+    );
+    const chips = document.getElementById('kpk-ai-chips-container');
+    if (chips) {
+      chips.innerHTML = '';
+      const mk = (label, q) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'kpk-suggest-chip';
+        b.textContent = label;
+        b.addEventListener('click', () => {
+          _input.value = q;
+          handleSend();
+        });
+        chips.appendChild(b);
+      };
+      mk('🥾 Otro trekking', 'quiero planes de trekking cerca');
+      mk('♨️ Termas', 'quiero planes de termas cerca');
+      mk('🏡 Ver lotes', '¿Cuáles lotes están disponibles?');
+      mk('📅 Agendar visita', 'Quiero coordinar una visita al terreno');
+      mk('💬 WhatsApp asesor', 'Quiero hablar por WhatsApp con un asesor humano');
+    }
+  };
 
   // ─── MOBILE HUD GLASSMORPHIC OVERLAYS ──────────────────────────────────────
   function showMobileBubblePopup(text, keepOpen) {

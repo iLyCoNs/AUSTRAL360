@@ -1,0 +1,180 @@
+{
+  "version": 3,
+  "regionHint": "Los Lagos / sur de Chile — entorno del proyecto",
+  "categories": [
+    { "id": "termas", "label": "Termas", "emoji": "♨️", "chip": "♨️ Termas" },
+    { "id": "trekking", "label": "Trekking", "emoji": "🥾", "chip": "🥾 Trekking" },
+    { "id": "rafting", "label": "Rafting", "emoji": "🛶", "chip": "🛶 Rafting" },
+    { "id": "lagos", "label": "Lagos", "emoji": "🏞️", "chip": "🏞️ Lagos" },
+    { "id": "pueblos", "label": "Pueblos", "emoji": "🏘️", "chip": "🏘️ Pueblos" },
+    { "id": "nieve", "label": "Nieve / Volcán", "emoji": "❄️", "chip": "❄️ Volcán" },
+    { "id": "cultura", "label": "Cultura", "emoji": "🎭", "chip": "🎭 Cultura" }
+  ],
+  "pois": [
+    {
+      "id": "petrohue-saltos",
+      "category": "trekking",
+      "title": "Saltos del Petrohué",
+      "blurb": "Cascadas sobre lava basáltica con el Volcán Osorno de fondo. El clásico del Parque Vicente Pérez Rosales.",
+      "lat": -41.17235,
+      "lng": -72.44683,
+      "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "naturaleza", "fotos"]
+    },
+    {
+      "id": "volcan-osorno",
+      "category": "nieve",
+      "title": "Volcán Osorno",
+      "blurb": "El ícono del sur: nieve, miradores y centro de ski sobre el lago Llanquihue.",
+      "lat": -41.1,
+      "lng": -72.49305556,
+      "wiki": { "lang": "es", "title": "Volcán_Osorno" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "nieve", "mirador"]
+    },
+    {
+      "id": "parque-vpr",
+      "category": "trekking",
+      "title": "Parque Vicente Pérez Rosales",
+      "blurb": "El parque nacional más antiguo de Chile: senderos, volcanes y el circuito Petrohué.",
+      "lat": -41.17222222,
+      "lng": -72.44888889,
+      "wiki": { "lang": "es", "title": "Parque_nacional_Vicente_Pérez_Rosales" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "trekking"]
+    },
+    {
+      "id": "lago-todos-santos",
+      "category": "lagos",
+      "title": "Lago Todos los Santos",
+      "blurb": "Aguas esmeralda entre volcanes; puerta a Petrohué y al corazón del parque.",
+      "lat": -41.13333333,
+      "lng": -72.2,
+      "wiki": { "lang": "es", "title": "Lago_Todos_los_Santos" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "lago"]
+    },
+    {
+      "id": "lago-llanquihue",
+      "category": "lagos",
+      "title": "Lago Llanquihue",
+      "blurb": "Uno de los lagos más grandes de Chile: costaneras, atardeceres y vista permanente al Osorno.",
+      "lat": -41.13333333,
+      "lng": -72.78333333,
+      "wiki": { "lang": "es", "title": "Lago_Llanquihue" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "lago"]
+    },
+    {
+      "id": "puerto-varas",
+      "category": "pueblos",
+      "title": "Puerto Varas",
+      "blurb": "Pueblo lacustre frente al Osorno: costanera, gastronomía y base para todas las excursiones.",
+      "lat": -41.3178,
+      "lng": -72.9827,
+      "wiki": { "lang": "es", "title": "Puerto_Varas" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "pueblo", "comida"]
+    },
+    {
+      "id": "frutillar",
+      "category": "pueblos",
+      "title": "Frutillar",
+      "blurb": "Teatro del Lago, tradición alemana y orilla del Llanquihue. Ideal para un domingo cultural.",
+      "lat": -41.1258,
+      "lng": -73.0605,
+      "wiki": { "lang": "es", "title": "Frutillar" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "pueblo"]
+    },
+    {
+      "id": "teatro-del-lago",
+      "category": "cultura",
+      "title": "Teatro del Lago",
+      "blurb": "Sala de conciertos sobre el Llanquihue en Frutillar: música, arquitectura y atardecer lacustre.",
+      "lat": -41.1335,
+      "lng": -73.0275,
+      "wiki": { "lang": "es", "title": "Teatro_del_Lago" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "cultura"]
+    },
+    {
+      "id": "ensenada",
+      "category": "pueblos",
+      "title": "Ensenada",
+      "blurb": "Puerta de entrada a Petrohué y al rafting: base de aventura al pie del Osorno.",
+      "lat": -41.2081,
+      "lng": -72.5383,
+      "wiki": { "lang": "es", "title": "Ensenada_(Chile)" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "aventura"]
+    },
+    {
+      "id": "rafting-petrohue",
+      "category": "rafting",
+      "title": "Rafting Río Petrohué",
+      "blurb": "Rápidos clase III con vista a Osorno, Calbuco y Puntiagudo. Salidas típicas desde Ensenada.",
+      "lat": -41.17235,
+      "lng": -72.44683,
+      "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["finde", "aventura", "agua"]
+    },
+    {
+      "id": "volcan-calbuco",
+      "category": "nieve",
+      "title": "Volcán Calbuco",
+      "blurb": "Vecino poderoso del Osorno; paisaje andino y rutas de observación en la región de Los Lagos.",
+      "lat": -41.33277778,
+      "lng": -72.61111111,
+      "wiki": { "lang": "es", "title": "Calbuco_(volcán)" },
+      "youtubeCandidates": ["xpt794jxa1A"],
+      "tags": ["naturaleza"]
+    },
+    {
+      "id": "termas-puyehue",
+      "category": "termas",
+      "title": "Termas de Puyehue",
+      "blurb": "Termas clásicas de la zona lacustre, mucho más cerca del proyecto que Coñaripe. Ideal para un día de lluvia sureña.",
+      "lat": -40.7375,
+      "lng": -72.30833333,
+      "wiki": { "lang": "es", "title": "Termas_de_Puyehue" },
+      "youtubeCandidates": [],
+      "tags": ["finde", "termas", "relax", "cerca"]
+    },
+    {
+      "id": "parque-puyehue",
+      "category": "trekking",
+      "title": "Parque nacional Puyehue",
+      "blurb": "Bosque valdiviano, volcanes y termas en la misma región. Perfecto para trekking de medio día.",
+      "lat": -40.7,
+      "lng": -72.15,
+      "wiki": { "lang": "es", "title": "Parque_nacional_Puyehue" },
+      "youtubeCandidates": [],
+      "tags": ["trekking", "naturaleza"]
+    },
+    {
+      "id": "termas-geometricas",
+      "category": "termas",
+      "title": "Termas Geométricas",
+      "blurb": "Pozones en la selva valdiviana (Coñaripe / Villarrica). Un escape memorable si quieres ir más al norte.",
+      "lat": -39.501659,
+      "lng": -71.874697,
+      "wiki": { "lang": "es", "title": "Termas_Geométricas" },
+      "youtubeCandidates": [],
+      "tags": ["finde", "termas", "relax"]
+    },
+    {
+      "id": "conaripe",
+      "category": "termas",
+      "title": "Coñaripe",
+      "blurb": "Pueblo termal al pie del Villarrica: base para pozones y rutas de la selva valdiviana.",
+      "lat": -39.5679,
+      "lng": -72.0075,
+      "wiki": { "lang": "es", "title": "Coñaripe" },
+      "youtubeCandidates": [],
+      "tags": ["termas", "pueblo"]
+    }
+  ]
+}
