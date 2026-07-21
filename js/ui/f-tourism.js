@@ -882,26 +882,26 @@
       }
       byBand[key].items.push(it);
     });
-    let html = 'Te armo opciones <b>de cerca a lejos</b> (media verificada):<br>';
+    let html =
+      'Te armo opciones <b>de cerca a lejos</b> con media verificada.';
     order.forEach((key) => {
       const g = byBand[key];
       html +=
-        '<br><b>' +
+        '<br><br><b>' +
         (g.emoji ? g.emoji + ' ' : '') +
         g.label +
-        '</b><br>';
+        '</b>';
       g.items.forEach((it) => {
         html +=
-          '· <b>' +
+          '<br>· <b>' +
           it.title +
           '</b> — ' +
           it.distLabel +
           ' · ' +
-          it.etaLabel +
-          '<br>';
+          it.etaLabel;
       });
     });
-    html += '<br>¿Cuál te muestro? (o elige el más cercano)';
+    html += '<br><br>¿Cuál te muestro? Elige abajo o di el más cercano.';
     return html;
   }
 

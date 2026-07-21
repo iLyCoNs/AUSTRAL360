@@ -186,11 +186,14 @@
       <div class="kpk-ai-panel" id="kpk-ai-panel">
         <div class="kpk-ai-header">
           <div class="kpk-ai-header-title">
-            <span class="kpk-ai-header-dot"></span>
-            <span class="kpk-ai-header-name">${assistantTitle}</span>
+            <span class="kpk-ai-header-dot" title="En línea"></span>
+            <div class="kpk-ai-header-copy">
+              <span class="kpk-ai-header-eyebrow">Copiloto premium</span>
+              <span class="kpk-ai-header-name">${assistantTitle}</span>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar">✕</button>
+          <div class="kpk-ai-header-actions">
+            <button class="kpk-ai-close" id="kpk-ai-close" title="Cerrar" aria-label="Cerrar">✕</button>
           </div>
         </div>
         <div class="kpk-voice-panel" id="kpk-voice-panel" style="display:none;"></div>
@@ -227,7 +230,7 @@
               </svg>
             </button>
           </div>
-          <button class="kpk-ai-action-btn" id="kpk-ai-send" title="Enviar mensaje">
+          <button class="kpk-ai-action-btn kpk-ai-send-btn" id="kpk-ai-send" title="Enviar mensaje" aria-label="Enviar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -1600,26 +1603,31 @@
     const chips = document.getElementById('kpk-ai-chips-container');
     if (chips) {
       chips.innerHTML = '';
-      const mk = (label, onClick) => {
+      chips.classList.add('kpk-ai-chips-container--carousel');
+      const mk = (label, onClick, opts) => {
+        opts = opts || {};
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'kpk-ai-chip';
+        b.className =
+          'kpk-ai-chip' +
+          (opts.featured ? ' kpk-ai-chip--featured' : '') +
+          (opts.ghost ? ' kpk-ai-chip--ghost' : '');
         b.textContent = label;
         b.addEventListener('click', onClick);
         chips.appendChild(b);
       };
 
-      // Más cercano primero
       mk('📍 El más cercano', async () => {
         if (window.FerrariTourism.selectOfferByPoiId) {
           window.FerrariTourism.selectOfferByPoiId(menu.items[0].poiId);
         }
         chips.innerHTML = '';
+        chips.classList.remove('kpk-ai-chips-container--carousel');
         const ok = await window.FerrariTourism.confirmPendingOffer();
         if (!ok) {
           appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
         }
-      });
+      }, { featured: true });
 
       menu.items.forEach((it) => {
         mk(it.chipLabel || it.title, async () => {
@@ -1627,6 +1635,7 @@
             window.FerrariTourism.selectOfferByPoiId(it.poiId);
           }
           chips.innerHTML = '';
+          chips.classList.remove('kpk-ai-chips-container--carousel');
           const ok = await window.FerrariTourism.confirmPendingOffer();
           if (!ok) {
             appendMessage('No pude verificar media de ese lugar. Elige otro del listado.', 'system');
@@ -1637,8 +1646,9 @@
       mk('Ahora no', () => {
         window.FerrariTourism.clearPendingOffer();
         chips.innerHTML = '';
+        chips.classList.remove('kpk-ai-chips-container--carousel');
         appendMessage('Cuando quieras, pide termas, trekking, lagos o “qué hacer cerca”.', 'system');
-      });
+      }, { ghost: true });
     }
   }
 
@@ -4923,6 +4933,31 @@
     });
   }
 
+  function _escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /** Render seguro: escapa todo y reabre solo etiquetas premium permitidas. */
+  function _formatChatHtml(raw) {
+    if (raw == null) return '';
+    const str = String(raw);
+    const blocks = [];
+    let work = str.replace(/<div class="kpk-chat-attachment-link"[\s\S]*?<\/div>/gi, (m) => {
+      blocks.push(m);
+      return '\u0000ATT' + (blocks.length - 1) + '\u0000';
+    });
+    work = _escapeHtml(work);
+    work = work
+      .replace(/&lt;(\/?)(b|strong|i|em)&gt;/gi, '<$1$2>')
+      .replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+    work = work.replace(/\u0000ATT(\d+)\u0000/g, (_, i) => blocks[Number(i)] || '');
+    return work;
+  }
+
   function appendMessage(text, role) {
     // ── En móvil: redirigir respuestas del asistente a la burbuja popup ──────
     const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -4933,21 +4968,18 @@
 
     const msg = document.createElement('div');
     msg.className = `kpk-ai-msg msg-${role}`;
-    
-    // Contenido del texto
+
     const txtNode = document.createElement('div');
     txtNode.className = 'kpk-ai-msg-text';
-    txtNode.textContent = text;
+    // Permitir <b>/<br> y adjuntos propios; nunca textContent crudo con tags
+    txtNode.innerHTML = _formatChatHtml(text);
     msg.appendChild(txtNode);
-    
-    // Etiqueta de tiempo (HH:MM:SS)
+
     const timeNode = document.createElement('span');
     timeNode.className = 'kpk-ai-msg-time';
-    
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
-    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    timeNode.textContent = `Enviado a las ${timeStr} hrs`;
+    timeNode.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
     msg.appendChild(timeNode);
 
     if (_log) {
@@ -6245,7 +6277,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     } else if (popup.classList.contains('is-visible') && popup.style.display !== 'none') {
       const txtEl = popup.querySelector('#kpk-mbp-text');
       if (txtEl && text !== undefined && text !== '') {
-        txtEl.innerHTML = text;
+        txtEl.innerHTML = _formatChatHtml(text);
       }
       
       popup.classList.remove('kpk-mbp-minimal');
@@ -6298,7 +6330,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
       </div>
       
       <div class="kpk-mbp-body">
-        <div class="kpk-mbp-text" id="kpk-mbp-text">${text}</div>
+        <div class="kpk-mbp-text" id="kpk-mbp-text">${_formatChatHtml(text)}</div>
         <div class="kpk-mbp-chips-row" id="kpk-mbp-chips-row" style="display: none;"></div>
       </div>
       
