@@ -6,8 +6,10 @@
 'use strict';
 
 (function () {
-  const CATALOG_URL = 'data/tourism-catalog.json?v=6';
+  const CATALOG_URL = 'data/tourism-catalog.json?v=7';
   const EARTH_R_M = 6371000;
+  /** false = solo video si hay youtubeCandidates curado + oEmbed OK (sin búsqueda proxy) */
+  const ENABLE_YT_LIVE_SEARCH = false;
   const DEFAULT_BANDS = [
     { id: 'muy_cerca', label: 'Muy cerca', emoji: '🟢', maxKm: 40 },
     { id: 'paseo', label: 'A un paseo', emoji: '🟡', maxKm: 100 },
@@ -327,8 +329,14 @@
     if (!poi) return null;
     if (_mediaCache.has(poi.id)) {
       const cached = _mediaCache.get(poi.id);
-      // Si había foto pero no video, reintentar búsqueda YT (proxy pudo estar caído)
-      if (cached && cached.ok && !cached.youtube && !cached._ytTriedLive) {
+      // Reintento de búsqueda YT solo si está habilitada
+      if (
+        ENABLE_YT_LIVE_SEARCH &&
+        cached &&
+        cached.ok &&
+        !cached.youtube &&
+        !cached._ytTriedLive
+      ) {
         const live = await _searchYoutubeLive(poi);
         cached._ytTriedLive = true;
         if (live) {
@@ -370,10 +378,11 @@
       }
     }
 
-    // 4) YouTube: IDs curados → búsqueda en vivo (proxy → YouTube results → oEmbed)
+    // 4) YouTube: SOLO IDs curados + oEmbed. Sin ID → sin video (búsqueda live off por defecto).
     let youtube = null;
     const candidates = Array.isArray(poi.youtubeCandidates) ? poi.youtubeCandidates : [];
     for (const id of candidates) {
+      if (!id) continue;
       youtube = await _validateYoutube(id);
       if (youtube) {
         youtube.source = 'catalog';
@@ -381,22 +390,30 @@
       }
     }
     let ytTriedLive = false;
-    if (!youtube) {
+    if (!youtube && ENABLE_YT_LIVE_SEARCH) {
       ytTriedLive = true;
       youtube = await _searchYoutubeLive(poi);
     }
 
-    // Sin foto NI video verificados → no servir el POI
-    if (!imageUrl && !youtube) {
-      const empty = { ok: false, imageUrl: null, youtube: null, wikiExtract: null, _ytTriedLive: ytTriedLive };
-      _mediaCache.set(poi.id, empty);
-      return empty;
-    }
-
-    // Texto: blurb del catálogo siempre; extracto wiki solo si la página es del mismo lugar
+    // Texto descriptivo
     const wikiRelated = wiki && _titlesRelated(poi.title, wiki.title);
     const wikiExtract =
       wikiRelated && wiki.extract ? wiki.extract.slice(0, 280) : null;
+
+    // Suficiente: coords + descripción (foto/video opcionales)
+    const hasPlace = poi.lat != null && poi.lng != null;
+    const hasDesc = !!(poi.blurb || wikiExtract);
+    if (!hasPlace || (!imageUrl && !youtube && !hasDesc)) {
+      const empty = {
+        ok: false,
+        imageUrl: null,
+        youtube: null,
+        wikiExtract: null,
+        _ytTriedLive: ytTriedLive
+      };
+      _mediaCache.set(poi.id, empty);
+      return empty;
+    }
 
     const resolved = {
       ok: true,
@@ -477,9 +494,9 @@
 
     const media = await resolveMedia(poi);
     if (!media || !media.ok) {
-      console.warn('[Tourism] Media no verificada → no se abre widget:', poi.id);
+      console.warn('[Tourism] Sin datos suficientes para abrir:', poi.id);
       if (window.FerrariUI && window.FerrariUI.showToast) {
-        window.FerrariUI.showToast('Sin foto/video verificado para ese lugar', 'warning');
+        window.FerrariUI.showToast('No pude armar la ficha de ese lugar', 'warning');
       }
       return false;
     }
@@ -488,19 +505,23 @@
     const distM = _haversineM(origin.lat, origin.lng, media.lat, media.lng);
     const el = _ensureWidget();
     el.querySelector('#kpk-tw-title').textContent = poi.title;
-    el.querySelector('#kpk-tw-blurb').textContent =
-      poi.blurb || media.wikiExtract || '';
-    const srcBits = [];
-    if (media.imageSource === 'wikipedia' || media.wikiPageUrl) srcBits.push('foto Wikipedia');
-    else if (media.imageSource === 'commons') srcBits.push('foto Wikimedia Commons');
-    else if (media.imageSource === 'catalog') srcBits.push('foto verificada');
-    if (media.youtube) {
-      srcBits.push(
-        media.youtube.source === 'yt_search' || media.youtube.source === 'youtube_search'
-          ? 'video buscado en YouTube'
-          : 'video YouTube verificado'
-      );
+
+    const descParts = [];
+    if (poi.blurb) descParts.push(poi.blurb);
+    if (media.wikiExtract && media.wikiExtract !== poi.blurb) descParts.push(media.wikiExtract);
+    if (Array.isArray(poi.highlights) && poi.highlights.length) {
+      descParts.push(poi.highlights.map((h) => '· ' + h).join(' '));
     }
+    el.querySelector('#kpk-tw-blurb').textContent = descParts.join('\n\n') || '';
+
+    const srcBits = [];
+    if (media.imageUrl) {
+      if (media.imageSource === 'wikipedia' || media.wikiPageUrl) srcBits.push('foto Wikipedia');
+      else if (media.imageSource === 'commons') srcBits.push('foto Commons');
+      else if (media.imageSource === 'catalog') srcBits.push('foto verificada');
+      else srcBits.push('foto');
+    }
+    if (media.youtube) srcBits.push('video curado');
     el.querySelector('#kpk-tw-meta').textContent =
       (poi.bandEmoji ? poi.bandEmoji + ' ' + poi.bandLabel + ' · ' : '') +
       _formatDist(distM) +
@@ -511,6 +532,14 @@
 
     const mediaBox = el.querySelector('#kpk-tw-media');
     mediaBox.innerHTML = '';
+    if (media.imageUrl) {
+      const img = document.createElement('img');
+      img.className = 'kpk-tw-photo';
+      img.alt = poi.title;
+      img.referrerPolicy = 'no-referrer';
+      img.src = media.imageUrl;
+      mediaBox.appendChild(img);
+    }
     if (media.youtube && media.youtube.id) {
       const wrap = document.createElement('div');
       wrap.className = 'kpk-tw-video';
@@ -521,23 +550,10 @@
         (media.youtube.title || poi.title).replace(/"/g, '') +
         '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
       mediaBox.appendChild(wrap);
-    } else if (media.imageUrl) {
-      const img = document.createElement('img');
-      img.className = 'kpk-tw-photo';
-      img.alt = poi.title;
-      img.referrerPolicy = 'no-referrer';
-      img.src = media.imageUrl;
-      mediaBox.appendChild(img);
     }
-
-    // Si hay video, foto chica debajo opcional
-    if (media.youtube && media.imageUrl) {
-      const thumb = document.createElement('img');
-      thumb.className = 'kpk-tw-photo kpk-tw-photo--secondary';
-      thumb.alt = '';
-      thumb.referrerPolicy = 'no-referrer';
-      thumb.src = media.imageUrl;
-      mediaBox.appendChild(thumb);
+    if (!media.imageUrl && !media.youtube) {
+      mediaBox.innerHTML =
+        '<div class="kpk-tw-map-hint">Ruta desde el proyecto · usa el mapa o los botones de abajo</div>';
     }
 
     const footer = el.querySelector('#kpk-tw-footer');
@@ -555,9 +571,10 @@
       };
     }
     footer.innerHTML =
+      '<button type="button" class="kpk-tw-btn kpk-tw-btn--route" id="kpk-tw-route">Ver ruta en mapa</button>' +
       '<a class="kpk-tw-btn kpk-tw-btn--maps" href="' +
       maps.google +
-      '" target="_blank" rel="noopener">Ruta Maps</a>' +
+      '" target="_blank" rel="noopener">Abrir Maps</a>' +
       '<a class="kpk-tw-btn kpk-tw-btn--waze" href="' +
       maps.waze +
       '" target="_blank" rel="noopener">Waze</a>' +
@@ -565,6 +582,18 @@
       '<button type="button" class="kpk-tw-btn kpk-tw-btn--next" id="kpk-tw-next">Otro plan cerca</button>' +
       '<button type="button" class="kpk-tw-btn kpk-tw-btn--lot" id="kpk-tw-lot">Quiero un lote aquí cerca</button>' +
       '<a class="kpk-tw-btn kpk-tw-btn--wa" id="kpk-tw-wa" href="#" target="_blank" rel="noopener">WhatsApp al asesor</a>';
+
+    const openRoute = () => {
+      try {
+        if (window.FerrariUI && typeof window.FerrariUI.openMapWidget === 'function') {
+          window.FerrariUI.openMapWidget(media.lat, media.lng, poi.title);
+        }
+      } catch (e) {}
+    };
+    openRoute();
+
+    const routeBtn = footer.querySelector('#kpk-tw-route');
+    if (routeBtn) routeBtn.onclick = openRoute;
 
     const lookBtn = footer.querySelector('#kpk-tw-look');
     if (lookBtn) {
@@ -583,9 +612,7 @@
               : brg;
             if (typeof viewer.lookAt === 'function') viewer.lookAt(0, yaw, 70, false);
           }
-          if (window.FerrariUI && typeof window.FerrariUI.openMapWidget === 'function') {
-            window.FerrariUI.openMapWidget(media.lat, media.lng, poi.title);
-          }
+          openRoute();
         } catch (e) {}
       };
     }

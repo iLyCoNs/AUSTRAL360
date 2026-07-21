@@ -5128,7 +5128,7 @@ ${tourismPending}
 REGLAS TURISMO (ESTRICTAS):
 1. Si el cliente pregunta por termas, trekking, rafting, lagos, volcanes, pueblos, cultura, finde o “qué hacer cerca”, responde breve y ejecuta SOLO {"type":"offerTourism","category":"termas|trekking|rafting|lagos|pueblos|nieve|cultura|nearest"}. El cliente lista opciones de CERCA a LEJOS; NUNCA abras el widget todavía.
 2. Solo si el usuario elige un lugar o confirma el más cercano → {"type":"confirmTourismOffer"} o {"type":"openTourismWidget","poiId":"ID","confirmed":true}.
-3. NUNCA inventes URLs de YouTube, fotos ni coordenadas. Foto: Wikipedia/Commons en el navegador. Video: el puente Node busca en YouTube (resultados reales) y solo embebe si oEmbed valida. Sin media real → no se abre el widget.
+3. NUNCA inventes URLs de YouTube, fotos ni coordenadas. Prioridad: ficha descriptiva + ruta en el widget Maps (origen dron → lugar). Foto Wikipedia/Commons si hay. Video SOLO si el catálogo trae ID curado validado con oEmbed; sin ID → no hay video.
 4. Si el tema cambia a lotes, precios, financiamiento o clima → no envíes acciones de turismo (el sistema cierra el widget solo).
 5. Tras mostrar turismo, invita a ver lotes o agendar visita (cierre comercial suave).
 6. Prioriza siempre lugares del entorno del proyecto (radio ~320 km), ordenados por distancia.
@@ -5354,7 +5354,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     );
     
     // Si no hay acción de mapa en este turno, cerrar mapa flotante
-    if (!hasMapAction) {
+    // Mapa: mantener si hay acción de mapa O turismo (la ficha abre la ruta)
+    if (!hasMapAction && !hasTourismAction) {
       closeMapWidget();
     }
 

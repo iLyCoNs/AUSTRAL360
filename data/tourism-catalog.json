@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "regionHint": "Patagonia Verde / Hualaihué–Reloncaví — entorno del origen dron",
   "maxRadiusKm": 320,
   "bands": [
@@ -56,6 +56,7 @@
       "category": "pueblos",
       "title": "Hornopirén",
       "blurb": "Puerta norte de la Carretera Austral: fiordos, volcanes, cascadas y termas cercanas.",
+      "highlights": ["Inicio Carretera Austral", "Termas Pichicolo cerca", "Parque nacional Hornopirén"],
       "lat": -41.9662,
       "lng": -72.4706,
       "wiki": { "lang": "es", "title": "Hornopirén" },
@@ -89,6 +90,7 @@
       "category": "termas",
       "title": "Termas de Pichicolo",
       "blurb": "Pozones naturales (32–42 °C) a ~9 km de Hornopirén, en la Carretera Austral. Las termas más cercanas al proyecto.",
+      "highlights": ["5 pozones al aire libre", "Acceso por Carretera Austral", "Ideal para un día de lluvia"],
       "lat": -41.92,
       "lng": -72.45,
       "wiki": { "lang": "es", "title": "Termas_de_Pichicolo" },
@@ -212,6 +214,7 @@
       "category": "trekking",
       "title": "Saltos del Petrohué",
       "blurb": "Cascadas sobre lava basáltica con el Osorno de fondo. Clásico del Vicente Pérez Rosales.",
+      "highlights": ["Parque Vicente Pérez Rosales", "Vista al Volcán Osorno", "Circuito clásico desde Ensenada"],
       "lat": -41.17235,
       "lng": -72.44683,
       "wiki": { "lang": "es", "title": "Saltos_del_Petrohué" },
