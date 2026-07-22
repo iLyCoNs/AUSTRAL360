@@ -6,6 +6,7 @@
   "logos": [],
   "titleBannerPath": "assets/brand/banners/title_mrvu2nm3.png",
   "titleBannerHref": null,
+  "titleBannerScale": 200,
   "font": "montserrat",
   "dockStyle": "graphite",
   "mobileSolid": true,
@@ -35,5 +36,5 @@
     "waAlertsPhone": "",
     "waAlertsKey": ""
   },
-  "updatedAt": 1784709697035
+  "updatedAt": 1784717814529
 }
