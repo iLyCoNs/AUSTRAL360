@@ -544,6 +544,7 @@
 
   let _hasGreeted = false;
   let _welcomeSpoken = false;
+  let _pendingWelcomeSpeak = '';
 
   function _getAssistantMeta() {
     const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
@@ -587,8 +588,10 @@
       const pack = _buildWelcomePack();
       _isWaitingForName = pack.waitingName;
       _hasGreeted = true;
+      // Guardar texto de saludo: se habla al abrir burbuja/panel (no al cargar)
+      _pendingWelcomeSpeak = pack.speakText;
 
-      // Un solo mensaje en el chat (nada más)
+      // Un solo mensaje en el chat (listo cuando expandan)
       if (_log) _log.innerHTML = '';
       pack.messages.forEach((msg) => appendMessage(msg, 'system'));
 
@@ -596,47 +599,56 @@
         _input.placeholder = pack.waitingName
           ? 'Escribe tu nombre aquí...'
           : 'Pregunta algo aquí o adjunta un archivo...';
-        if (pack.waitingName) {
-          setTimeout(() => { try { _input.focus(); } catch (e) {} }, 400);
-        }
       }
 
-      if (!isMobile && _panel && !_panel.classList.contains('is-open')) {
-        _panel.classList.add('is-open');
+      // Desktop: panel cerrado; solo FAB/burbuja. Saludo al abrir togglePanel.
+      if (_panel) {
+        _panel.classList.remove('is-open');
         _syncAiPanelBodyClass();
       }
 
       if (isMobile) {
-        showMobileBubblePopup(pack.messages[0], true);
+        // Burbuja mínima; al tocarla → expand + voz
+        showMobileBubblePopup(pack.messages[0], false);
+        _forceMobileBubbleMinimal();
+        // showMobileBubblePopup aplica clases en setTimeout(50); reafirmar minimal
+        setTimeout(_forceMobileBubbleMinimal, 80);
       }
 
       // Precargar Edge TTS para que el saludo no caiga a voz robótica
       _loadEdgeTTS().catch(() => {});
-
-      function _playWelcome(e) {
-        // Evita doble disparo click+touchstart en el mismo toque
-        if (_welcomeSpoken) return;
-        _welcomeSpoken = true;
-        window.removeEventListener('click', _playWelcome);
-        window.removeEventListener('touchstart', _playWelcome);
-        _unlockMobileAudio();
-        speakJarvis(pack.speakText);
-      }
-      window.addEventListener('click', _playWelcome, { passive: true });
-      window.addEventListener('touchstart', _playWelcome, { passive: true });
     } catch (err) {
       console.error('[Ferrari/IA] Error en onboarding:', err);
-      if (_panel) _panel.classList.add('is-open');
+      // No abrir panel en error: mantener foto limpia
     }
   }
 
-  /** Re-hablar el onboarding si abren el panel y aún no sonó (desktop) */
+  /** Fuerza burbuja compacta tras onboarding (aunque waitingName / speech digan lo contrario) */
+  function _forceMobileBubbleMinimal() {
+    const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+    if (!popup) return;
+    popup.classList.add('kpk-mbp-minimal', 'is-visible');
+    popup.style.display = 'flex';
+    _mobileHudPinned = false;
+    if (_bubblePopupTimeout) {
+      clearTimeout(_bubblePopupTimeout);
+      _bubblePopupTimeout = null;
+    }
+    const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
+    const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
+    if (inputRow) inputRow.style.display = 'none';
+    if (controlsRow) controlsRow.style.display = 'none';
+  }
+
+  /** Saludo de voz al primer contacto con burbuja/panel (no al cargar la página) */
   function _triggerWelcomeGreeting() {
     if (_welcomeSpoken) return;
-    const pack = _buildWelcomePack();
+    const text = _pendingWelcomeSpeak || (_buildWelcomePack().speakText);
+    if (!text) return;
     _welcomeSpoken = true;
+    _pendingWelcomeSpeak = '';
     _unlockMobileAudio();
-    speakJarvis(pack.speakText);
+    speakJarvis(text);
   }
 
   function _syncAiPanelBodyClass() {
@@ -659,7 +671,7 @@
         popup.style.display !== 'none';
 
       if (visible && popup.classList.contains('kpk-mbp-minimal')) {
-        // Estaba minimizado → expandir para poder escribir
+        // Estaba minimizado → expandir + saludo (expandMobileBubblePopup dispara voz)
         _mobileHudPinned = true;
         if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
         expandMobileBubblePopup();
@@ -7094,6 +7106,8 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
         }
       }
       _updateSuggestiveChips();
+      // Primer contacto con la burbuja → hablar saludo
+      _triggerWelcomeGreeting();
     }
   }
 
