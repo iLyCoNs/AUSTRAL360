@@ -1166,8 +1166,8 @@
               <span class="brand-opt-hint">assets/brand/banners/</span>
             </div>
             <p class="brand-card-sub" style="margin:0 0 10px;font-size:12px;">
-              Reemplaza el dock de título en el tour 360°. Ideal: PNG ancho con transparencia, legible en desktop y móvil.
-              Si configuras un link, al tocar el banner se abre la web oficial del dueño.
+              Reemplaza el dock de título en el tour 360°: queda <b>solo tu PNG</b> (sin barra/pila de glass), con tamaño ajustable abajo.
+              Ideal: PNG con transparencia. Si configuras un link, al tocar el banner se abre la web oficial.
             </p>
             <div class="brand-banner-row" id="brand-banner-row">
               <div class="brand-banner-thumb" id="brand-banner-thumb"><span class="ph">Sin banner</span></div>
@@ -1188,6 +1188,14 @@
               <label for="brand-banner-href">Link al hacer clic en el banner (web oficial)</label>
               <input type="url" id="brand-banner-href" placeholder="https://www.tuproyecto.cl" inputmode="url" autocomplete="url" oninput="liveBrandPreview()">
               <span class="brand-opt-hint" style="margin-top:4px;display:block;font-size:11px;color:var(--text-3);">Ej: https://www.alercepatagon.cl — se abre en una pestaña nueva desde el 360°.</span>
+            </div>
+            <div class="efield full" style="margin-top:14px;">
+              <label for="brand-banner-scale">Tamaño del banner en el 360°</label>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+                <input type="range" id="brand-banner-scale" min="40" max="220" step="5" value="100" oninput="onBannerScaleInput()" style="flex:1;accent-color:#00b4ff;">
+                <strong id="brand-banner-scale-val" style="min-width:3.2em;font-variant-numeric:tabular-nums;font-size:13px;">100%</strong>
+              </div>
+              <span class="brand-opt-hint" style="margin-top:4px;display:block;font-size:11px;color:var(--text-3);">Solo la foto PNG (sin pila/glass). Ajusta a voluntad y publica identidad.</span>
             </div>
           </div>
 
@@ -2229,7 +2237,13 @@ function _deobfuscateKey(encKey) {
 }
 
 function _brandDefaults() {
-  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], titleBannerPath: null, titleBannerHref: null, font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '', elevenlabs: '' }, voiceMode: 'auto_gigi', ttsOutputEnabled: false, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+  return { version: 3, projectName: '', logoPath: null, logoId: null, logos: [], titleBannerPath: null, titleBannerHref: null, titleBannerScale: 100, font: 'cormorant', dockStyle: 'crystal', mobileSolid: true, hideLoteFill: false, loteFillOnHoverOnly: false, loteHoverColor: 'neon-green', aiProvider: 'openrouter', aiKeys: { openrouter: '', groq: '', gemini: '', lightning: '', elevenlabs: '' }, voiceMode: 'auto_gigi', ttsOutputEnabled: false, contact: Object.assign({}, CONTACT_DEFAULTS), updatedAt: null };
+}
+
+function _clampBannerScale(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return 100;
+  return Math.max(40, Math.min(220, Math.round(v)));
 }
 
 function _normalizeBrand(raw) {
@@ -2246,6 +2260,8 @@ function _normalizeBrand(raw) {
   if (b.voiceMode == null) b.voiceMode = 'auto_gigi';
   if (b.ttsOutputEnabled == null) b.ttsOutputEnabled = false;
   if (!b.aiKeys) b.aiKeys = { openrouter: '', groq: '', gemini: '', lightning: '' };
+  b.titleBannerScale = _clampBannerScale(b.titleBannerScale);
+  b.titleBannerHref = _normalizeBannerHref(b.titleBannerHref);
   b.contact = Object.assign({}, CONTACT_DEFAULTS, (raw && raw.contact) || b.contact || {});
   if (b.logoPath && !b.logoId && b.logos.length === 0) {
     b.logoId = 'legacy';
@@ -2444,6 +2460,16 @@ function pendingLabel(logo) {
   return _logoPendingMap[logo.id] ? 'Nuevo · ' : '';
 }
 
+function onBannerScaleInput() {
+  const el = document.getElementById('brand-banner-scale');
+  const val = document.getElementById('brand-banner-scale-val');
+  const pct = _clampBannerScale(el ? el.value : 100);
+  if (el) el.value = String(pct);
+  if (val) val.textContent = pct + '%';
+  _brand.titleBannerScale = pct;
+  liveBrandPreview();
+}
+
 function liveBrandPreview() {
   const name = (document.getElementById('brand-name').value || '').trim();
   const src = _brandLogoSrc(_brand);
@@ -2567,6 +2593,14 @@ function liveBrandPreview() {
   dock.classList.toggle('has-title-banner', hasBanner);
   dock.classList.toggle('has-logo', hasLogo && !hasBanner);
   dock.classList.toggle('has-name', hasName && !hasBanner);
+
+  const scaleEl = document.getElementById('brand-banner-scale');
+  const scaleVal = document.getElementById('brand-banner-scale-val');
+  const scalePct = _clampBannerScale(scaleEl ? scaleEl.value : (_brand.titleBannerScale || 100));
+  _brand.titleBannerScale = scalePct;
+  if (scaleEl && String(scaleEl.value) !== String(scalePct)) scaleEl.value = String(scalePct);
+  if (scaleVal) scaleVal.textContent = scalePct + '%';
+  dock.style.setProperty('--kpk-banner-scale', String(scalePct / 100));
 
   if (hasName || hasLogo || hasBanner) {
     dock.hidden = false;
@@ -2869,6 +2903,12 @@ async function loadBrandFromGitHub() {
   if (nameEl) nameEl.value = _brand.projectName || '';
   const bannerHrefEl = document.getElementById('brand-banner-href');
   if (bannerHrefEl) bannerHrefEl.value = _brand.titleBannerHref || '';
+  const bannerScaleEl = document.getElementById('brand-banner-scale');
+  const bannerScaleVal = document.getElementById('brand-banner-scale-val');
+  const bannerScale = _clampBannerScale(_brand.titleBannerScale);
+  _brand.titleBannerScale = bannerScale;
+  if (bannerScaleEl) bannerScaleEl.value = String(bannerScale);
+  if (bannerScaleVal) bannerScaleVal.textContent = bannerScale + '%';
   const solidEl = document.getElementById('brand-mobile-solid');
   if (solidEl) solidEl.checked = _brand.mobileSolid !== false;
   const hideFillEl = document.getElementById('brand-hide-lote-fill');
@@ -3050,6 +3090,13 @@ async function saveBrand() {
       })),
       titleBannerPath,
       titleBannerHref: titleBannerPath ? _readBannerHrefFromForm() : null,
+      titleBannerScale: titleBannerPath
+        ? _clampBannerScale(
+            document.getElementById('brand-banner-scale')
+              ? document.getElementById('brand-banner-scale').value
+              : _brand.titleBannerScale
+          )
+        : 100,
       font: _brandFont,
       dockStyle: _brandStyle,
       mobileSolid,

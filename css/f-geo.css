@@ -892,7 +892,17 @@ html.kpk-amenity-present #kpk-fab {
   pointer-events: none;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
+  /* blur(32px)×N pins = compositor killer en móvil/tablet */
+  .fgp-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(18, 22, 30, 0.88) !important;
+  }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-card {
+    background: rgba(12, 28, 48, 0.90) !important;
+  }
+
   .kad-grid { grid-template-columns: repeat(3, 1fr); }
   .kpk-amenity-dock {
     right: 10px;

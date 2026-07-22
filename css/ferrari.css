@@ -1046,8 +1046,14 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   .kpk-brand-dock__glass {
     box-shadow: 0 4px 12px rgba(15,23,42,0.12);
   }
+  .kpk-brand-dock.has-title-banner .kpk-brand-dock__glass {
+    box-shadow: none !important;
+  }
   .kpk-brand-dock.dock-style-obsidian .kpk-brand-dock__glass {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .kpk-brand-dock.has-title-banner.dock-style-obsidian .kpk-brand-dock__glass {
+    box-shadow: none !important;
   }
   .kbd-glass {
     background: rgba(255, 255, 255, 0.10) !important;
@@ -1775,33 +1781,38 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   position: relative;
   z-index: 1;
   display: block;
-  height: clamp(28px, 5.2vw, 44px);
+  /* Escala admin: --kpk-banner-scale (1 = 100%) */
+  height: calc(clamp(28px, 5.2vw, 44px) * var(--kpk-banner-scale, 1));
   width: auto;
-  max-width: min(92vw, 680px);
+  max-width: min(96vw, calc(720px * var(--kpk-banner-scale, 1)));
   object-fit: contain;
   object-position: center;
   pointer-events: none;
   user-select: none;
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease, height 0.2s ease;
 }
 .kpk-brand-dock__banner[hidden] { display: none !important; }
 
 .kpk-brand-dock.has-title-banner {
-  max-width: min(96vw, 760px);
+  max-width: min(96vw, 900px);
   width: max-content;
 }
+/* Banner = solo la foto (sin pila). !important: skins dock-style-* van después y si no, vuelven a pintar el glass */
 .kpk-brand-dock.has-title-banner .kpk-brand-dock__glass {
-  gap: 0;
-  padding: 6px 14px;
-  min-height: 0;
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  box-shadow: none;
+  gap: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
-.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass::before {
-  display: none;
+.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass::before,
+.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass::after {
+  display: none !important;
+  content: none !important;
 }
 .kpk-brand-dock.has-title-banner .kpk-brand-dock__logo-wrap,
 .kpk-brand-dock.has-title-banner .kpk-brand-dock__text {
@@ -2057,6 +2068,35 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   display: none;
 }
 
+/* Banner PNG: anula CUALQUIER skin / solid móvil — solo la foto */
+.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.is-mobile-solid .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-crystal .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-obsidian .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-ivory .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-graphite .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-champagne .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-obsidian-gold .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-bordeaux .kpk-brand-dock__glass,
+.kpk-brand-dock.has-title-banner.dock-style-platinum .kpk-brand-dock__glass {
+  gap: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass::before,
+.kpk-brand-dock.has-title-banner .kpk-brand-dock__glass::after,
+.kpk-brand-dock.has-title-banner.is-mobile-solid .kpk-brand-dock__glass::before,
+.kpk-brand-dock.has-title-banner.is-mobile-solid .kpk-brand-dock__glass::after {
+  display: none !important;
+  content: none !important;
+}
+
 @media (max-width: 640px) {
   .kpk-brand-dock {
     top: max(10px, env(safe-area-inset-top, 0px));
@@ -2079,10 +2119,14 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
     letter-spacing: 0.1em;
   }
   .kpk-brand-dock.has-title-banner .kpk-brand-dock__glass {
-    padding: 4px 8px;
+    padding: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
   }
   .kpk-brand-dock__banner {
-    height: clamp(24px, 7vw, 36px);
+    height: calc(clamp(24px, 7vw, 36px) * var(--kpk-banner-scale, 1));
     max-width: calc(100vw - 28px);
   }
 }

@@ -2,8 +2,9 @@
  * f-device.js — Detección de capacidad + panorama único (loteo360.jpg)
  *
  * Una sola foto en el repo. El runtime decide:
- *   - high / mid (móvil, tablet o desktop): intenta FULL si la GPU aguanta
- *   - low o GPU chica: downscale en código (createImageBitmap / canvas)
+ *   - desktop high/mid: FULL si la GPU aguanta
+ *   - phone/tablet: tope 4096 (mid) / 2048 (low) — full 8–12k mata FPS en móvil
+ *   - low o poca RAM: 2048
  *
  * Override URL: ?tex=2048|4096|8192  o  ?tier=low|mid|high
  */
@@ -107,8 +108,8 @@
 
   /**
    * Ancho objetivo según tier / override / GPU.
-   * mid+high (phone/tablet/desktop): FULL si GPU aguanta.
-   * low o poca RAM: downscale.
+   * Phone/tablet: nunca full 8–12k (regresión de lag vs variantes 4096/2048).
+   * Desktop mid/high: FULL si GPU aguanta.
    */
   function getTargetWidth(forcedMaxWidth) {
     detect();
@@ -121,8 +122,11 @@
       want = force;
     } else if (_tier === 'low' || (mem != null && mem > 0 && mem < 3)) {
       want = LIMITS.low;
+    } else if (_isPhone || _isTablet) {
+      // Móvil/tablet: tope 4096 (evitar full 8–12k)
+      want = LIMITS.mid;
     } else {
-      // mid / high → foto full (limitada solo por GPU) — máxima nitidez
+      // Desktop mid/high → foto full (limitada solo por GPU)
       want = ORIGINAL_WIDTH;
     }
 

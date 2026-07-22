@@ -27,6 +27,7 @@
     logos: [],
     titleBannerPath: null,
     titleBannerHref: null,
+    titleBannerScale: 100,
     font: 'cormorant',
     dockStyle: 'crystal',
     mobileSolid: true,
@@ -91,6 +92,18 @@
     }
   }
 
+  function _clampBannerScale(n) {
+    const v = Number(n);
+    if (!isFinite(v)) return 100;
+    return Math.max(40, Math.min(220, Math.round(v)));
+  }
+
+  function _applyBannerScale(dock) {
+    if (!dock) return;
+    const scale = _clampBannerScale(_brand && _brand.titleBannerScale) / 100;
+    dock.style.setProperty('--kpk-banner-scale', String(scale));
+  }
+
   function _activeLogoPath(brand) {
     if (!brand) return null;
     if (brand.logoDataUrl) return null; // handled separately
@@ -137,6 +150,7 @@
     if (!Array.isArray(b.logos)) b.logos = [];
     if (!b.titleBannerPath) b.titleBannerPath = null;
     b.titleBannerHref = _normalizeBannerHref(b.titleBannerHref);
+    b.titleBannerScale = _clampBannerScale(b.titleBannerScale);
     if (b.mobileSolid == null) b.mobileSolid = true;
     if (b.hideLoteFill == null) b.hideLoteFill = false;
     if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
@@ -200,6 +214,7 @@
     dock.dataset.font = _brand.font;
     dock.dataset.style = _brand.dockStyle;
     _applyMobileSolid(dock);
+    _applyBannerScale(dock);
 
     if (name) {
       name.style.fontFamily = fontMeta.family;
