@@ -87,15 +87,18 @@
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
+  visibility: hidden;
   transform: translateY(16px) scale(0.96);
   pointer-events: none;
   transition: opacity 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-              transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+              transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              visibility 0.35s;
   font-family: 'Outfit', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   color: #fff;
 }
 .kpk-ai-panel.is-open {
   opacity: 1;
+  visibility: visible;
   transform: translateY(0) scale(1);
   pointer-events: auto;
 }
@@ -1148,7 +1151,7 @@
   z-index: 10005;
   font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   color: #fff;
-  display: flex;
+  display: none;
   flex-direction: column;
   padding: 0;
   gap: 0;
@@ -1163,6 +1166,7 @@
 }
 
 .kpk-mobile-ai-bubble-popup.is-visible {
+  display: flex;
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;

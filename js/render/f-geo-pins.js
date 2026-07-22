@@ -158,12 +158,18 @@
   function _syncEditability() {
     if (!_layer) return;
     const editable = _isToolMode();
-    if (_lastEditable === editable) return; // sin cambios → nada que hacer
-    _lastEditable = editable;
+    if (_lastEditable === editable) {
+      // still refresh amenity delete visibility
+    } else {
+      _lastEditable = editable;
+      _layer.classList.toggle('is-readonly', !editable);
+    }
     _layer.classList.toggle('is-readonly', !editable);
     _elMap.forEach(el => {
       const e = el.querySelector('.fgp-btn--edit');
       if (e) e.style.display = editable ? '' : 'none';
+      const del = el.querySelector('.kam-del');
+      if (del) del.style.display = editable ? '' : 'none';
     });
   }
 
@@ -180,6 +186,13 @@
     pins.forEach(pin => {
       seen.add(pin.id);
       let el = _elMap.get(pin.id);
+      const wantAmenity = pin.tipo === 'amenidad';
+      const isAmenityEl = !!(el && el.classList.contains('f-geo-pin--amenity'));
+      if (el && wantAmenity !== isAmenityEl) {
+        el.remove();
+        _elMap.delete(pin.id);
+        el = null;
+      }
       if (!el) {
         el = _createPinEl(pin);
         layer.appendChild(el);
@@ -211,6 +224,9 @@
   }
 
   function _createPinEl(pin) {
+    if (pin.tipo === 'amenidad') {
+      return _createAmenityEl(pin);
+    }
     const el = document.createElement('div');
     el.className = 'f-geo-pin';
     el.dataset.id = pin.id;
@@ -240,10 +256,33 @@
       </div>
     `;
 
+    _bindPinPointer(el);
+    _fillPinEl(el, pin);
+    return el;
+  }
+
+  function _createAmenityEl(pin) {
+    const el = document.createElement('div');
+    el.className = 'f-geo-pin f-geo-pin--amenity';
+    el.dataset.id = pin.id;
+    el.innerHTML = `
+      <div class="kpk-amenity-mark" role="button" tabindex="0">
+        <span class="kam-ring" aria-hidden="true"></span>
+        <span class="kam-ico" aria-hidden="true"></span>
+        <span class="kam-label"></span>
+      </div>
+      <button type="button" class="kam-del fgp-btn" data-act="delete" title="Eliminar" aria-label="Eliminar">×</button>
+    `;
+    _bindPinPointer(el);
+    _fillPinEl(el, pin);
+    return el;
+  }
+
+  function _bindPinPointer(el) {
     const onPointerDown = (e) => {
       if (e.button != null && e.button !== 0) return;
       _bringFront(el.dataset.id);
-      if (e.target.closest('.fgp-btn')) {
+      if (e.target.closest('.fgp-btn') || e.target.closest('.kam-del')) {
         _armInteractGuard(400);
         return;
       }
@@ -256,7 +295,7 @@
       _dragMoved = false;
       el.classList.add('is-dragging');
       try {
-        const cap = e.target.closest('.fgp-card') || e.target.closest('.fgp-tip') || el;
+        const cap = e.target.closest('.kpk-amenity-mark') || e.target.closest('.fgp-card') || e.target.closest('.fgp-tip') || el;
         cap.setPointerCapture && cap.setPointerCapture(e.pointerId);
       } catch (err) { /* ok */ }
     };
@@ -275,7 +314,7 @@
       e.stopPropagation();
       _armInteractGuard(400);
       _bringFront(el.dataset.id);
-      const btn = e.target.closest('.fgp-btn');
+      const btn = e.target.closest('.fgp-btn') || e.target.closest('.kam-del');
       const tool = _isToolMode();
       const id = el.dataset.id;
 
@@ -292,6 +331,14 @@
       const act = btn.dataset.act;
       const p = window.FerrariGeo.getPin(id);
       if (!p) return;
+      if (act === 'delete') {
+        if (!tool) return;
+        window.FerrariGeo.removePin(id);
+        if (window.FerrariAmenities && window.FerrariAmenities.refreshLegend) {
+          window.FerrariAmenities.refreshLegend();
+        }
+        return;
+      }
       if (act === 'edit') {
         if (!tool) return;
         if (window.FerrariGeoEditor) window.FerrariGeoEditor.open(p.id);
@@ -302,15 +349,28 @@
         window.FerrariUI && window.FerrariUI.showToast('Este pin no tiene coordenadas GPS.', 'info');
       }
     });
-
-    _fillPinEl(el, pin);
-    return el;
   }
 
   function _fillPinEl(el, pin) {
     el.dataset.tipo = pin.tipo || 'horizonte';
     el.dataset.cat = pin.categoria || 'otro';
     const meta = window.FerrariGeo.categoryMeta(pin.tipo, pin.categoria);
+
+    if (pin.tipo === 'amenidad') {
+      el.classList.add('f-geo-pin--amenity');
+      const ico = el.querySelector('.kam-ico');
+      const lab = el.querySelector('.kam-label');
+      const cat = window.FerrariAmenitiesCatalog;
+      const item = cat ? cat.get(pin.icon || pin.categoria) : null;
+      if (ico) ico.innerHTML = item && item.svg ? item.svg : '';
+      if (lab) lab.textContent = pin.titulo || (item && item.label) || meta.label || '';
+      const scale = Math.max(0.75, Math.min(1.45, Number(pin.scale) || 1));
+      el.style.setProperty('--kam-scale', String(scale));
+      const del = el.querySelector('.kam-del');
+      if (del) del.style.display = _isToolMode() ? '' : 'none';
+      return;
+    }
+
     const icon = el.querySelector('.fgp-icon');
     const title = el.querySelector('.fgp-title');
     const sub = el.querySelector('.fgp-sub');
@@ -321,7 +381,11 @@
     }
 
     let line2 = meta.label;
-    if (pin._routeDistM != null && pin._routeSec != null) {
+    if (window.FerrariGeo.formatPinDistanceEta) {
+      const m = window.FerrariGeo.formatPinDistanceEta(pin);
+      if (m && m !== '—') line2 = m;
+      else if (pin.lat != null) line2 = 'Sin origen dron';
+    } else if (pin._routeDistM != null && pin._routeSec != null) {
       line2 = `${window.FerrariGeo.formatDistance(pin._routeDistM)} · ${window.FerrariGeo.formatEtaSeconds(pin._routeSec)}`;
     } else if (pin._distM != null) {
       line2 = `≈ ${window.FerrariGeo.formatDistance(pin._distM)} · ${window.FerrariGeo.formatEtaMinutes(pin._distM)}`;
@@ -332,6 +396,7 @@
 
     const hasGps = pin.lat != null && pin.lng != null;
     el.querySelectorAll('[data-act="maps"], [data-act="waze"]').forEach(b => {
+      b.style.display = '';
       b.classList.toggle('is-disabled', !hasGps);
     });
   }
@@ -425,6 +490,11 @@
     _clearFront();
   }, true);
 
+  function setAmenitySpotlight(id) {
+    _bringFront(id || null);
+    markDirty();
+  }
+
   window.FerrariGeoPins = {
     markDirty,
     update,
@@ -434,6 +504,7 @@
     bringFront: _bringFront,
     clearFront: _clearFront,
     setBuyerNearbyFilter,
+    setAmenitySpotlight,
     setEditorNearbyHidden,
     isEditorNearbyHidden
   };

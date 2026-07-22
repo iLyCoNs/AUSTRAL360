@@ -545,6 +545,8 @@
   let _hasGreeted = false;
   let _welcomeSpoken = false;
   let _pendingWelcomeSpeak = '';
+  /** Tras onboarding: burbuja compacta hasta que el usuario la toque */
+  let _preferMinimalBubble = false;
 
   function _getAssistantMeta() {
     const brand = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
@@ -590,10 +592,11 @@
       _hasGreeted = true;
       // Guardar texto de saludo: se habla al abrir burbuja/panel (no al cargar)
       _pendingWelcomeSpeak = pack.speakText;
+      _preferMinimalBubble = false;
 
-      // Un solo mensaje en el chat (listo cuando expandan)
+      // Sembrar log SIN abrir UI
       if (_log) _log.innerHTML = '';
-      pack.messages.forEach((msg) => appendMessage(msg, 'system'));
+      pack.messages.forEach((msg) => _appendToLogOnly(msg, 'system'));
 
       if (_input) {
         _input.placeholder = pack.waitingName
@@ -601,19 +604,13 @@
           : 'Pregunta algo aquí o adjunta un archivo...';
       }
 
-      // Desktop: panel cerrado; solo FAB/burbuja. Saludo al abrir togglePanel.
+      // Desktop + móvil: nada abierto al cargar. Solo FAB; saludo al primer toque.
       if (_panel) {
         _panel.classList.remove('is-open');
         _syncAiPanelBodyClass();
       }
-
-      if (isMobile) {
-        // Burbuja mínima; al tocarla → expand + voz
-        showMobileBubblePopup(pack.messages[0], false);
-        _forceMobileBubbleMinimal();
-        // showMobileBubblePopup aplica clases en setTimeout(50); reafirmar minimal
-        setTimeout(_forceMobileBubbleMinimal, 80);
-      }
+      _preferMinimalBubble = false;
+      closeMobileBubblePopup(false);
 
       // Precargar Edge TTS para que el saludo no caiga a voz robótica
       _loadEdgeTTS().catch(() => {});
@@ -623,10 +620,30 @@
     }
   }
 
+  /** Escribe en el log del panel sin redirigir a burbuja móvil */
+  function _appendToLogOnly(text, role) {
+    if (!_log) return;
+    const msg = document.createElement('div');
+    msg.className = `kpk-ai-msg msg-${role}`;
+    const txtNode = document.createElement('div');
+    txtNode.className = 'kpk-ai-msg-text';
+    txtNode.innerHTML = _formatChatHtml(text);
+    msg.appendChild(txtNode);
+    const timeNode = document.createElement('span');
+    timeNode.className = 'kpk-ai-msg-time';
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    timeNode.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    msg.appendChild(timeNode);
+    _log.appendChild(msg);
+    _log.scrollTop = _log.scrollHeight;
+  }
+
   /** Fuerza burbuja compacta tras onboarding (aunque waitingName / speech digan lo contrario) */
   function _forceMobileBubbleMinimal() {
     const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (!popup) return;
+    _preferMinimalBubble = true;
     popup.classList.add('kpk-mbp-minimal', 'is-visible');
     popup.style.display = 'flex';
     _mobileHudPinned = false;
@@ -636,8 +653,10 @@
     }
     const inputRow = popup.querySelector('#kpk-mbp-input-row') || popup.querySelector('.kpk-mbp-input-row');
     const controlsRow = popup.querySelector('#kpk-mbp-controls-row') || popup.querySelector('.kpk-mbp-controls-row');
+    const chipsRow = popup.querySelector('#kpk-mbp-chips-row');
     if (inputRow) inputRow.style.display = 'none';
     if (controlsRow) controlsRow.style.display = 'none';
+    if (chipsRow) chipsRow.style.display = 'none';
   }
 
   /** Saludo de voz al primer contacto con burbuja/panel (no al cargar la página) */
@@ -655,8 +674,10 @@
     try {
       if (_panel && _panel.classList.contains('is-open')) {
         document.body.classList.add('kpk-ai-panel-open');
+        _panel.setAttribute('aria-hidden', 'false');
       } else {
         document.body.classList.remove('kpk-ai-panel-open');
+        if (_panel) _panel.setAttribute('aria-hidden', 'true');
       }
     } catch (e) {}
   }
@@ -689,6 +710,7 @@
         : (_clientName
           ? pack.messages.join(' ')
           : pack.speakText);
+      _preferMinimalBubble = false;
       _mobileHudPinned = true;
       showMobileBubblePopup(txt, true);
       if (!_welcomeSpoken) {
@@ -2161,10 +2183,22 @@
     // Cerrar widgets de tour si existen
     const tw = document.getElementById('kpk-tour-overlay');
     if (tw) tw.remove();
+    if (window.FerrariIdleCam && typeof window.FerrariIdleCam.resume === 'function') {
+      window.FerrariIdleCam.resume();
+    }
   }
 
   function startAutoTour() {
-    stopAutoTour(); // cancelar cualquier tour previo
+    // Cancelar tour previo sin reactivar idle (pause abajo)
+    _autoTourActive = false;
+    _autoTourTimers.forEach(t => clearTimeout(t));
+    _autoTourTimers = [];
+    const twPrev = document.getElementById('kpk-tour-overlay');
+    if (twPrev) twPrev.remove();
+
+    if (window.FerrariIdleCam && typeof window.FerrariIdleCam.pause === 'function') {
+      window.FerrariIdleCam.pause();
+    }
     _autoTourActive = true;
 
     const lotes = (window.allDrawnLines || [])
@@ -5327,30 +5361,20 @@
     // ── En móvil: redirigir respuestas del asistente a la burbuja popup ──────
     const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobileDevice && role === 'system') {
+      // Onboarding compacto: actualizar texto sin expandir
+      if (_preferMinimalBubble) {
+        _appendToLogOnly(text, role);
+        const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
+        const pText = popup && popup.querySelector('#kpk-mbp-text');
+        if (pText) pText.textContent = String(text || '').replace(/<[^>]+>/g, ' ').trim();
+        _forceMobileBubbleMinimal();
+        return;
+      }
       showMobileBubblePopup(text, true);
       return;
     }
 
-    const msg = document.createElement('div');
-    msg.className = `kpk-ai-msg msg-${role}`;
-
-    const txtNode = document.createElement('div');
-    txtNode.className = 'kpk-ai-msg-text';
-    // Permitir <b>/<br> y adjuntos propios; nunca textContent crudo con tags
-    txtNode.innerHTML = _formatChatHtml(text);
-    msg.appendChild(txtNode);
-
-    const timeNode = document.createElement('span');
-    timeNode.className = 'kpk-ai-msg-time';
-    const now = new Date();
-    const pad = (n) => String(n).padStart(2, '0');
-    timeNode.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
-    msg.appendChild(timeNode);
-
-    if (_log) {
-      _log.appendChild(msg);
-      _log.scrollTop = _log.scrollHeight;
-    }
+    _appendToLogOnly(text, role);
   }
 
   function showTypingIndicator() {
@@ -7018,24 +7042,30 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     if (popupMicBtn) popupMicBtn.addEventListener('click', _sharedToggleMic);
     if (popupMicInlineBtn) popupMicInlineBtn.addEventListener('click', _sharedToggleMic);
 
-    // Chat completo: minimal SOLO si TTS activo, no anclado y sin keepOpen
+    // Chat completo: minimal en onboarding (hasta tap) o si TTS activo sin anclar
     const isMinimal =
+      keepOpen !== true &&
       !_mobileHudPinned &&
-      !_isWaitingForName &&
-      !!_speechEnabled &&
-      keepOpen !== true;
+      (
+        _preferMinimalBubble ||
+        (!_isWaitingForName && !!_speechEnabled)
+      );
     if (isMinimal) {
       popup.classList.add('kpk-mbp-minimal');
     } else {
       popup.classList.remove('kpk-mbp-minimal');
+      _preferMinimalBubble = false;
     }
 
     // Mostrar teclado/input si esperamos el nombre, TTS off, o HUD anclado (texto)
     if (inputRow && controlsRow) {
-      if (_isWaitingForName || !_speechEnabled || _mobileHudPinned || keepOpen === true) {
+      if (isMinimal) {
+        inputRow.style.display = 'none';
+        controlsRow.style.display = 'none';
+      } else if (_isWaitingForName || !_speechEnabled || _mobileHudPinned || keepOpen === true) {
         inputRow.style.display = 'flex';
         controlsRow.style.display = 'none';
-      } else if (!isMinimal) {
+      } else {
         inputRow.style.display = 'none';
         controlsRow.style.display = 'flex';
       }
@@ -7044,10 +7074,11 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
     popup.style.display = 'flex';
     setTimeout(() => {
       popup.classList.add('is-visible');
-      if (_isWaitingForName || (!_speechEnabled && keepOpen)) {
+      if (!isMinimal && (_isWaitingForName || (!_speechEnabled && keepOpen))) {
         const inp = popup.querySelector('#kpk-mbp-text-input');
         if (inp) try { inp.focus(); } catch (e) {}
       }
+      if (isMinimal) _forceMobileBubbleMinimal();
       try {
         if (!_actionChipsActive) _updateSuggestiveChips();
       } catch (e) {}
@@ -7090,6 +7121,7 @@ FORMATO DE RESPUESTA — ESTRICTAMENTE JSON:
   function expandMobileBubblePopup() {
     const popup = document.getElementById('kpk-mobile-ai-bubble-popup');
     if (popup) {
+      _preferMinimalBubble = false;
       _mobileHudPinned = true;
       if (_bubblePopupTimeout) clearTimeout(_bubblePopupTimeout);
       popup.classList.remove('kpk-mbp-minimal');

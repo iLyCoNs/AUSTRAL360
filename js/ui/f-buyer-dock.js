@@ -123,9 +123,9 @@
       servicios: 'bencinera gasolinera servicios'
     };
     const term = queryMap[_poiFilter] || 'servicios cercanos';
-    // Google Maps embed con búsqueda de tipo nearby + coordenadas de referencia exactas
+    // Embed sin API key (evita secret scanning). Misma familia que el minimapa satélite.
     const q = encodeURIComponent(`${term} cerca de ${o.lat},${o.lng}`);
-    return `https://www.google.com/maps/embed/v1/search?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&q=${q}&center=${o.lat},${o.lng}&zoom=14&language=es`;
+    return `https://maps.google.com/maps?q=${q}&z=14&t=m&hl=es&output=embed`;
   }
 
   // Envía el query de búsqueda de POIs abriendo Google Maps en una nueva pestaña
@@ -506,11 +506,18 @@
 
     // 4) Inyectar mensaje de Jarvis en el chatbot narrando la acción
     if (pin.titulo || pin.nombre) {
-      const distKm = pin._routeDistM ? (pin._routeDistM / 1000).toFixed(1) + ' km' : (pin._distM ? (pin._distM / 1000).toFixed(1) + ' km aprox.' : '');
-      const tiempoMin = pin._routeDurationS ? Math.round(pin._routeDurationS / 60) + ' min' : '';
+      const useRoute = !!(pin._routeDistM && (pin._routeSec || pin._routeDurationS));
+      const distKm = useRoute
+        ? (pin._routeDistM / 1000).toFixed(1) + ' km'
+        : (pin._distM ? (pin._distM / 1000).toFixed(1) + ' km aprox.' : '');
+      const tiempoMin = useRoute
+        ? Math.round((pin._routeSec || pin._routeDurationS) / 60) + ' min'
+        : '';
       const infoTexto = (distKm && tiempoMin)
-        ? `a ${distKm} — ${tiempoMin} en vehículo`
-        : distKm ? `a ${distKm} del proyecto` : '';
+        ? `a ${distKm} por ruta — ${tiempoMin} en vehículo`
+        : distKm
+          ? (pin.tipo === 'horizonte' ? `a ${distKm} (aprox. línea recta)` : `a ${distKm} del proyecto`)
+          : '';
 
       const jarvisMsg = `He girado la cámara 360° hacia ${pinTitle}${infoTexto ? ', ' + infoTexto : ''}. El mapa interactivo muestra la ruta de acceso con las opciones de navegación para Google Maps y Waze, señor.`;
 
@@ -742,11 +749,12 @@
       } else {
         list.innerHTML = pins.map(p => {
           const meta = window.FerrariGeo.categoryMeta('poi', p.categoria);
-          const dist = p._routeDistM != null && p._routeSec != null
-            ? `${window.FerrariGeo.formatDistance(p._routeDistM)} · ${window.FerrariGeo.formatEtaSeconds(p._routeSec)}`
-            : (p._distM != null
-              ? `≈ ${window.FerrariGeo.formatDistance(p._distM)} · ${window.FerrariGeo.formatEtaMinutes(p._distM)}`
-              : (p.lat != null ? 'Sin origen dron' : meta.label));
+          let dist = window.FerrariGeo.formatPinDistanceEta
+            ? window.FerrariGeo.formatPinDistanceEta(p)
+            : null;
+          if (!dist || dist === '—') {
+            dist = p.lat != null ? 'Sin origen dron' : meta.label;
+          }
           const nav = (p.lat != null && p.lng != null) ? _navBtns(p.lat, p.lng) : '';
           const on = _spotlightNearbyId === p.id;
           return `

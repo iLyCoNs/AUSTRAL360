@@ -161,6 +161,9 @@
         bylineLabel:  'por %s'
       }
     };
+    if (window.FerrariIdleCam && window.FerrariIdleCam.applyViewerConfig) {
+      window.FerrariIdleCam.applyViewerConfig(config);
+    }
 
     // Quitar overlay residual que tapa la textura WebGL
     _hideLoadingMessage(true);
@@ -325,9 +328,23 @@
     // 6. Verificación de consola según spec
     _verifyProjection();
 
-    // 7. Cinematic intro: paneo norte → izquierda → Lote 13
-    _tryCinematicIntro();
-    document.addEventListener('ferrari:lotes-changed', _tryCinematicIntro, { once: true });
+    // 7. Cinematic intro: paneo norte → izquierda → Lote 13 → idle
+    //    Si el intro no arranca (ya jugó / sin lote 13), idle diferido.
+    var introStarted = _tryCinematicIntro();
+    if (!introStarted && window.FerrariIdleCam) {
+      window.FerrariIdleCam.scheduleStart(1500);
+    }
+    document.addEventListener('ferrari:lotes-changed', function () {
+      if (_tryCinematicIntro()) return;
+      if (window.FerrariIdleCam && !window.FerrariIdleCam.isStarted()) {
+        window.FerrariIdleCam.scheduleStart(800);
+      }
+    }, { once: true });
+
+    // 8. Tonos guardados (viewer + editor)
+    if (window.FerrariTone && typeof window.FerrariTone.applySaved === 'function') {
+      window.FerrariTone.applySaved();
+    }
 
     console.log('[Ferrari/Init] ✓ Motor Ferrari360 activo — SVG nadir-clamped');
   }
@@ -359,15 +376,17 @@
     } catch (e2) {}
   }
 
-  /** Paneo cinemático de bienvenida: norte → izquierda → Lote 13 */
+  /** Paneo cinemático de bienvenida: norte → izquierda → Lote 13 → idle autorotate
+   *  @returns {boolean} true si el intro arrancó ahora
+   */
   function _tryCinematicIntro() {
-    if (sessionStorage.getItem('ferrari_cinematic_played')) return;
+    if (sessionStorage.getItem('ferrari_cinematic_played')) return false;
     const viewer = window.Ferrari && window.Ferrari.viewer;
     const lines = window.allDrawnLines || [];
-    if (!viewer || !viewer.lookAt) return;
+    if (!viewer || !viewer.lookAt) return false;
 
     const lote13 = lines.find(function(l) { return l.titulo === '13' && l._pinCentroid; });
-    if (!lote13) return;
+    if (!lote13) return false;
     sessionStorage.setItem('ferrari_cinematic_played', '1');
 
     var northOff = (window.FerrariGeo && window.FerrariGeo.northOffset) || 0;
@@ -378,16 +397,26 @@
     var midPitch  = lotePitch * 0.5;
     var DUR = 1200;
 
+    if (window.FerrariIdleCam) {
+      // Idle autorotate mira fijo a P −80° (no al pitch del lote)
+      window.FerrariIdleCam.setTerrainPitch(-80);
+    }
+
     viewer.stopMovement();
     viewer.lookAt(0, northYaw, 90, 0);
 
     setTimeout(function() {
       viewer.lookAt(midPitch, midYaw, 90, DUR, function() {
         setTimeout(function() {
-          viewer.lookAt(lotePitch, loteYaw, 90, DUR);
+          viewer.lookAt(lotePitch, loteYaw, 90, DUR, function() {
+            if (window.FerrariIdleCam) {
+              window.FerrariIdleCam.scheduleStart(900);
+            }
+          });
         }, 250);
       });
     }, 400);
+    return true;
   }
 
   /**

@@ -9,8 +9,8 @@
 
   const CACHE_KEY = 'ferrari360_brand';
   const CONTACT_DEFAULTS = {
-    whatsapp: '56987491964',
-    formEmail: 'perito.vidal@gmail.com',
+    whatsapp: '',
+    formEmail: '',
     formEnabled: true,
     platformCta: 'Consigue tu 360° aquí',
     platformWhatsapp: '',
@@ -20,11 +20,13 @@
   };
 
   const DEFAULTS = {
-    version: 2,
+    version: 3,
     projectName: '',
     logoPath: null,
     logoId: null,
     logos: [],
+    titleBannerPath: null,
+    titleBannerHref: null,
     font: 'cormorant',
     dockStyle: 'crystal',
     mobileSolid: true,
@@ -69,8 +71,24 @@
       name: document.getElementById('kpk-brand-name'),
       logo: document.getElementById('kpk-brand-logo'),
       logoWrap: document.getElementById('kpk-brand-logo-wrap'),
+      banner: document.getElementById('kpk-brand-title-banner'),
+      bannerLink: document.getElementById('kpk-brand-title-banner-link'),
       title: document.querySelector('title')
     };
+  }
+
+  /** Normaliza URL externa del banner (solo http/https). */
+  function _normalizeBannerHref(raw) {
+    let s = String(raw || '').trim();
+    if (!s) return null;
+    if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+    try {
+      const u = new URL(s);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+      return u.href;
+    } catch (e) {
+      return null;
+    }
   }
 
   function _activeLogoPath(brand) {
@@ -93,6 +111,16 @@
     return path + bust;
   }
 
+  function _bannerUrl(brand) {
+    if (!brand) return null;
+    if (brand.titleBannerDataUrl) return brand.titleBannerDataUrl;
+    const path = brand.titleBannerPath;
+    if (!path) return null;
+    const bust = brand.updatedAt ? `?v=${encodeURIComponent(String(brand.updatedAt))}` : '';
+    if (/^https?:\/\//i.test(path)) return path + bust;
+    return path + bust;
+  }
+
   function _normalize(brand) {
     const b = Object.assign({}, DEFAULTS, brand || {});
     if (!FONTS[b.font]) b.font = 'cormorant';
@@ -107,6 +135,8 @@
     if (legacy[b.dockStyle]) b.dockStyle = legacy[b.dockStyle];
     if (STYLES.indexOf(b.dockStyle) === -1) b.dockStyle = 'crystal';
     if (!Array.isArray(b.logos)) b.logos = [];
+    if (!b.titleBannerPath) b.titleBannerPath = null;
+    b.titleBannerHref = _normalizeBannerHref(b.titleBannerHref);
     if (b.mobileSolid == null) b.mobileSolid = true;
     if (b.hideLoteFill == null) b.hideLoteFill = false;
     if (b.loteFillOnHoverOnly == null) b.loteFillOnHoverOnly = false;
@@ -149,13 +179,16 @@
       }
     } catch (e) { /* quota */ }
 
-    const { dock, glass, name, logo, logoWrap, title } = _els();
+    const { dock, glass, name, logo, logoWrap, banner, bannerLink, title } = _els();
     if (!dock) return;
 
     const projectName = String(_brand.projectName || '').trim();
     const src = _logoUrl(_brand);
+    const bannerSrc = _bannerUrl(_brand);
+    const bannerHref = _normalizeBannerHref(_brand.titleBannerHref);
     const hasName = projectName.length > 0;
     const hasLogo = !!src;
+    const hasBanner = !!bannerSrc;
     const fontMeta = FONTS[_brand.font] || FONTS.cormorant;
 
     STYLES.forEach(s => dock.classList.remove('dock-style-' + s));
@@ -179,19 +212,102 @@
       glass.style.setProperty('--brand-weight', fontMeta.weight);
     }
 
-    if (!hasName && !hasLogo) {
-      dock.classList.remove('is-visible');
+    if (!hasName && !hasLogo && !hasBanner) {
+      dock.classList.remove('is-visible', 'has-title-banner', 'has-logo', 'has-name');
       dock.setAttribute('aria-hidden', 'true');
+      dock.hidden = true;
+      if (banner) {
+        banner.hidden = true;
+        banner.removeAttribute('src');
+        banner.classList.remove('is-loaded');
+      }
+      if (bannerLink) {
+        bannerLink.hidden = true;
+        bannerLink.classList.remove('is-linked');
+        bannerLink.removeAttribute('href');
+        bannerLink.removeAttribute('target');
+        bannerLink.removeAttribute('rel');
+        bannerLink.setAttribute('tabindex', '-1');
+        bannerLink.removeAttribute('aria-label');
+      }
+      if (name) {
+        name.textContent = '';
+        name.hidden = true;
+      }
+      if (logoWrap) {
+        logoWrap.hidden = true;
+        logoWrap.classList.remove('is-on', 'is-loaded');
+      }
       return;
+    }
+
+    dock.hidden = false;
+
+    // Banner PNG transparente: sustituye el título (y el logo chico) en el dock
+    if (banner) {
+      if (hasBanner) {
+        banner.onload = () => { banner.classList.add('is-loaded'); };
+        banner.onerror = () => {
+          banner.hidden = true;
+          banner.removeAttribute('src');
+          banner.classList.remove('is-loaded');
+          if (bannerLink) {
+            bannerLink.hidden = true;
+            bannerLink.classList.remove('is-linked');
+            bannerLink.removeAttribute('href');
+          }
+          dock.classList.remove('has-title-banner');
+        };
+        banner.src = bannerSrc;
+        banner.alt = hasName ? projectName : 'Banner del proyecto';
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+        banner.removeAttribute('src');
+        banner.classList.remove('is-loaded');
+      }
+    }
+
+    if (bannerLink) {
+      if (hasBanner) {
+        bannerLink.hidden = false;
+        if (bannerHref) {
+          bannerLink.href = bannerHref;
+          bannerLink.target = '_blank';
+          bannerLink.rel = 'noopener noreferrer';
+          bannerLink.classList.add('is-linked');
+          bannerLink.setAttribute('tabindex', '0');
+          bannerLink.setAttribute(
+            'aria-label',
+            (hasName ? projectName + ' — ' : '') + 'Abrir sitio web oficial'
+          );
+        } else {
+          bannerLink.removeAttribute('href');
+          bannerLink.removeAttribute('target');
+          bannerLink.removeAttribute('rel');
+          bannerLink.classList.remove('is-linked');
+          bannerLink.setAttribute('tabindex', '-1');
+          bannerLink.removeAttribute('aria-label');
+        }
+      } else {
+        bannerLink.hidden = true;
+        bannerLink.classList.remove('is-linked');
+        bannerLink.removeAttribute('href');
+        bannerLink.removeAttribute('target');
+        bannerLink.removeAttribute('rel');
+        bannerLink.setAttribute('tabindex', '-1');
+        bannerLink.removeAttribute('aria-label');
+      }
     }
 
     if (name) {
       name.textContent = hasName ? projectName : '';
-      name.hidden = !hasName;
+      // Con banner: el PNG es la marca visible; el texto queda para <title>/a11y
+      name.hidden = hasBanner || !hasName;
     }
 
     if (logo && logoWrap) {
-      if (hasLogo) {
+      if (hasLogo && !hasBanner) {
         logo.onload = () => { logoWrap.classList.add('is-loaded'); };
         logo.onerror = () => {
           logoWrap.hidden = true;
@@ -210,10 +326,14 @@
       }
     }
 
-    dock.classList.toggle('has-logo', hasLogo);
-    dock.classList.toggle('has-name', hasName);
+    dock.classList.toggle('has-logo', hasLogo && !hasBanner);
+    dock.classList.toggle('has-name', hasName && !hasBanner);
+    dock.classList.toggle('has-title-banner', hasBanner);
     dock.classList.add('is-visible');
     dock.setAttribute('aria-hidden', 'false');
+    if (hasName) {
+      dock.setAttribute('aria-label', projectName);
+    }
 
     if (title && hasName) {
       title.textContent = `${projectName} — Tour 360°`;
