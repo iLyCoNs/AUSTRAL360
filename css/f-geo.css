@@ -384,6 +384,10 @@
   50% { transform: scale(1.35); opacity: 0.45; }
 }
 
+#f-geo-pins-layer.is-readonly .fgp-btn--edit,
+#f-geo-pins-layer.is-readonly .kam-del {
+  display: none !important;
+}
 #f-geo-pins-layer.is-readonly .fgp-card,
 #f-geo-pins-layer.is-readonly .fgp-tip { cursor: pointer; }
 #f-geo-pins-layer.is-readonly .f-geo-pin.is-dragging .fgp-card { cursor: pointer; }
@@ -530,6 +534,10 @@
 .fge-info-cat { font-size: 12px; font-weight: 700; color: rgba(0,0,0,0.45); text-transform: uppercase; letter-spacing: 0.04em; }
 .fge-info-metric { font-size: 15px; font-weight: 650; color: #1d1d1f; margin-top: 2px; }
 
+#f-geo-pins-layer.is-readonly .fgp-btn--edit,
+#f-geo-pins-layer.is-readonly .kam-del {
+  display: none !important;
+}
 #f-geo-pins-layer.is-readonly .fgp-card,
 #f-geo-pins-layer.is-readonly .fgp-tip { cursor: pointer; }
 #f-geo-pins-layer.is-readonly .f-geo-pin.is-dragging .fgp-card { cursor: pointer; }

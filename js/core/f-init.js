@@ -109,39 +109,51 @@
   }
 
   /**
-   * Elige un JPG ya escalado (loteo360 / -4096 / -2048).
-   * NUNCA reescala el equirect de 41MB en el navegador: eso cuelga móviles/tablets
-   * en "Ajustando resolución 360°…".
-   * @returns {Promise<string>} URL del panorama
+   * Una sola foto (loteo360.jpg). Si hace falta, downscale en runtime
+   * según GPU / tier (createImageBitmap + canvas). mid/high → full si cabe.
+   * @returns {Promise<string>} URL (archivo o blob:)
    */
   function _preparePanorama(forcedMaxWidth) {
     var info = window.FerrariDevice.detect();
-    var pano = window.FerrariDevice.pickPanorama
-      ? window.FerrariDevice.pickPanorama(forcedMaxWidth)
-      : { url: 'loteo360-4096.jpg', width: 4096, tier: info.tier };
-
-    var tier = pano.tier || info.tier;
     document.body.classList.remove('ferrari-device-high', 'ferrari-device-mid', 'ferrari-device-low');
-    document.body.classList.add('ferrari-device-' + tier);
+    document.body.classList.add('ferrari-device-' + info.tier);
     if (info.isTablet) document.body.classList.add('ferrari-device-tablet');
     if (info.isPhone) document.body.classList.add('ferrari-device-phone');
 
-    console.log('[Ferrari/Init] Device tier:', tier,
-      '| pano:', pano.url, '| width:', pano.width,
+    var targetW = window.FerrariDevice.getTargetWidth
+      ? window.FerrariDevice.getTargetWidth(forcedMaxWidth)
+      : (forcedMaxWidth || 4096);
+
+    console.log('[Ferrari/Init] Device tier:', info.tier,
+      '| targetW:', targetW,
       '| phone:', !!info.isPhone, '| tablet:', !!info.isTablet,
       '| MAX_TEXTURE_SIZE:', info.maxTextureSize);
 
-    // No tapar el canvas con overlay permanente: Pannellum ya muestra su loader
-    _hideLoadingMessage();
-    return Promise.resolve(pano.url);
+    var needsHint = window.FerrariDevice.needsDownscale && window.FerrariDevice.needsDownscale();
+    if (needsHint || (forcedMaxWidth && forcedMaxWidth < 8000)) {
+      _showLoadingMessage('Ajustando resolución 360°…');
+    } else {
+      _hideLoadingMessage();
+    }
+
+    var resolver = window.FerrariDevice.resolvePanoramaSource
+      ? window.FerrariDevice.resolvePanoramaSource(forcedMaxWidth)
+      : Promise.resolve({ url: 'loteo360.jpg', width: targetW, resized: false, tier: info.tier });
+
+    return resolver.then(function(src) {
+      console.log('[Ferrari/Init] Panorama listo:', src.url.slice(0, 48),
+        '|', src.width + 'px', '| resized:', !!src.resized);
+      _hideLoadingMessage();
+      return src.url;
+    });
   }
 
   /**
    * Crea el viewer de Pannellum con la fuente preparada.
-   * @param {string} source URL del JPG
+   * @param {string} source URL del JPG (archivo o blob:)
    */
   function _createViewer(source) {
-    var panoUrl = typeof source === 'string' ? source : 'loteo360-4096.jpg';
+    var panoUrl = typeof source === 'string' ? source : 'loteo360.jpg';
     var config = {
       type:        'equirectangular',
       panorama:    panoUrl,

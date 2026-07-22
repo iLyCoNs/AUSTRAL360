@@ -5266,11 +5266,11 @@
 
     const bits = [];
     if (dims) bits.push(`<b>${dims}</b>`);
-    if (uf) bits.push(`<b>${uf}</b>${clpStr ? ' <span style="opacity:.75">(~' + clpStr + ')</span>' : ''}`);
+    if (uf) bits.push(`<b>${uf}</b>${clpStr ? ' <span class="kpk-chat-muted">(~' + clpStr + ')</span>' : ''}`);
     const meta = bits.length ? `<br>${bits.join(' · ')}` : '';
 
     const tagsLine = tags.length
-      ? `<br><span style="opacity:.9">${tags.map((t) => '#' + t).join(' · ')}</span>`
+      ? `<br><span class="kpk-chat-tags">${tags.map((t) => '#' + t).join(' · ')}</span>`
       : '';
 
     let fotosNote = '';
@@ -5350,9 +5350,21 @@
       return '\u0000ATT' + (blocks.length - 1) + '\u0000';
     });
     work = _escapeHtml(work);
+    // Etiquetas tipográficas + saltos
     work = work
       .replace(/&lt;(\/?)(b|strong|i|em)&gt;/gi, '<$1$2>')
       .replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+    // Spans premium seguros (opacidad inline o clases whitelisteadas)
+    work = work
+      .replace(
+        /&lt;span\s+style=&quot;opacity:\s*(\.?\d+(?:\.\d+)?)&quot;\s*&gt;/gi,
+        '<span class="kpk-chat-dim" style="opacity:$1">'
+      )
+      .replace(
+        /&lt;span\s+class=&quot;(kpk-chat-(?:muted|tags|dim))&quot;\s*&gt;/gi,
+        '<span class="$1">'
+      )
+      .replace(/&lt;\/span&gt;/gi, '</span>');
     work = work.replace(/\u0000ATT(\d+)\u0000/g, (_, i) => blocks[Number(i)] || '');
     return work;
   }

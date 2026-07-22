@@ -75,7 +75,8 @@
       }
     }
     if (window.FerrariGeoPins && window.FerrariGeoPins.update && !editingVerts) {
-      window.FerrariGeoPins.update();
+      const geoDragging = window.FerrariGeoPins.isDragging && window.FerrariGeoPins.isDragging();
+      window.FerrariGeoPins.update(!!(camDirty || dataDirty || geoDragging));
     }
     // 4c. Smart Pins HTML overlay — reposicionamiento por GPU compositing (cero repintado SVG)
     if (window.FerrariSmartPins && !editingVerts) {

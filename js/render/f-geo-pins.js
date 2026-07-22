@@ -73,7 +73,7 @@
   }
 
   function _buyerHidesPin(pin) {
-    if (!_buyerNearby.enabled || _isToolMode()) return false;
+    if (!_buyerNearby.enabled || _cachedToolMode()) return false;
     if (!_isNearbyTipo(pin.tipo)) return false;
     if (!_buyerNearby.show || !pin.id || pin.id !== _buyerNearby.spotlightId) return true;
     return false;
@@ -81,7 +81,7 @@
 
   function _editorHidesPin(pin) {
     if (!_editorHideNearby) return false;
-    if (!_isToolMode()) return false;
+    if (!_cachedToolMode()) return false;
     return _isNearbyTipo(pin.tipo);
   }
 
@@ -145,32 +145,34 @@
 
   function markDirty() { _dirty = true; }
 
-  function update() {
-    if (!_dirty && !_draggingId) {
-      _repositionAll();
-      _syncEditability();
+  /**
+   * @param {boolean} [camMoved] si false y no hay dirty/drag → no-op (ahorra trabajo en idle quieto)
+   */
+  function update(camMoved) {
+    if (_dirty || _draggingId) {
+      _dirty = false;
+      _frameToolMode = null;
+      _rebuild();
       return;
     }
-    _dirty = false;
-    _rebuild();
+    if (camMoved === false) return;
+    _frameToolMode = null;
+    _repositionAll();
+  }
+
+  /** Cache por frame: evita N× query del panel en _placeEl */
+  let _frameToolMode = null;
+  function _cachedToolMode() {
+    if (_frameToolMode == null) _frameToolMode = _isToolMode();
+    return _frameToolMode;
   }
 
   function _syncEditability() {
     if (!_layer) return;
     const editable = _isToolMode();
-    if (_lastEditable === editable) {
-      // still refresh amenity delete visibility
-    } else {
-      _lastEditable = editable;
-      _layer.classList.toggle('is-readonly', !editable);
-    }
+    if (_lastEditable === editable) return;
+    _lastEditable = editable;
     _layer.classList.toggle('is-readonly', !editable);
-    _elMap.forEach(el => {
-      const e = el.querySelector('.fgp-btn--edit');
-      if (e) e.style.display = editable ? '' : 'none';
-      const del = el.querySelector('.kam-del');
-      if (del) del.style.display = editable ? '' : 'none';
-    });
   }
 
   function _rebuild() {
@@ -209,6 +211,7 @@
         _elMap.delete(id);
       }
     });
+    _lastEditable = null; // forzar sync tras rebuild
     _syncEditability();
   }
 
@@ -367,7 +370,7 @@
       const scale = Math.max(0.75, Math.min(1.45, Number(pin.scale) || 1));
       el.style.setProperty('--kam-scale', String(scale));
       const del = el.querySelector('.kam-del');
-      if (del) del.style.display = _isToolMode() ? '' : 'none';
+      if (del) del.style.display = '';
       return;
     }
 
@@ -403,39 +406,54 @@
 
   function _placeEl(el, pin) {
     if (_editorHidesPin(pin) || _buyerHidesPin(pin)) {
-      el.style.display = 'none';
+      if (el.style.display !== 'none') el.style.display = 'none';
       return;
     }
     _pinPt[0] = pin.pitch;
     _pinPt[1] = pin.yaw;
     const cam = window.FerrariCamera.getCamFastInto(_pinPt, _pinCam);
     if (cam.z <= 0.0001) {
-      el.style.display = 'none';
+      if (el.style.display !== 'none') el.style.display = 'none';
       return;
     }
     const proj = window.FerrariCamera.getProjectionParams();
     const { px, py } = window.FerrariCamera.camToPixel(cam, proj);
 
     if (px < -120 || py < -40 || px > proj.w + 120 || py > proj.h + 120) {
-      el.style.display = 'none';
+      if (el.style.display !== 'none') el.style.display = 'none';
       return;
     }
-    el.style.display = '';
-    el.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)`;
+    if (el.style.display === 'none') el.style.display = '';
+
+    const tx = px.toFixed(1);
+    const ty = py.toFixed(1);
+    const nextT = 'translate(' + tx + 'px, ' + ty + 'px)';
+    if (el._kpkT !== nextT) {
+      el._kpkT = nextT;
+      el.style.transform = nextT;
+    }
 
     // Profundidad: más cerca → más arriba en la pila (salvo el pin en foco)
     const depthZ = Math.max(1, Math.min(40, Math.round(cam.z * 28)));
-    if (el.dataset.id !== _frontId) {
-      el.style.zIndex = String(depthZ);
-    } else {
-      el.style.zIndex = '80';
-    }
+    const nextZ = el.dataset.id !== _frontId ? String(depthZ) : '80';
+    if (el.style.zIndex !== nextZ) el.style.zIndex = nextZ;
 
     // Solo voltear si el tip está pegado al borde superior (card siempre ancla abajo al lugar)
     const flipDown = py < 58;
-    el.classList.toggle('is-flip', flipDown);
-    el.classList.toggle('is-front', el.dataset.id === _frontId);
-    el.classList.toggle('is-dimmed', !!_frontId && el.dataset.id !== _frontId);
+    const isFront = el.dataset.id === _frontId;
+    const isDimmed = !!_frontId && !isFront;
+    if (el._kpkFlip !== flipDown) {
+      el._kpkFlip = flipDown;
+      el.classList.toggle('is-flip', flipDown);
+    }
+    if (el._kpkFront !== isFront) {
+      el._kpkFront = isFront;
+      el.classList.toggle('is-front', isFront);
+    }
+    if (el._kpkDim !== isDimmed) {
+      el._kpkDim = isDimmed;
+      el.classList.toggle('is-dimmed', isDimmed);
+    }
   }
 
   function _dragToEvent(e) {

@@ -235,6 +235,24 @@
   display: inline;
   color: #fff;
 }
+.kpk-ai-msg .kpk-chat-muted,
+.kpk-ai-msg .kpk-chat-dim {
+  opacity: 0.75;
+  font-weight: 500;
+}
+.kpk-ai-msg .kpk-chat-tags {
+  opacity: 0.9;
+  display: inline;
+  font-size: 0.95em;
+  letter-spacing: 0.01em;
+}
+.kpk-mbp-text .kpk-chat-muted,
+.kpk-mbp-text .kpk-chat-dim {
+  opacity: 0.75;
+}
+.kpk-mbp-text .kpk-chat-tags {
+  opacity: 0.9;
+}
 .kpk-ai-msg-time {
   display: block;
   font-size: 9px;
