@@ -56,7 +56,11 @@
 
     _restoreDelay(viewer);
     try {
+      // Pitch objetivo del idle (Pannellum guarda Ga al reanudar tras inactividad)
       viewer.startAutoRotate(SPEED, _terrainPitch);
+      if (typeof viewer.lookAt === 'function') {
+        viewer.lookAt(_terrainPitch, undefined, undefined, 2800);
+      }
       _started = true;
       _armed = true;
     } catch (e) {

@@ -58,13 +58,11 @@
     el.setAttribute('role', 'complementary');
     el.setAttribute('aria-label', 'Widget del clima');
     el.innerHTML = `
-      <div class="kpk-weather__handle" id="kpk-weather-handle" title="Arrastrar">
-        <div class="kpk-weather__grip">
-          <span></span><span></span><span></span>
-        </div>
-        <button class="kpk-weather__collapse" id="kpk-weather-toggle" title="Expandir clima" type="button" aria-expanded="false">
-          ${ICON_EXPAND}
-        </button>
+      <button class="kpk-weather__collapse" id="kpk-weather-toggle" title="Expandir clima" type="button" aria-expanded="false" aria-label="Expandir clima">
+        ${ICON_EXPAND}
+      </button>
+      <div class="kpk-weather__handle" id="kpk-weather-handle" title="Arrastrar" hidden>
+        <span class="kpk-weather__drag-label">Clima</span>
       </div>
       <div class="kpk-weather__body" id="kpk-weather-body" style="display:none">
         <div class="kpk-weather__main">
@@ -86,7 +84,10 @@
       window.FerrariDrag.attach(el, { handle: '#kpk-weather-handle' });
     }
 
-    el.querySelector('#kpk-weather-toggle').addEventListener('click', toggleCollapse);
+    el.querySelector('#kpk-weather-toggle').addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleCollapse();
+    });
     startClock();
     return el;
   }
@@ -95,11 +96,14 @@
     if (!_widget) return;
     const body = _widget.querySelector('#kpk-weather-body');
     const btn  = _widget.querySelector('#kpk-weather-toggle');
+    const handle = _widget.querySelector('#kpk-weather-handle');
     if (body) body.style.display = _collapsed ? 'none' : '';
+    if (handle) handle.hidden = !!_collapsed;
     _widget.classList.toggle('kpk-weather--collapsed', _collapsed);
     if (btn) {
       btn.innerHTML = _collapsed ? ICON_EXPAND : ICON_COLLAPSE;
       btn.title = _collapsed ? 'Expandir clima' : 'Minimizar';
+      btn.setAttribute('aria-label', _collapsed ? 'Expandir clima' : 'Minimizar clima');
       btn.setAttribute('aria-expanded', _collapsed ? 'false' : 'true');
     }
   }
