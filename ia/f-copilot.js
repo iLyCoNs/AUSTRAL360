@@ -256,10 +256,12 @@
     };
     _modelName = models[_provider] || models.openrouter;
 
-    // TTS OFF duro (v2) ANTES de pintar UI — silencia Charon/Dalia/robot
-    if (localStorage.getItem('kpk_tts_output_forced_v2') !== '1') {
-      localStorage.setItem('kpk_tts_output', '0');
-      localStorage.setItem('kpk_tts_output_forced_v2', '1');
+    // TTS salida: respetar configuración del proyecto (brand.json / config.js)
+    if (localStorage.getItem('kpk_tts_output') === null) {
+      const brandTts = (window.FerrariBrandDock && typeof window.FerrariBrandDock.getBrand === 'function')
+        ? window.FerrariBrandDock.getBrand().ttsOutputEnabled
+        : (cfg.ttsOutputEnabled !== undefined ? cfg.ttsOutputEnabled : true);
+      localStorage.setItem('kpk_tts_output', brandTts ? '1' : '0');
     }
     _speechEnabled = localStorage.getItem('kpk_tts_output') === '1';
     try { stopAISpeech(); } catch (e) {}
@@ -4138,12 +4140,14 @@
     return new Blob([bytes], { type: mime.includes('audio') ? mime : 'audio/mpeg' });
   }
 
-  // Solo el TTS más barato (price-performance). Pro/3.1 cuestan ~2× y queman cuota free.
-  // Paid: $0.50/1M input + $10/1M audio vs 3.1 Flash TTS $1 + $20.
-  const GEMINI_TTS_CHEAPEST = 'gemini-2.5-flash-preview-tts';
+  // Gemini Live & TTS real-time voice model (gemini-3.1-flash-tts-preview)
+  const GEMINI_TTS_CHEAPEST = 'gemini-3.1-flash-tts-preview';
   const GEMINI_TTS_MODELS = [
-    GEMINI_TTS_CHEAPEST
-    // No rotar a Pro/3.1: agotan la cuota free más rápido sin mejor precio.
+    'gemini-3.1-flash-tts-preview',
+    'gemini-2.5-flash-preview-tts',
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash'
   ];
 
   // Estrategia experta: cerebro (Lightning) ≠ voz.
@@ -4273,11 +4277,20 @@
             }
           }
         });
-        let res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-          { method: 'POST', headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' }, body }
-        );
-        if (!res.ok) {
+        const isAccessToken = key.startsWith('ya29.') || key.startsWith('AQ.');
+        const url = isAccessToken
+          ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+          : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (isAccessToken) {
+          headers['Authorization'] = `Bearer ${key}`;
+        } else {
+          headers['x-goog-api-key'] = key;
+        }
+
+        let res = await fetch(url, { method: 'POST', headers, body });
+        if (!res.ok && !isAccessToken) {
           res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
             { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
@@ -4680,7 +4693,7 @@
 
       const setupFrame = {
         setup: {
-          model: "models/gemini-2.0-flash-exp",
+          model: "models/gemini-3.1-flash-tts-preview",
           generationConfig: {
             responseModalities: ["TEXT", "AUDIO"],
             speechConfig: {

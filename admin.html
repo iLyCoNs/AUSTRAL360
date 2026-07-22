@@ -1252,6 +1252,20 @@
           </div>
 
           <div class="efield full">
+            <label>API Key de Google Gemini (para Voz JARVIS Charon / Kore)</label>
+            <div class="kpk-ai-key-input-container" style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="brand-gemini-key" placeholder="AIzaSy... pega tu API Key de Gemini para voz aquí" oninput="onGeminiVoiceKeyChange()" style="flex: 1; padding-right: 42px; width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; font-family: inherit;">
+              <button type="button" id="btn-toggle-gemini-key" onclick="toggleGeminiVoiceKeyVisibility()" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; padding: 4px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <span class="brand-opt-hint" style="margin-top: 4px; display: block; font-size: 11px; color: var(--text-3);">Clave necesaria para generar la voz masculina JARVIS Charon o Kore mediante Gemini. Al hacer clic en <b>Guardar en GitHub</b> quedará <b>ofuscada de forma segura (kpk-enc-)</b>.</span>
+          </div>
+
+          <div class="efield full">
             <label>API Key ElevenLabs (voz Gigi Bella)</label>
             <input type="password" id="brand-elevenlabs-key" placeholder="xi-... pega tu key aquí" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; outline:none; font-family:inherit;" oninput="onElevenLabsKeyChange()">
             <span class="brand-opt-hint" style="margin-top:4px; display:block; font-size:11px; color:var(--text-3);">Si cambias o recargas créditos, se limpia el caché y el copiloto re-sondea al instante.</span>
@@ -2160,6 +2174,37 @@ function onElevenLabsKeyChange() {
   localStorage.removeItem('kpk_el_status_v1');
 }
 
+function onGeminiVoiceKeyChange() {
+  const gemInput = document.getElementById('brand-gemini-key');
+  const val = (gemInput && gemInput.value || '').trim();
+  if (val) {
+    localStorage.setItem('ferrari_ai_key_gemini', val);
+    localStorage.setItem('ferrari_gemini_api_key', val);
+  } else {
+    localStorage.removeItem('ferrari_ai_key_gemini');
+    localStorage.removeItem('ferrari_gemini_api_key');
+  }
+}
+
+function toggleGeminiVoiceKeyVisibility() {
+  const txtKey = document.getElementById('brand-gemini-key');
+  const btn = document.getElementById('btn-toggle-gemini-key');
+  if (!txtKey || !btn) return;
+  const isPassword = txtKey.type === 'password';
+  txtKey.type = isPassword ? 'text' : 'password';
+  btn.innerHTML = isPassword ? `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
+  ` : `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  `;
+}
+
 function syncCopilotTtsOutputUI() {
   const on = localStorage.getItem('kpk_tts_output') === '1';
   const btn = document.getElementById('btn-tts-output-toggle');
@@ -2949,6 +2994,15 @@ async function loadBrandFromGitHub() {
       || (_brand.aiKeys && _brand.aiKeys.elevenlabs)
       || '';
     elKeyInput.value = _deobfuscateKey(storedEl || '');
+  }
+  const gemKeyInput = document.getElementById('brand-gemini-key');
+  if (gemKeyInput) {
+    const cfg = window.KPK_CONFIG || {};
+    const storedGem = localStorage.getItem('ferrari_ai_key_gemini')
+      || (_brand.aiKeys && _brand.aiKeys.gemini)
+      || (cfg.aiKeys && cfg.aiKeys.gemini)
+      || '';
+    gemKeyInput.value = _deobfuscateKey(storedGem || '');
   }
   onAIProviderChange();
 

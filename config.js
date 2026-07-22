@@ -21,8 +21,8 @@
     // Ejemplo: 'https://tts.tudominio.com'
     ttsProxyUrl: '',
 
-    // Salida de voz del copiloto (hablar). false = solo texto; admin.html lo activa.
-    ttsOutputEnabled: false,
+    // Salida de voz del copiloto (hablar). true = voz activa por defecto para Charon
+    ttsOutputEnabled: true,
 
     // Claves por proveedor (Ofuscadas de forma reversible)
     aiKeys: {
