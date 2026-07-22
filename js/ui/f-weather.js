@@ -62,7 +62,7 @@
         ${ICON_EXPAND}
       </button>
       <div class="kpk-weather__handle" id="kpk-weather-handle" title="Arrastrar" hidden>
-        <span class="kpk-weather__drag-label">Clima</span>
+        <span class="kpk-weather__drag-label">CLIMA DEL LUGAR</span>
       </div>
       <div class="kpk-weather__body" id="kpk-weather-body" style="display:none">
         <div class="kpk-weather__main">
@@ -111,6 +111,22 @@
   function toggleCollapse() {
     _collapsed = !_collapsed;
     applyCollapseUi();
+  }
+
+  function expand() {
+    if (!_widget) createWidget();
+    _collapsed = false;
+    applyCollapseUi();
+  }
+
+  function collapse() {
+    if (!_widget) return;
+    _collapsed = true;
+    applyCollapseUi();
+  }
+
+  function isCollapsed() {
+    return !!_collapsed;
   }
 
   function formatLiveClock() {
@@ -236,6 +252,12 @@
     init();
   }
 
-  window.FerrariWeather = { refresh: fetchWeather };
+  window.FerrariWeather = {
+    refresh: fetchWeather,
+    expand,
+    collapse,
+    toggle: toggleCollapse,
+    isCollapsed
+  };
 
 })();

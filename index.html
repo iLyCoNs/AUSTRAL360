@@ -9,17 +9,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:wght@500;600;700&family=Josefin+Sans:wght@400;500;600&family=Montserrat:wght@500;600;700&family=Outfit:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="pannellum.css?v=7">
-  <link rel="stylesheet" href="css/ferrari.css?v=44">
+  <link rel="stylesheet" href="css/ferrari.css?v=46">
   <!-- Pills dock/CTA glass (vence a ferrari). Clásico: css/kbd-buttons-classic.css al final. -->
   <link rel="stylesheet" href="css/kbd-buttons-glass.css?v=3">
   <link rel="stylesheet" href="css/f-gallery.css?v=1">
-  <link rel="stylesheet" href="css/f-geo.css?v=16">
-  <link rel="stylesheet" href="css/f-tourism.css?v=9">
+  <link rel="stylesheet" href="css/f-geo.css?v=21">
+  <link rel="stylesheet" href="css/f-tourism.css?v=10">
   <!-- Copiloto IA de Ventas -->
   <link rel="stylesheet" href="ia/f-copilot.css?v=19">
   <!-- Widget Meteorológico -->
   <link rel="stylesheet" href="css/f-weather.css?v=6">
-  <link rel="stylesheet" href="css/f-calendar.css?v=5">
+  <link rel="stylesheet" href="css/f-calendar.css?v=6">
   <link rel="stylesheet" href="css/f-draggable.css?v=2">
   <!-- Configuración predeterminada (API keys obfuscadas) — en el repositorio -->
   <script src="config.js?v=7"></script>
@@ -87,6 +87,10 @@
         <path id="calles-asfalto-union" class="path-calle-union" d="M -9999 -9999" />
       </g>
       <g id="layer-lotes"           class="svg-layer"></g>
+      <!-- Glow hover encima del relleno de lotes (sin capturar pointer) -->
+      <g id="layer-lote-hover" class="svg-layer" pointer-events="none">
+        <path id="hover-lote-edges-path" class="path-border-hover-fx" d="M -9999 -9999" fill="none" />
+      </g>
       <g id="layer-calles-arq2"     class="svg-layer"></g>
       <!-- Calco KMZ/KML (debajo del overlay de dibujo, sin pointer-events) -->
       <g id="layer-kmz-calco"       class="svg-layer" style="display:none" pointer-events="none"></g>
@@ -544,11 +548,11 @@
   <script src="js/core/f-idle-cam.js?v=3"></script>
 
   <!-- Ferrari Render: sync → paths → overlay -->
-  <script src="js/render/f-svg-sync.js?v=12"></script>
-  <script src="js/render/f-svg-paths.js?v=25"></script>
+  <script src="js/render/f-svg-sync.js?v=13"></script>
+  <script src="js/render/f-svg-paths.js?v=27"></script>
   <script src="js/render/f-smart-pins.js?v=1"></script>
   <script src="js/render/f-overlay.js?v=13"></script>
-  <script src="js/render/f-geo-pins.js?v=26"></script>
+  <script src="js/render/f-geo-pins.js?v=30"></script>
 
   <!-- Ferrari UI -->
   <script src="js/ui/f-draggable.js?v=1"></script>
@@ -557,12 +561,12 @@
   <script src="js/tools/f-street-network.js?v=15"></script>
   <script src="js/ui/f-persist.js?v=15"></script>
   <script src="js/ui/f-brand-dock.js?v=9"></script>
-  <script src="js/ui/f-buyer-dock.js?v=12"></script>
-  <script src="js/ui/f-lote-panel.js?v=15"></script>
+  <script src="js/ui/f-buyer-dock.js?v=13"></script>
+  <script src="js/ui/f-lote-panel.js?v=16"></script>
   <script src="js/ui/f-gallery.js?v=12"></script>
-  <script src="js/ui/f-compass.js?v=17"></script>
+  <script src="js/ui/f-compass.js?v=18"></script>
   <script src="js/ui/f-geo-editor.js?v=24"></script>
-  <script src="js/ui/f-tourism.js?v=14"></script>
+  <script src="js/ui/f-tourism.js?v=15"></script>
 
   <!-- Ferrari Tools -->
   <script src="js/tools/f-draw-lote.js?v=13"></script>
@@ -571,7 +575,7 @@
   <script src="js/tools/f-eraser.js?v=12"></script>
   <script src="js/tools/f-edit.js?v=18"></script>
   <script src="js/tools/f-add-pin.js?v=12"></script>
-  <script src="js/tools/f-geo-tools.js?v=15"></script>
+  <script src="js/tools/f-geo-tools.js?v=16"></script>
   <script src="js/tools/f-kmz-calco.js?v=2"></script>
   <script src="js/tools/f-amenities.js?v=1"></script>
   <script src="js/tools/f-tone.js?v=1"></script>
@@ -580,10 +584,10 @@
   <script src="js/core/f-device.js?v=8"></script>
 
   <!-- Copiloto IA de Ventas -->
-  <script src="ia/f-copilot.js?v=97"></script>
+  <script src="ia/f-copilot.js?v=99"></script>
 
   <!-- Widget Meteorológico (Open-Meteo · sin API key) -->
-  <script src="js/ui/f-weather.js?v=5"></script>
+  <script src="js/ui/f-weather.js?v=7"></script>
 
   <!-- Ferrari Init: último, arranca todo -->
   <script src="js/core/f-init.js?v=27"></script>

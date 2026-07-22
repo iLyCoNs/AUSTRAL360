@@ -266,6 +266,67 @@ body.kpk-lote-fill-hover-only .lote-interactivo:hover .path-default {
   stroke-width: 1.2px; /* Más fino y elegante */
 }
 
+/* Glow futurista del perímetro al hover / pointer sobre un lote */
+.path-border-hover-fx {
+  fill: none;
+  stroke: #5CFFE7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6px;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgba(92, 255, 231, 0.95))
+          drop-shadow(0 0 14px rgba(0, 200, 255, 0.7));
+  stroke-dasharray: 12 7;
+  transition: opacity 0.12s ease;
+}
+.path-border-hover-fx.is-active {
+  opacity: 1;
+  animation: kpk-lote-neon-dash 0.95s linear infinite, kpk-lote-neon-pulse 1.4s ease-in-out infinite;
+}
+@keyframes kpk-lote-neon-dash {
+  to { stroke-dashoffset: -36; }
+}
+@keyframes kpk-lote-neon-pulse {
+  0%, 100% {
+    stroke: #5CFFE7;
+    filter: drop-shadow(0 0 3px rgba(92, 255, 231, 0.7))
+            drop-shadow(0 0 8px rgba(0, 200, 255, 0.4));
+  }
+  50% {
+    stroke: #B8FFF6;
+    filter: drop-shadow(0 0 6px rgba(92, 255, 231, 1))
+            drop-shadow(0 0 16px rgba(0, 229, 255, 0.75));
+  }
+}
+
+/* Relleno + trazo suave del polígono mientras el cursor está encima */
+.lote-interactivo.is-pointer .path-lote,
+.lote-interactivo.is-pointer .path-default,
+.lote-interactivo:hover .path-lote,
+.lote-interactivo:hover .path-default {
+  stroke: rgba(92, 255, 231, 0.55);
+  stroke-width: 1.1px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-border-hover-fx.is-active {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .path-border-hover-fx {
+    filter: drop-shadow(0 0 3px rgba(92, 255, 231, 0.7));
+  }
+  .path-border-hover-fx.is-active {
+    animation: kpk-lote-neon-dash 1.2s linear infinite;
+  }
+}
+
 .path-costura {
   fill: none;
   stroke: var(--svg-lote);

@@ -18,6 +18,26 @@
   -webkit-backdrop-filter: none;
   pointer-events: none;
   user-select: none;
+  transition: transform 0.25s ease;
+}
+#f-compass.is-pulse {
+  transform: scale(1.08);
+}
+#f-compass.is-pulse .fc-orb {
+  filter:
+    drop-shadow(0 0 10px rgba(92, 255, 231, 0.95))
+    drop-shadow(0 0 22px rgba(0, 200, 255, 0.65))
+    drop-shadow(0 8px 18px rgba(0,0,0,0.18));
+  animation: fc-pulse-ring 0.9s ease-in-out 3;
+}
+#f-compass .fc-bearing.is-target {
+  color: #5CFFE7;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(92, 255, 231, 0.85);
+}
+@keyframes fc-pulse-ring {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
 .fc-orb {
   position: relative;
@@ -215,7 +235,286 @@
 }
 
 .f-geo-pin[data-tipo="horizonte"] .fgp-card {
-  max-width: min(86vw, 360px);
+  max-width: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HORIZONTE — Horizontal Glass Pins
+   Colapsado: gota + nombre + brújula.
+   Expandido (.is-open): Waze / Maps + km / min.
+   ═══════════════════════════════════════════════════════════ */
+.f-geo-pin[data-tipo="horizonte"] {
+  z-index: 3;
+}
+.f-geo-pin[data-tipo="horizonte"].is-dimmed {
+  opacity: 0.34;
+  filter: saturate(0.55);
+}
+.f-geo-pin[data-tipo="horizonte"].is-front {
+  z-index: 40;
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-card--hz {
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+  overflow: visible;
+  color: #0f172a;
+  font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+  bottom: 12px;
+  transition: transform 0.2s ease;
+}
+.f-geo-pin[data-tipo="horizonte"].is-front .fgp-card--hz {
+  box-shadow: none !important;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-card--hz:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+.f-geo-pin[data-tipo="horizonte"].is-open .fgp-card--hz,
+.f-geo-pin[data-tipo="horizonte"].is-front .fgp-card--hz,
+.f-geo-pin[data-tipo="horizonte"].is-dragging .fgp-card--hz {
+  transform: translateX(-50%);
+}
+.f-geo-pin[data-tipo="horizonte"].is-flip .fgp-card--hz {
+  bottom: auto;
+  top: 12px;
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Glass shared */
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__core,
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app,
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__meta {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.22));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 8px 22px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__core {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(186, 210, 235, 0.28));
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__ico {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.95);
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 4px rgba(15, 23, 42, 0.35));
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__ico svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__core .fgp-title {
+  font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 8px rgba(15, 23, 42, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(42vw, 160px);
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reveal: apps + meta — solo con .is-open */
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__reveal {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-6px);
+  transition:
+    max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.f-geo-pin[data-tipo="horizonte"].is-open .fgp-hz__reveal {
+  max-width: 280px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: #0f172a;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app:hover {
+  transform: scale(1.06);
+  background: rgba(255, 255, 255, 0.55);
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app:active {
+  transform: scale(0.96);
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app img,
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__app--edit {
+  color: rgba(15, 23, 42, 0.7);
+}
+#f-geo-pins-layer.is-readonly .fgp-hz__app--edit {
+  display: none;
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-hz__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+  color: rgba(15, 23, 42, 0.88);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-meta-item svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.72;
+  flex-shrink: 0;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-meta-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(15, 23, 42, 0.18);
+  flex-shrink: 0;
+}
+
+.f-geo-pin[data-tipo="horizonte"] .fgp-stem {
+  display: none;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-tip--hz {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  opacity: 0.85;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-tip-glow {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.16) 48%,
+    transparent 72%
+  );
+  animation: none;
+}
+.f-geo-pin[data-tipo="horizonte"] .fgp-tip-core {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.7),
+    0 1px 6px rgba(0, 0, 0, 0.28);
+}
+.f-geo-pin[data-tipo="horizonte"].is-open .fgp-tip-core,
+.f-geo-pin[data-tipo="horizonte"].is-front .fgp-tip-core {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 5px rgba(255, 255, 255, 0.14),
+    0 2px 10px rgba(0, 0, 0, 0.26);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__reveal,
+  .f-geo-pin[data-tipo="horizonte"] .fgp-card--hz {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__core,
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__app,
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__meta {
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    backdrop-filter: blur(10px) saturate(1.2);
+  }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__core {
+    height: 32px;
+    padding: 0 10px 0 8px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__core .fgp-title {
+    font-size: 11px;
+    max-width: min(38vw, 120px);
+  }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__app {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+  .f-geo-pin[data-tipo="horizonte"] .fgp-hz__meta {
+    height: 30px;
+    font-size: 11px;
+    padding: 0 10px;
+  }
+  .f-geo-pin[data-tipo="horizonte"].is-open .fgp-hz__reveal {
+    max-width: 240px;
+  }
 }
 
 .fgp-icon {
@@ -252,10 +551,6 @@
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
   -webkit-font-smoothing: antialiased;
 }
-.f-geo-pin[data-tipo="horizonte"] .fgp-title {
-  font-size: 11px;
-  font-weight: 600;
-}
 .fgp-sub {
   font-family: 'Outfit', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-size: 9px;
@@ -266,11 +561,6 @@
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
-}
-.f-geo-pin[data-tipo="horizonte"] .fgp-sub {
-  font-size: 9px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.72);
 }
 .fgp-actions {
   display: flex;
@@ -366,12 +656,6 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 0 0 2px rgba(64, 156, 255, 0.95), 0 0 10px rgba(0, 122, 255, 0.55);
-}
-.f-geo-pin[data-tipo="horizonte"] .fgp-tip-glow {
-  background: radial-gradient(circle, rgba(255,255,255,0.75) 0%, rgba(255,149,0,0.5) 42%, transparent 72%);
-}
-.f-geo-pin[data-tipo="horizonte"] .fgp-tip-core {
-  box-shadow: 0 0 0 2px rgba(255, 169, 64, 0.95), 0 0 10px rgba(255, 149, 0, 0.55);
 }
 .f-geo-pin[data-tipo="poi"] .fgp-tip-glow {
   background: radial-gradient(circle, rgba(255,255,255,0.75) 0%, rgba(52,199,89,0.5) 42%, transparent 72%);
@@ -560,23 +844,19 @@
   #f-compass { top: 76px !important; right: 12px !important; padding: 0 !important; gap: 4px !important; }
   .fc-orb { width: 51px !important; height: 51px !important; }
   .fc-bearing { font-size: 9.5px !important; }
-  .fgp-card {
-    min-width: 120px;
-    max-width: min(88vw, 300px);
-    /* Mismo glass clima — sin override opaco */
-    background: rgba(255, 255, 255, 0.10) !important;
-    backdrop-filter: blur(32px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.28),
-      0 1px 0 rgba(255, 255, 255, 0.18) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.12) inset !important;
+  /* Ruta/POI: sólido ligero sin blur (perf) */
+  .f-geo-pin:not([data-tipo="horizonte"]) .fgp-card {
+    min-width: 110px;
+    max-width: min(88vw, 280px);
+    background: rgba(18, 22, 30, 0.88) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28) !important;
   }
-  .f-geo-pin[data-tipo="horizonte"] .fgp-card {
-    max-width: min(92vw, 340px);
+  .f-geo-pin[data-tipo="horizonte"] .fgp-card--hz {
+    max-width: none;
   }
-  .f-geo-pin[data-tipo="horizonte"] .fgp-title { font-size: 11px; }
 }
 
 /* ─── Amenities Los Lagos (círculos premium) ───────────────────────── */
@@ -894,13 +1174,10 @@ html.kpk-amenity-present #kpk-fab {
 
 @media (max-width: 768px) {
   /* blur(32px)×N pins = compositor killer en móvil/tablet */
-  .fgp-card {
+  .f-geo-pin:not([data-tipo="horizonte"]) .fgp-card {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: rgba(18, 22, 30, 0.88) !important;
-  }
-  .f-geo-pin[data-tipo="horizonte"] .fgp-card {
-    background: rgba(12, 28, 48, 0.90) !important;
   }
 
   .kad-grid { grid-template-columns: repeat(3, 1fr); }
